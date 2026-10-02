@@ -14,6 +14,9 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasUuids;
 
     protected $table = 'users';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'username',
@@ -44,6 +47,15 @@ class User extends Authenticatable
     public const ROLE_DESIGNER = 'designer';
     public const ROLE_ADMIN = 'admin';
 
+
+    public function home(): string
+    {
+        return match ($this->role) {
+            'designer' => route('designer.dashboard'),
+            'admin'    => route('admin.dashboard'),
+            default    => route('customer.beranda'),
+        };
+    }
     // ==================== Relasi ====================
 
     // Designer
