@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -10,7 +11,29 @@ class BerandaController extends Controller
 {
     public function index()
     {
-        return view('customer.beranda');
+        $popularProducts = Product::where('is_active', true)
+            ->with(['tiers' => fn($q) => $q->where('is_active', true)])
+            ->withCount([
+                'orders' => function ($query) {
+                    $query->whereNotIn('status', [
+                        Order::STATUS_CANCELLED,
+                        Order::STATUS_REFUNDED,
+                    ]);
+                }
+            ])
+            ->orderByDesc('orders_count')
+            ->limit(4)
+            ->get();
+
+        if ($popularProducts->sum('orders_count') === 0) {
+            $popularProducts = Product::where('is_active', true)
+                ->with(['tiers' => fn($q) => $q->where('is_active', true)])
+                ->orderByDesc('created_at')
+                ->limit(4)
+                ->get();
+        }
+
+        return view('customer.beranda', compact('popularProducts'));
     }
 
     public function katalog(Request $request)
