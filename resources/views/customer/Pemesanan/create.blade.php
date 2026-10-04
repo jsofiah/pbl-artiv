@@ -137,9 +137,11 @@
                         </svg>
                     </button>
 
+                    {{-- Input angka — pakai div supaya tidak ada spinner --}}
                     <div class="w-14 h-10 flex items-center justify-center border border-slate-200 rounded-lg font-bold text-slate-900"
                         x-text="quantity"></div>
 
+                    {{-- Hidden input untuk form submit --}}
                     <input type="hidden" name="quantity" :value="quantity">
 
                     <button type="button" @click="incrementQty()"
