@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="max-w-5xl mx-auto py-8"
-        x-data="pemesananForm({{ $product->tiers->map(fn($t) => ['id' => $t->id, 'price' => (float) $t->price])->toJson() }}, {{ $expressFeeMap }})">
+        x-data='pemesananForm(@json($product->tiers->map(fn($t) => ["id" => $t->id, "price" => (float) $t->price])->values()), {!! $expressFeeMap !!})'>
 
     {{-- Header --}}
     <div class="mb-8">

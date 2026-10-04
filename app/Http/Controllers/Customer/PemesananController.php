@@ -4,18 +4,21 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\ExpressFee;
-use App\Models\Order;
-use App\Models\OrderReference;
 use App\Models\Product;
 use App\Models\ProductTier;
 use App\Services\R2StorageService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PemesananController extends Controller
 {
+    protected R2StorageService $storage;
+
+    public function __construct(R2StorageService $storage)
+    {
+        $this->storage = $storage;
+    }
+
     public function create(Product $product)
     {
         abort_if(!$product->is_active, 404, 'Jasa tidak tersedia.');
@@ -32,6 +35,7 @@ class PemesananController extends Controller
             ->values();
 
         $defaultTier = $product->tiers->first();
+
         $expressFeeMap = $expressFees->map(function ($fee) {
             return [
                 'id' => $fee->id,
@@ -41,7 +45,12 @@ class PemesananController extends Controller
             ];
         })->values()->toJson();
 
-        return view('customer.pemesanan.create', compact('product', 'expressFees', 'defaultTier', 'expressFeeMap'));
+        return view('customer.pemesanan.create', compact(
+            'product',
+            'expressFees',
+            'defaultTier',
+            'expressFeeMap'
+        ));
     }
 
     public function ringkasan(Request $request, Product $product)
@@ -56,21 +65,26 @@ class PemesananController extends Controller
             'reference_links.*' => 'nullable|url',
         ]);
 
-        $tier = ProductTier::where('product_id', $product->id)->findOrFail($validated['product_tier_id']);
+        $tier = ProductTier::where('product_id', $product->id)
+            ->findOrFail($validated['product_tier_id']);
 
         $deadline = now()->addDays(7);
         $expressFee = null;
 
         if ($validated['deadline_option'] === 'express') {
             if (empty($validated['target_deadline'])) {
-                return back()->withErrors(['target_deadline' => 'Tanggal deadline wajib diisi.'])->withInput();
+                return back()
+                    ->withErrors(['target_deadline' => 'Tanggal deadline wajib diisi untuk express.'])
+                    ->withInput();
             }
 
-            $deadline = \Carbon\Carbon::parse($validated['target_deadline'])->startOfDay();
+            $deadline = Carbon::parse($validated['target_deadline'])->startOfDay();
             $daysDiff = (int) now()->startOfDay()->diffInDays($deadline, false);
 
             if ($daysDiff < 1) {
-                return back()->withErrors(['target_deadline' => 'Minimal H+1 dari sekarang.'])->withInput();
+                return back()
+                    ->withErrors(['target_deadline' => 'Tanggal deadline minimal H+1 dari sekarang.'])
+                    ->withInput();
             }
 
             $allExpressFees = ExpressFee::where('is_active', true)->get();
@@ -90,7 +104,9 @@ class PemesananController extends Controller
             }
 
             if (!$expressFee) {
-                return back()->withErrors(['target_deadline' => 'Tidak ada express fee.'])->withInput();
+                return back()
+                    ->withErrors(['target_deadline' => 'Tidak ada express fee yang tersedia. Hubungi admin.'])
+                    ->withInput();
             }
         }
 
@@ -118,14 +134,16 @@ class PemesananController extends Controller
 
         session(['pemesanan_data' => $pemesananData]);
 
+        // Upload reference files ke R2 public bucket
         $references = [];
+
         if ($request->hasFile('reference_files')) {
-            $storage = app(R2StorageService::class);
             foreach ($request->file('reference_files') as $file) {
-                $path = $storage->upload($file, 'temp/references');
+                $url = $this->storage->upload($file, 'temp/references');
+
                 $references[] = [
                     'type' => 'file',
-                    'file_url' => $path,
+                    'file_url' => $url,
                     'file_name' => $file->getClientOriginalName(),
                     'file_size' => $file->getSize(),
                     'mime_type' => $file->getMimeType(),
@@ -136,14 +154,17 @@ class PemesananController extends Controller
         if ($request->filled('reference_links')) {
             foreach ($request->reference_links as $link) {
                 if (!empty($link)) {
-                    $references[] = ['type' => 'link', 'external_url' => $link];
+                    $references[] = [
+                        'type' => 'link',
+                        'external_url' => $link,
+                    ];
                 }
             }
         }
 
         session(['pemesanan_references' => $references]);
 
-        return view('customer.pembayaran', compact('product', 'pemesananData', 'order'));
+        return redirect()->route('customer.pemesanan.ringkasan.show', $product->id);
     }
 
     public function showRingkasan(Product $product)
@@ -160,72 +181,39 @@ class PemesananController extends Controller
         if ($pemesananData['product_id'] !== $product->id) {
             return redirect()
                 ->route('customer.pemesanan.create', $product->id)
-                ->withErrors(['error' => 'Data pemesanan tidak sesuai.']);
+                ->withErrors(['error' => 'Data pemesanan tidak sesuai. Silakan isi ulang.']);
         }
 
         $tier = ProductTier::find($pemesananData['product_tier_id']);
-        $expressFee = $pemesananData['express_fee_id'] ? ExpressFee::find($pemesananData['express_fee_id']) : null;
+        $expressFee = $pemesananData['express_fee_id']
+            ? ExpressFee::find($pemesananData['express_fee_id'])
+            : null;
 
-        return view('customer.pemesanan.ringkasan', compact('product', 'pemesananData', 'tier', 'expressFee', 'references'));
+        return view('customer.pemesanan.ringkasan', compact(
+            'product',
+            'pemesananData',
+            'tier',
+            'expressFee',
+            'references'
+        ));
     }
 
     public function konfirmasi(Request $request, Product $product)
-    {
-        $pemesananData = session('pemesanan_data');
-        $references = session('pemesanan_references', []);
+        {
+            $pemesananData = session('pemesanan_data');
 
-        if (!$pemesananData) {
-            return redirect()
-                ->route('customer.pemesanan.create', $product->id)
-                ->withErrors(['error' => 'Sesi pemesanan telah berakhir. Silakan isi ulang.']);
-        }
-
-        if ($pemesananData['product_id'] !== $product->id) {
-            return redirect()
-                ->route('customer.pemesanan.create', $product->id)
-                ->withErrors(['error' => 'Data pemesanan tidak sesuai.']);
-        }
-
-        DB::beginTransaction();
-        try {
-            $order = Order::create([
-                'order_code' => 'ARTIV-' . strtoupper(Str::random(8)),
-                'customer_id' => Auth::id(),
-                'designer_id' => null,
-                'product_id' => $product->id,
-                'product_tier_id' => $pemesananData['product_tier_id'],
-                'unit_price' => $pemesananData['unit_price'],
-                'quantity' => $pemesananData['quantity'],
-                'deadline' => $pemesananData['deadline'],
-                'is_express' => $pemesananData['is_express'],
-                'express_fee_id' => $pemesananData['express_fee_id'],
-                'express_fee' => $pemesananData['express_fee'],
-                'brief_note' => $pemesananData['brief_note'],
-                'total_price' => $pemesananData['total_price'],
-                'status' => 'pending',
-            ]);
-
-            foreach ($references as $ref) {
-                OrderReference::create([
-                    'order_id' => $order->id,
-                    'type' => $ref['type'],
-                    'file_url' => $ref['file_url'] ?? null,
-                    'file_name' => $ref['file_name'] ?? null,
-                    'file_size' => $ref['file_size'] ?? null,
-                    'mime_type' => $ref['mime_type'] ?? null,
-                    'external_url' => $ref['external_url'] ?? null,
-                ]);
+            if (!$pemesananData) {
+                return redirect()
+                    ->route('customer.pemesanan.create', $product->id)
+                    ->withErrors(['error' => 'Sesi pemesanan telah berakhir. Silakan isi ulang.']);
             }
 
-            session()->forget(['pemesanan_data', 'pemesanan_references']);
-            DB::commit();
+            if ($pemesananData['product_id'] !== $product->id) {
+                return redirect()
+                    ->route('customer.pemesanan.create', $product->id)
+                    ->withErrors(['error' => 'Data pemesanan tidak sesuai.']);
+            }
 
-            // Untuk sementara, tampilkan halaman placeholder
-            return view('customer.pemesanan.pembayaran-placeholder', compact('product', 'pemesananData', 'order'));
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'Gagal memproses: ' . $e->getMessage()]);
+            return redirect()->route('customer.pembayaran.show', $product->id);
         }
-    }
 }
