@@ -55,6 +55,7 @@
                             {{ $product->name }}
                         </span>
                         <h3 class="font-bold text-lg text-slate-900">{{ $product->name }}</h3>
+                        <!-- <p class="text-sm text-slate-500">Estimasi Standar: 2-3 Hari Kerja</p> -->
                     </div>
                 </div>
 
@@ -86,6 +87,7 @@
                     </span>
                 </div>
 
+                {{-- File & Link Referensi --}}
                 @if (count($references) > 0)
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">BERKAS REFERENSI TERUNGGAH:</p>
 
@@ -128,6 +130,7 @@
                     </div>
                 @endif
 
+                {{-- Brief --}}
                 @if ($pemesananData['brief_note'])
                     <div class="mt-4">
                         <div class="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 mb-3">
