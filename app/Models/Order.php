@@ -73,7 +73,10 @@ class Order extends Model
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_IN_PROGRESS = 'in_progress';
+    public const STATUS_REVISION_NEEDED = 'revision_needed';
+    public const STATUS_DELIVERABLE_SENT = 'deliverable_sent';
     public const STATUS_WAITING_CUSTOMER_DECISION = 'waiting_customer_decision';
+    public const STATUS_APPROVED = 'approved';
     public const STATUS_REASSIGNMENT_NEEDED = 'reassignment_needed';
     public const STATUS_REFUND_REQUESTED = 'refund_requested';
     public const STATUS_REFUNDED = 'refunded';
@@ -86,6 +89,8 @@ class Order extends Model
     public const AKTIF = [
         self::STATUS_PENDING,
         self::STATUS_IN_PROGRESS,
+        self::STATUS_REVISION_NEEDED,
+        self::STATUS_DELIVERABLE_SENT,
         self::STATUS_WAITING_CUSTOMER_DECISION,
         self::STATUS_REASSIGNMENT_NEEDED,
         self::STATUS_REFUND_REQUESTED,
@@ -95,13 +100,17 @@ class Order extends Model
         self::STATUS_COMPLETED,
         self::STATUS_CANCELLED,
         self::STATUS_REFUNDED,
+        self::STATUS_APPROVED,
     ];
 
     // Nama status untuk dropdown filter
     public const STATUS_LABELS = [
         self::STATUS_PENDING                   => 'Menunggu Kreator',
         self::STATUS_IN_PROGRESS               => 'Sedang Dikerjakan',
+        self::STATUS_REVISION_NEEDED           => 'Revisi Diperlukan',
+        self::STATUS_DELIVERABLE_SENT          => 'Hasil Dikirim',
         self::STATUS_WAITING_CUSTOMER_DECISION => 'Menunggu Keputusan Anda',
+        self::STATUS_APPROVED                  => 'Disetujui',
         self::STATUS_REASSIGNMENT_NEEDED       => 'Mencari Kreator Baru',
         self::STATUS_REFUND_REQUESTED          => 'Pengajuan Refund',
         self::STATUS_COMPLETED                 => 'Selesai',
@@ -114,7 +123,10 @@ class Order extends Model
     public const STAGES = [
         self::STATUS_PENDING                   => ['step' => 1, 'label' => 'Brief Diterima',          'percent' => 10],
         self::STATUS_IN_PROGRESS               => ['step' => 2, 'label' => 'Eksplorasi Konsep',       'percent' => 65],
+        self::STATUS_REVISION_NEEDED           => ['step' => 2, 'label' => 'Revisi',                  'percent' => 70],
+        self::STATUS_DELIVERABLE_SENT          => ['step' => 3, 'label' => 'Menunggu Review',         'percent' => 90],
         self::STATUS_WAITING_CUSTOMER_DECISION => ['step' => 0, 'label' => 'Menunggu Keputusan Anda', 'percent' => 0],
+        self::STATUS_APPROVED                  => ['step' => 3, 'label' => 'Disetujui',               'percent' => 100],
         self::STATUS_REASSIGNMENT_NEEDED       => ['step' => 0, 'label' => 'Mencari Kreator Baru',    'percent' => 0],
         self::STATUS_REFUND_REQUESTED          => ['step' => 0, 'label' => 'Pengajuan Refund',        'percent' => 0],
         self::STATUS_COMPLETED                 => ['step' => 3, 'label' => 'Selesai',                 'percent' => 100],
