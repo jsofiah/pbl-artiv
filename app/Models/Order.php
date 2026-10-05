@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -77,6 +79,55 @@ class Order extends Model
     public const STATUS_REFUNDED = 'refunded';
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
+
+    // ==================== Konstanta Tampilan "Pesanan Saya" (BARU) ====================
+
+    // Tab "Pesanan Aktif" dan "Riwayat Selesai"
+    public const AKTIF = [
+        self::STATUS_PENDING,
+        self::STATUS_IN_PROGRESS,
+        self::STATUS_WAITING_CUSTOMER_DECISION,
+        self::STATUS_REASSIGNMENT_NEEDED,
+        self::STATUS_REFUND_REQUESTED,
+    ];
+
+    public const RIWAYAT = [
+        self::STATUS_COMPLETED,
+        self::STATUS_CANCELLED,
+        self::STATUS_REFUNDED,
+    ];
+
+    // Nama status untuk dropdown filter
+    public const STATUS_LABELS = [
+        self::STATUS_PENDING                   => 'Menunggu Kreator',
+        self::STATUS_IN_PROGRESS               => 'Sedang Dikerjakan',
+        self::STATUS_WAITING_CUSTOMER_DECISION => 'Menunggu Keputusan Anda',
+        self::STATUS_REASSIGNMENT_NEEDED       => 'Mencari Kreator Baru',
+        self::STATUS_REFUND_REQUESTED          => 'Pengajuan Refund',
+        self::STATUS_COMPLETED                 => 'Selesai',
+        self::STATUS_REFUNDED                  => 'Dana Dikembalikan',
+        self::STATUS_CANCELLED                 => 'Dibatalkan',
+    ];
+
+    // Tahap + persen progres untuk badge dan progress bar.
+    // step 0 = tidak ada progress bar (status khusus / sudah berakhir).
+    public const STAGES = [
+        self::STATUS_PENDING                   => ['step' => 1, 'label' => 'Brief Diterima',          'percent' => 10],
+        self::STATUS_IN_PROGRESS               => ['step' => 2, 'label' => 'Eksplorasi Konsep',       'percent' => 65],
+        self::STATUS_WAITING_CUSTOMER_DECISION => ['step' => 0, 'label' => 'Menunggu Keputusan Anda', 'percent' => 0],
+        self::STATUS_REASSIGNMENT_NEEDED       => ['step' => 0, 'label' => 'Mencari Kreator Baru',    'percent' => 0],
+        self::STATUS_REFUND_REQUESTED          => ['step' => 0, 'label' => 'Pengajuan Refund',        'percent' => 0],
+        self::STATUS_COMPLETED                 => ['step' => 3, 'label' => 'Selesai',                 'percent' => 100],
+        self::STATUS_REFUNDED                  => ['step' => 0, 'label' => 'Dana Dikembalikan',       'percent' => 0],
+        self::STATUS_CANCELLED                 => ['step' => 0, 'label' => 'Dibatalkan',              'percent' => 0],
+    ];
+
+    // Label 3 tahap di bawah progress bar
+    public const STEP_LABELS = [
+        1 => 'Brief Diterima',
+        2 => 'Eksplorasi Konsep',
+        3 => 'Finishing',
+    ];
 
     // ==================== Konstanta Decision ====================
 
@@ -155,6 +206,16 @@ class Order extends Model
         return $this->hasOne(Review::class);
     }
 
+    // ==================== Accessor (BARU) ====================
+
+    // Dipakai view sebagai $order->progress
+    protected function progress(): Attribute
+    {
+        return Attribute::get(
+            fn () => (self::STAGES[$this->status] ?? self::STAGES[self::STATUS_PENDING]) + ['total' => 3]
+        );
+    }
+
     // ==================== Scope ====================
 
     public function scopeUrgent($query)
@@ -169,6 +230,43 @@ class Order extends Model
                 self::STATUS_PENDING,
                 self::STATUS_REASSIGNMENT_NEEDED,
             ]);
+    }
+
+    // ----- Scope untuk halaman "Pesanan Saya" (BARU) -----
+
+    public function scopeAktif(Builder $q): Builder
+    {
+        return $q->whereIn('status', self::AKTIF);
+    }
+
+    public function scopeRiwayat(Builder $q): Builder
+    {
+        return $q->whereIn('status', self::RIWAYAT);
+    }
+
+    public function scopeFilter(Builder $q, array $f): Builder
+    {
+        return $q
+            ->when($f['q'] ?? null, function ($q, $term) {
+                // ilike = pencarian tidak peka huruf besar/kecil (khusus PostgreSQL)
+                $q->where(function ($q) use ($term) {
+                    $q->where('order_code', 'ilike', "%{$term}%")
+                      ->orWhereHas('product', fn ($p) => $p->where('name', 'ilike', "%{$term}%"))
+                      ->orWhereHas('designer', fn ($d) => $d->where('full_name', 'ilike', "%{$term}%"));
+                });
+            })
+            ->when($f['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
+            ->when($f['kategori'] ?? null, fn ($q, $k) =>
+                $q->whereHas('product', fn ($p) => $p->where('name', 'ilike', "%{$k}%")));
+    }
+
+    public function scopeUrutkan(Builder $q, string $by): Builder
+    {
+        return match ($by) {
+            'terbaru' => $q->latest(),
+            'terlama' => $q->oldest(),
+            default   => $q->orderByRaw('deadline asc nulls last'),   // deadline terdekat
+        };
     }
 
     // ==================== Helper Status ====================
