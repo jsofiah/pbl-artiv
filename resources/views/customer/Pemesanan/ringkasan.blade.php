@@ -21,7 +21,6 @@
 
         <div class="lg:col-span-2 space-y-6">
 
-            {{-- 1. Detail Pesanan --}}
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="flex items-center gap-2 font-bold text-lg text-slate-900">
@@ -55,9 +54,13 @@
                             {{ $product->name }}
                         </span>
                         <h3 class="font-bold text-lg text-slate-900">{{ $product->name }}</h3>
-                        <!-- <p class="text-sm text-slate-500">Estimasi Standar: 2-3 Hari Kerja</p> -->
                     </div>
                 </div>
+
+                @php
+                    \Carbon\Carbon::setLocale('id');
+                    $deadline = \Carbon\Carbon::parse($pemesananData['deadline']);
+                @endphp
 
                 <div class="bg-violet-50 border border-violet-100 rounded-xl p-4">
                     <span class="inline-block px-2.5 py-0.5 rounded-md bg-[#6D28D9] text-white text-[10px] font-bold mb-2">
@@ -70,78 +73,102 @@
                         @endif
                     </p>
                     <p class="text-sm text-slate-500 mt-1">
-                        Estimasi Penyelesaian: {{ \Carbon\Carbon::parse($pemesananData['deadline'])->translatedFormat('l, d F Y') }}
+                        Estimasi Penyelesaian: {{ $deadline->translatedFormat('l, d F Y') }}
                     </p>
                 </div>
             </div>
 
-            {{-- 2. Referensi & Catatan Brief --}}
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="flex items-center gap-2 font-bold text-lg text-slate-900">
                         <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">2</span>
                         Referensi & Catatan Brief
                     </h2>
+                    @php
+                        $fileCount = collect($references)->where('type', 'file')->count();
+                        $linkCount = collect($references)->where('type', 'link')->count();
+                    @endphp
+
                     <span class="text-sm font-semibold text-[#6D28D9]">
-                        [ {{ count($references) }} Berkas Terlampir ]
+                        [ {{ $fileCount }} Berkas
+                        @if ($linkCount > 0)
+                            , {{ $linkCount }} Tautan
+                        @endif
+                        ]
                     </span>
                 </div>
 
-                {{-- File & Link Referensi --}}
-                @if (count($references) > 0)
+                @php
+                    $files = collect($references)->where('type', 'file');
+                    $links = collect($references)->where('type', 'link');
+                @endphp
+
+                @if ($files->count() > 0)
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">BERKAS REFERENSI TERUNGGAH:</p>
 
-                    <div class="space-y-2 mb-4">
-                        @foreach ($references as $ref)
-                            @if ($ref['type'] === 'file')
-                                <div class="flex items-center gap-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                    <div class="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        @foreach ($files as $ref)
+                            @php
+                                $mime = $ref['mime_type'] ?? '';
+                                $isImage = str_starts_with($mime, 'image/');
+                                $ext = strtoupper(pathinfo($ref['file_name'] ?? '', PATHINFO_EXTENSION));
+                            @endphp
+
+                            <a href="{{ \Storage::disk('r2')->temporaryUrl($ref['file_url'], now()->addHour()) }}" target="_blank" rel="noopener"
+                                class="flex items-center gap-3 bg-slate-50 hover:bg-slate-100 rounded-xl p-3 border border-slate-100 transition cursor-pointer">
+                                <div class="w-10 h-10 rounded-lg {{ $isImage ? 'bg-blue-100' : 'bg-violet-100' }} flex items-center justify-center shrink-0">
+                                    @if ($isImage)
+                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                    @else
                                         <svg class="w-5 h-5 text-[#6D28D9]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                         </svg>
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-semibold text-slate-800 truncate">{{ $ref['file_name'] }}</p>
-                                        <p class="text-xs text-slate-400">
-                                            {{ number_format(($ref['file_size'] ?? 0) / 1024 / 1024, 1) }} MB
-                                            • {{ strtoupper($ref['mime_type'] ?? 'FILE') }}
-                                        </p>
-                                    </div>
-                                    <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
+                                    @endif
                                 </div>
-                            @endif
-                        @endforeach
 
-                        @foreach ($references as $ref)
-                            @if ($ref['type'] === 'link')
-                                <div class="flex items-center gap-2 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
-                                    <svg class="w-4 h-4 text-[#6D28D9] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5l4-4a3 3 0 10-4.24-4.24l-6 6a3 3 0 000 4.24m3 3.5l-4 4a3 3 0 11-4.24-4.24l6-6a3 3 0 014.24 0"/>
-                                    </svg>
-                                    <a href="{{ $ref['external_url'] }}" target="_blank"
-                                        class="text-sm text-[#6D28D9] truncate hover:underline">
-                                        {{ $ref['external_url'] }}
-                                    </a>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-semibold text-slate-800 truncate">{{ $ref['file_name'] }}</p>
+                                    <p class="text-xs text-slate-400">
+                                        {{ number_format(($ref['file_size'] ?? 0) / 1024 / 1024, 1) }} MB
+                                        • {{ $ext ?: 'FILE' }}
+                                        {{ $isImage ? 'Gambar' : 'Dokumen' }}
+                                    </p>
                                 </div>
-                            @endif
+
+                                <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </a>
                         @endforeach
                     </div>
                 @endif
 
-                {{-- Brief --}}
+                @if ($links->count() > 0)
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 mt-4">TAUTAN REFERENSI EKSTERNAL:</p>
+                    <div class="space-y-2 mb-4">
+                        @foreach ($links as $ref)
+                            <a href="{{ $ref['external_url'] }}" target="_blank"
+                            class="flex items-center gap-2 bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5 hover:bg-violet-100 transition">
+                                <svg class="w-4 h-4 text-[#6D28D9] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                                </svg>
+                                <span class="text-sm text-[#6D28D9] truncate hover:underline">{{ $ref['external_url'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+
                 @if ($pemesananData['brief_note'])
-                    <div class="mt-4">
-                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 mb-3">
+                    <div class="mt-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                        <div class="flex items-center gap-2 mb-3">
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                             <span class="font-semibold text-slate-700 text-sm">Catatan Brief Desain</span>
                         </div>
-                        <div class="bg-slate-50 rounded-xl p-4">
-                            <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{{ $pemesananData['brief_note'] }}</p>
-                        </div>
+                        <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{{ $pemesananData['brief_note'] }}</p>
                     </div>
                 @endif
             </div>
