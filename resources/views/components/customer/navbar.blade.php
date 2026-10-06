@@ -17,14 +17,14 @@
                 </a>
                 <a href="{{ route('customer.katalog') }}"
                     class="px-4 py-1.5 rounded-full text-sm font-medium transition
-                            {{ request()->routeIs('customer.katalog.*')
+                            {{ request()->routeIs('customer.katalog*')
                                 ? 'bg-[#D5FC55] text-neutral-900 font-semibold'
                                 : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
                     Katalog
                 </a>
                 <a href="{{ route('customer.pesanan') }}"
                     class="px-4 py-1.5 rounded-full text-sm font-medium transition
-                            {{ request()->routeIs('customer.pesanan.*')
+                            {{ request()->routeIs('customer.pesanan*')
                                 ? 'bg-[#D5FC55] text-neutral-900 font-semibold'
                                 : 'text-white/90 hover:bg-white/10 hover:text-white' }}">
                     Pesanan Saya
