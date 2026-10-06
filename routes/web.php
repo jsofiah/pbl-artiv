@@ -39,6 +39,8 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');
         Route::get('/pemesanan/{product}/ringkasan', [PemesananController::class, 'showRingkasan'])->name('pemesanan.ringkasan.show');
         Route::post('/pemesanan/{product}/konfirmasi', [PemesananController::class, 'konfirmasi'])->name('pemesanan.konfirmasi');
+        Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])
+        ->name('pemesanan.hapus-referensi');
     });
 });
 
