@@ -3,8 +3,18 @@
 @section('title', 'Form Pemesanan')
 
 @section('content')
-<div class="max-w-5xl mx-auto py-8"
-        x-data="pemesananForm({{ $product->tiers->map(fn($t) => ['id' => $t->id, 'price' => (float) $t->price])->toJson() }}, {{ $expressFeeMap }})">
+<div class="max-w-5xl mx-auto py-8">
+        <div x-data="pemesananForm(
+            {{ Js::from($tiers) }},
+            {{ Js::from($expressFeeMap) }},
+            {
+                selectedTier: '{{ old('product_tier_id', $pemesananData['product_tier_id'] ?? $defaultTier?->id) }}',
+                quantity: {{ old('quantity', $pemesananData['quantity'] ?? 1) }},
+                deadlineOption: '{{ old('deadline_option', ($pemesananData['is_express'] ?? false) ? 'express' : 'default') }}',
+                targetDeadline: '{{ old('target_deadline', isset($pemesananData['deadline']) ? \Carbon\Carbon::parse($pemesananData['deadline'])->format('Y-m-d') : now()->addDays(2)->format('Y-m-d')) }}',
+                briefNote: '{{ old('brief_note', $pemesananData['brief_note'] ?? '') }}'
+            }
+        )">
 
     {{-- Header --}}
     <div class="mb-8">
@@ -137,11 +147,9 @@
                         </svg>
                     </button>
 
-                    {{-- Input angka — pakai div supaya tidak ada spinner --}}
                     <div class="w-14 h-10 flex items-center justify-center border border-slate-200 rounded-lg font-bold text-slate-900"
                         x-text="quantity"></div>
 
-                    {{-- Hidden input untuk form submit --}}
                     <input type="hidden" name="quantity" :value="quantity">
 
                     <button type="button" @click="incrementQty()"
@@ -161,7 +169,6 @@
             </h3>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {{-- STANDAR --}}
                 <label class="border-2 rounded-2xl p-5 cursor-pointer transition"
                         :class="deadlineOption === 'default' ? 'border-[#6D28D9] bg-violet-50/50' : 'border-slate-200 hover:border-[#6D28D9]/50'">
                     <input type="radio" name="deadline_option" value="default" class="hidden"
@@ -208,7 +215,8 @@
                         <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Informasi Biaya Tambahan Express:</p>
                         <ul class="space-y-1 text-sm">
                             @foreach ($expressFees as $fee)
-                                <li class="flex items-center justify-between">
+                                <li class="flex items-center justify-between rounded px-2 py-1 transition"
+                                    :class="selectedFee && selectedFee.id === '{{ $fee->id }}' ? 'bg-violet-100 font-semibold' : ''">
                                     <span class="text-slate-600">{{ $fee->name }}</span>
                                     <span class="font-bold text-[#6D28D9]">+Rp {{ number_format($fee->fee, 0, ',', '.') }}</span>
                                 </li>
@@ -227,21 +235,28 @@
                     <input type="date" name="target_deadline" x-model="targetDeadline"
                             :min="minDate" :max="maxDate"
                             class="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
+                    <!-- <p class="text-xs text-slate-400 mt-1">
+                        Minimal <span x-text="2"></span> hari, maksimal <span x-text="maxDuration"></span> hari dari hari ini.
+                    </p> -->
+                    <p x-show="durationDays < 2" x-cloak class="text-xs text-red-500 mt-1">
+                        Tanggal minimal H+2 dari hari ini.
+                    </p>
                 </div>
 
-                <div x-show="selectedFee" x-cloak class="mt-4 flex items-center justify-between bg-white border border-violet-200 rounded-xl px-4 py-3">
-                    <div>
-                        <p class="text-xs text-slate-500">Biaya Tambahan</p>
-                        <p class="font-bold text-slate-900" x-text="selectedFee ? selectedFee.name : '-'"></p>
-                    </div>
-                    <p class="text-2xl font-extrabold text-[#6D28D9]"
-                        x-text="selectedFee ? '+Rp ' + formatNumber(selectedFee.fee) : 'Rp 0'"></p>
+                <div x-show="selectedFee" x-cloak
+                    class="mt-4 flex items-center justify-between bg-white border border-violet-200 rounded-xl px-4 py-3">
+                <div>
+                    <p class="text-xs text-slate-500">Biaya Tambahan Express</p>
+                    <p class="font-bold text-slate-900" x-text="selectedFee ? selectedFee.name : '-'"></p>
                 </div>
+                <p class="text-2xl font-extrabold text-[#6D28D9]"
+                    x-text="'+Rp ' + formatNumber(expressFee)"></p>
+            </div>
 
-                <p x-show="!selectedFee && targetDeadline" x-cloak
-                    class="mt-4 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                    Tidak ada tarif express untuk durasi ini. Pilih tanggal lain.
-                </p>
+            <p x-show="!selectedFee && deadlineOption === 'express'" x-cloak
+                class="mt-4 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                Tidak ada tarif express untuk durasi ini. Pilih tanggal lain.
+            </p>
             </div>
 
             @error('target_deadline')
@@ -249,7 +264,6 @@
             @enderror
         </div>
 
-        {{-- 4. File & Tautan Referensi --}}
         <div class="mb-8">
             <h3 class="flex items-center gap-2 font-bold text-lg text-slate-900 mb-4">
                 <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">4</span>
@@ -264,24 +278,120 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
                         </svg>
                     </div>
-                    <p class="font-semibold text-[#6D28D9] mb-1">+ Upload File Referensi Desain</p>
+                    <p class="font-semibold text-[#6D28D9] mb-1">Upload File Referensi Desain</p>
                     <p class="text-sm text-slate-500">Drag & drop file moodboard, sketsa, logo lama, atau dokumen pendukung.</p>
-                    <p class="text-xs text-slate-400 mt-2">Format didukung: JPG, PNG, PDF, AI, PSD, ZIP (Maksimal 50MB per file)</p>
-                    <input type="file" id="reference-files" name="reference_files[]" multiple class="hidden" accept=".jpg,.jpeg,.png,.pdf,.ai,.psd,.zip">
+                    <p class="text-xs text-slate-400 mt-2">Format didukung: JPG, PNG, PDF, ZIP (Maksimal 20MB per file)</p>
+                    <input type="file" id="reference-files" name="reference_files[]" multiple class="hidden"
+                        accept=".jpg,.jpeg,.png,.pdf,.zip"
+                        onchange="handleReferenceFiles(this)">
                 </div>
 
-                <div id="file-list" class="mt-4 space-y-2"></div>
+                @php
+                    $oldFiles = collect($references)->where('type', 'file');
+                @endphp
+
+                @if ($oldFiles->count() > 0)
+                    <div class="mt-4 space-y-2">
+                        @foreach ($references as $i => $ref)
+                            @if ($ref['type'] === 'file')
+                                <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-4 py-2"
+                                    id="old-file-{{ $i }}">
+                                    
+                                    {{-- Bagian kiri bisa diklik --}}
+                                    <a href="{{ \Storage::disk('r2')->temporaryUrl($ref['file_url'], now()->addHour()) }}"
+                                    target="_blank" rel="noopener"
+                                    class="flex items-center gap-3 min-w-0 flex-1 hover:opacity-80 transition">
+                                        <svg class="w-5 h-5 text-[#6D28D9] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-slate-700 truncate">{{ $ref['file_name'] }}</p>
+                                            <p class="text-xs text-slate-400">
+                                                {{ number_format(($ref['file_size'] ?? 0) / 1024 / 1024, 1) }} MB
+                                            </p>
+                                        </div>
+                                    </a>
+
+                                    <input type="hidden" name="existing_files[]" value="{{ $ref['file_url'] }}">
+
+                                    <button type="button" onclick="openDeleteModal({{ $i }}, 'old-file-{{ $i }}')"
+                                            class="text-slate-400 hover:text-red-500 transition shrink-0 ml-3"
+                                            title="Hapus file">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
+
+                <div id="file-list" class="mt-2 space-y-2"></div>
+
+                <p id="file-error" class="text-sm text-red-500 mt-2 hidden"></p>
 
                 <div class="mt-5">
-                    <label class="text-sm font-semibold text-slate-700">Tautan Referensi Eksternal (Opsional)</label>
+                    <label class="text-sm font-semibold text-slate-700">
+                        Tautan Referensi Eksternal
+                        <span class="text-xs text-slate-400 font-normal">(wajib jika tidak ada file)</span>
+                    </label>
                     <div id="link-container" class="mt-2 space-y-2">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5l4-4a3 3 0 10-4.24-4.24l-6 6a3 3 0 000 4.24m3 3.5l-4 4a3 3 0 11-4.24-4.24l6-6a3 3 0 014.24 0"/>
-                            </svg>
-                            <input type="url" name="reference_links[]" placeholder="https://drive/file/..."
-                                    class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
-                        </div>
+                        @error('reference_links')
+                            <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                        @enderror
+
+                        @php
+                            $hasOldLinks = collect($references)->where('type', 'link')->count() > 0;
+                        @endphp
+
+                        @if ($hasOldLinks)
+                            @foreach ($references as $i => $ref)
+                                @if ($ref['type'] === 'link')
+                                    <div class="flex items-center gap-2" id="old-link-{{ $i }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400 shrink-0">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                                        </svg>
+                                        <input type="url" name="reference_links[]" value="{{ $ref['external_url'] }}"
+                                                class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
+                                        <button type="button" onclick="openDeleteModal({{ $i }}, 'old-link-{{ $i }}')"
+                                                class="shrink-0 w-9 h-9 flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                                                title="Hapus tautan">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endif
+                            @endforeach
+                        @else
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    class="w-5 h-5 text-slate-400 shrink-0">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                                </svg>
+
+                                <input type="url"
+                                    name="reference_links[]"
+                                    placeholder="https://drive/file/..."
+                                    class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
+
+                                {{-- X dari awal sudah tampil --}}
+                                <button type="button"
+                                    onclick="this.parentElement.remove()"
+                                    class="shrink-0 w-9 h-9 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                                    title="Hapus tautan">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                        stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        @endif
                     </div>
                     <button type="button" onclick="addLinkInput()" class="text-[#6D28D9] text-sm font-semibold mt-2 hover:underline">
                         + Tambah Tautan
@@ -290,7 +400,32 @@
             </div>
         </div>
 
-        {{-- 5. Catatan Brief Desain --}}
+        <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6 transform transition-all">
+                <div class="flex items-center justify-center w-14 h-14 rounded-full bg-red-100 mx-auto mb-4">
+                    <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M4.93 19h14.14a2 2 0 001.74-2.97L13.74 4.03a2 2 0 00-3.48 0L3.19 16.03A2 2 0 004.93 19z"/>
+                    </svg>
+                </div>
+
+                <h3 class="text-lg font-bold text-slate-900 text-center mb-2">Hapus Referensi?</h3>
+                <p class="text-sm text-slate-500 text-center mb-6">
+                    File yang dihapus tidak akan disertakan dalam pesanan. Tindakan ini tidak dapat dibatalkan.
+                </p>
+
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeDeleteModal()"
+                            class="flex-1 px-4 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition">
+                        Batal
+                    </button>
+                    <button type="button" onclick="confirmDelete()"
+                            class="flex-1 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition">
+                        Ya, Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="mb-8">
             <h3 class="flex items-center gap-2 font-bold text-lg text-slate-900 mb-4">
                 <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">5</span>
@@ -299,43 +434,66 @@
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
                 <label class="font-semibold text-slate-700 mb-2 block">Deskripsi Kebutuhan Desain</label>
                 <textarea name="brief_note" id="brief_note" rows="6" maxlength="1000"
-                            placeholder="Warna, tipografi, nuansa brand, teks yang wajib dicantumkan, target audiens."
-                            class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30"
-                            oninput="updateCharCount()">{{ old('brief_note') }}</textarea>
+                    x-model="briefNote"
+                    placeholder="Warna, tipografi, nuansa brand, teks yang wajib dicantumkan, target audiens."
+                    class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30"
+                    oninput="updateCharCount()">{{ old('brief_note', $pemesananData['brief_note'] ?? '') }}</textarea>
+                    @error('brief_note')
+                        <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                    @enderror
                 <div class="flex justify-end mt-2">
                     <span class="text-xs text-slate-400"><span id="char-count">0</span> / 1000 Karakter</span>
                 </div>
             </div>
         </div>
 
-        {{-- Action Bar --}}
-        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center justify-between gap-4 flex-wrap">
-            <a href="{{ route('customer.katalog.detail', $product->id) }}"
-                class="px-5 py-3 rounded-xl border-2 border-slate-200 font-semibold text-slate-600 hover:border-[#6D28D9] hover:text-[#6D28D9] transition">
-                ← Kembali
-            </a>
+        <div class="bg-white rounded-2xl px-6 py-4 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between gap-4">
+                {{-- KIRI: Tombol Kembali --}}
+                <a href="{{ route('customer.katalog.detail', $product->id) }}"
+                    class="shrink-0 px-5 py-3 rounded-xl border-2 border-[#6D28D9]/30 text-[#6D28D9] font-semibold hover:bg-violet-50 transition inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+                    </svg>
+                    Kembali
+                </a>
 
-            <div class="text-right">
-                <p class="text-xs text-slate-500">TOTAL ESTIMASI</p>
-                <p class="text-2xl font-extrabold text-[#6D28D9]"
-                    x-text="'Rp ' + formatNumber(totalPrice)"></p>
+                <div class="flex items-center gap-4 ml-auto">
+                    {{-- Total Estimasi --}}
+                    <div class="text-right">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                            Total Estimasi Sementara
+                        </p>
+                        <p class="text-3xl font-extrabold text-slate-900 leading-none">
+                            Rp <span x-text="formatNumber(totalPrice)"></span>
+                            <span class="text-xs font-semibold text-slate-400 align-middle">IDR</span>
+                        </p>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Paket <span x-text="selectedTierName"></span>
+                        </p>
+                    </div>
+
+                    <button type="submit"
+                            :disabled="!isFormValid"
+                            :class="!isFormValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#c5ec45]'"
+                            class="shrink-0 inline-flex items-center gap-2 bg-[#D5FC55] text-neutral-900 font-bold px-6 py-3 rounded-xl transition shadow-sm">
+                        Lanjutkan ke Ringkasan
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
-            <button type="submit"
-                    class="inline-flex items-center gap-2 bg-[#D5FC55] hover:bg-[#c5ec45] text-neutral-900 font-bold px-6 py-3 rounded-xl transition shadow-sm">
-                Lanjutkan ke Ringkasan
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                </svg>
-            </button>
+            <div class="border-t border-slate-100 pt-3 mt-3">
+                <p class="text-xs text-slate-400 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    Transaksi aman & terproteksi dengan Sistem Bersama ARTIV.
+                </p>
+            </div>
         </div>
-
-        <p class="text-xs text-slate-400 mt-3 flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-            </svg>
-            Transaksi aman & terproteksi dengan Sistem Rekening Bersama (Escrow) ARTIV.
-        </p>
     </form>
 </div>
 @endsection
@@ -344,78 +502,90 @@
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
 <script>
-    function pemesananForm(tiers, expressFees) {
-        return {
-            selectedTier: '{{ old('product_tier_id', $defaultTier?->id) }}',
-            quantity: {{ old('quantity', 1) }},
-            deadlineOption: '{{ old('deadline_option', 'default') }}',
-            targetDeadline: '{{ old('target_deadline', now()->addDays(3)->format('Y-m-d')) }}',
-            tiers: tiers,
-            fees: expressFees,
+    let selectedFiles = [];
 
-            get minDate() {
-                return new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-            },
-            get maxDate() {
-                return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-            },
-            get selectedFee() {
-                if (this.deadlineOption !== 'express' || !this.targetDeadline) return null;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const target = new Date(this.targetDeadline);
-                target.setHours(0, 0, 0, 0);
-                const daysDiff = Math.round((target - today) / (1000 * 60 * 60 * 24));
-                return this.fees.find(f => f.days === daysDiff) || null;
-            },
-            get totalPrice() {
-                const tier = this.tiers.find(t => t.id === this.selectedTier);
-                const unitPrice = tier ? tier.price : 0;
-                const subtotal = unitPrice * this.quantity;
-                const expressFee = this.selectedFee ? this.selectedFee.fee : 0;
-                return subtotal + expressFee;
-            },
-            incrementQty() {
-                this.quantity = Math.max(1, parseInt(this.quantity) + 1);
-            },
-            decrementQty() {
-                this.quantity = Math.max(1, parseInt(this.quantity) - 1);
-            },
-            formatNumber(num) {
-                return new Intl.NumberFormat('id-ID').format(num);
-            },
+    function handleReferenceFiles(input) {
+        const errorEl = document.getElementById('file-error');
+        errorEl.classList.add('hidden');
+        errorEl.textContent = '';
+
+        const MAX_SIZE = 20 * 1024 * 1024;
+        const files = Array.from(input.files);
+        const rejected = [];
+
+        files.forEach(file => {
+            if (file.size > MAX_SIZE) {
+                rejected.push(file.name);
+            } else {
+                const exists = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+                if (!exists) selectedFiles.push(file);
+            }
+        });
+
+        if (rejected.length > 0) {
+            errorEl.textContent = 'File berikut melebihi 20MB dan tidak diunggah: ' + rejected.join(', ');
+            errorEl.classList.remove('hidden');
         }
+
+        input.value = '';
+        renderFileList();
     }
 
-    document.getElementById('reference-files')?.addEventListener('change', function(e) {
+    function renderFileList() {
         const list = document.getElementById('file-list');
         list.innerHTML = '';
-        Array.from(e.target.files).forEach((file) => {
-            const item = document.createElement('div');
-            item.className = 'flex items-center justify-between bg-slate-50 rounded-lg p-3 text-sm';
-            item.innerHTML = `
-                <div class="flex items-center gap-2 min-w-0">
-                    <svg class="w-4 h-4 text-[#6D28D9] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+
+        selectedFiles.forEach((file, index) => {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-4 py-2';
+
+            row.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    <svg class="w-5 h-5 text-[#6D28D9] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <span class="font-medium text-slate-700 truncate">${file.name}</span>
-                    <span class="text-xs text-slate-400 shrink-0">(${formatBytes(file.size)})</span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-slate-700 truncate">${file.name}</p>
+                        <p class="text-xs text-slate-400">${sizeMB} MB</p>
+                    </div>
                 </div>
+                <button type="button" onclick="removeFile(${index})"
+                        class="text-slate-400 hover:text-red-500 transition shrink-0 ml-3"
+                        title="Batalkan unggahan">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             `;
-            list.appendChild(item);
+
+            list.appendChild(row);
         });
-    });
+    }
+
+    function removeFile(index) {
+        selectedFiles.splice(index, 1);
+        renderFileList();
+    }
 
     function addLinkInput() {
         const container = document.getElementById('link-container');
         const div = document.createElement('div');
         div.className = 'flex items-center gap-2';
         div.innerHTML = `
-            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5l4-4a3 3 0 10-4.24-4.24l-6 6a3 3 0 000 4.24m3 3.5l-4 4a3 3 0 11-4.24-4.24l6-6a3 3 0 014.24 0"/>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400 shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
             </svg>
             <input type="url" name="reference_links[]" placeholder="https://drive/file/..."
                     class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
+            <button type="button" onclick="this.parentElement.remove()"
+                    class="text-slate-400 hover:text-red-500 transition shrink-0"
+                    title="Hapus tautan">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         `;
         container.appendChild(div);
     }
@@ -436,6 +606,72 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         updateCharCount();
+    });
+
+    document.querySelector('form[action*="ringkasan"]').addEventListener('submit', function () {
+        const dt = new DataTransfer();
+        selectedFiles.forEach(f => dt.items.add(f));
+        const input = document.getElementById('reference-files');
+        if (input) input.files = dt.files;
+    });
+
+    let pendingDeleteIndex = null;
+    let pendingDeleteElementId = null;
+
+    function openDeleteModal(index, elementId) {
+        pendingDeleteIndex = index;
+        pendingDeleteElementId = elementId;
+        
+        const modal = document.getElementById('deleteModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+        pendingDeleteIndex = null;
+        pendingDeleteElementId = null;
+        
+        const modal = document.getElementById('deleteModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function confirmDelete() {
+        if (pendingDeleteIndex === null) return;
+
+        const index = pendingDeleteIndex;
+        const elementId = pendingDeleteElementId;
+        closeDeleteModal();
+
+        fetch('{{ route('customer.pemesanan.hapus-referensi', $product->id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ index: index })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const el = document.getElementById(elementId);
+                if (el) {
+                    el.style.transition = 'opacity 0.2s';
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 200);
+                }
+            } else {
+                alert('Gagal hapus. Coba lagi.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Gagal hapus. Coba lagi.');
+        });
+    }
+
+    document.getElementById('deleteModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeDeleteModal();
     });
 </script>
 @endpush
