@@ -9,7 +9,7 @@ use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Order;
 use App\Models\OrderReference;
-use App\Models\Product;
+use App\Services\BlacklistFilter;
 use App\Services\R2StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +18,16 @@ use Illuminate\View\View;
 
 class PesananController extends Controller
 {
+    public function index(): View
+    {
+        $orders = Order::with(['product', 'productTier', 'designer'])
+            ->where('customer_id', Auth::id())
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('customer.pesanan', compact('orders'));
+    }
+
     public function show(string $order): View
     {
         $order = Order::with([
@@ -50,6 +60,17 @@ class PesananController extends Controller
 
         if (!$request->filled('isi') && !$request->hasFile('attachment')) {
             return back()->withErrors(['isi' => 'Pesan atau lampiran harus diisi.']);
+        }
+
+        $textToCheck = $request->isi ?? '';
+        if ($request->hasFile('attachment')) {
+            $textToCheck .= ' ' . $request->file('attachment')->getClientOriginalName();
+        }
+        $filter = BlacklistFilter::check($textToCheck);
+        if ($filter['blocked']) {
+            return back()
+                ->withErrors(['isi' => $filter['reason'] . ' (' . $filter['keyword'] . ')'])
+                ->withInput();
         }
 
         $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
@@ -140,7 +161,7 @@ class PesananController extends Controller
         $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
 
         $att = MessageAttachment::whereHas('message.conversation', function ($q) use ($orderModel) {
-                $q->where('order_id', $orderModel->id);
+                $q->where('conversation_id', $orderModel->conversation?->id);
             })
             ->where('id', $attachment)
             ->firstOrFail();

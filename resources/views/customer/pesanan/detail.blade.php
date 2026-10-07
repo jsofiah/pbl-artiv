@@ -3,7 +3,6 @@
 @section('title', 'Detail Pesanan')
 
 @php
-    // ===== Mapping status order =====
     $statusMap = [
         'pending'          => ['bg-amber-50 text-amber-600',     'Menunggu Konfirmasi'],
         'waiting_designer' => ['bg-amber-50 text-amber-600',     'Mencari Desainer'],
@@ -15,7 +14,6 @@
         'cancelled'        => ['bg-red-50 text-red-600',         'Dibatalkan'],
     ];
 
-    // ===== Mapping untuk log/timeline =====
     $logMap = [
         'pending'          => ['Menunggu Konfirmasi',  'bg-amber-100 text-amber-700'],
         'waiting_designer' => ['Mencari Desainer',      'bg-amber-100 text-amber-700'],
@@ -299,196 +297,254 @@
         </div>
 
         {{-- ============ KOLOM KANAN: CHAT ============ --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[calc(100vh-160px)] min-h-[640px] sticky top-24">
+        <div class="lg:sticky lg:top-20 h-[calc(100vh-160px)]">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full overflow-hidden">
 
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                @php $designerAvatar = \App\Helpers\R2Helper::url($designer?->avatar_url); @endphp
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-violet-100 text-[#6D28D9] font-bold flex items-center justify-center overflow-hidden">
-                        @if ($designerAvatar)
-                            <img src="{{ $designerAvatar }}" alt="{{ $designer->full_name }}" class="w-full h-full object-cover">
-                        @else
-                            {{ $designer ? strtoupper(substr($designer->full_name, 0, 1)) : '?' }}
-                        @endif
-                    </div>
-                    <div>
-                        <p class="font-bold text-slate-900 leading-tight">
-                            {{ $designer->full_name ?? 'Belum ada desainer' }}
-                        </p>
-                        <p class="text-xs text-emerald-600 font-medium">
-                            {{ $designer ? 'Online' : '-' }}
-                        </p>
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                    @php $designerAvatar = \App\Helpers\R2Helper::url($designer?->avatar_url); @endphp
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-violet-100 text-[#6D28D9] font-bold flex items-center justify-center overflow-hidden">
+                            @if ($designerAvatar)
+                                <img src="{{ $designerAvatar }}" alt="{{ $designer->full_name }}" class="w-full h-full object-cover">
+                            @else
+                                {{ $designer ? strtoupper(substr($designer->full_name, 0, 1)) : '?' }}
+                            @endif
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-900 leading-tight">
+                                {{ $designer->full_name ?? 'Belum ada desainer' }}
+                            </p>
+                            <p class="text-xs text-emerald-600 font-medium">
+                                {{ $designer ? 'Online' : '-' }}
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4" id="chat-container">
-                @forelse ($conv?->messages ?? [] as $msg)
-                    @php
-                        $isMe = $msg->sender_id === auth()->id();
-                        $sender = $msg->sender;
-                    @endphp
+                <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4" id="chat-container">
+                    @php $lastDate = null; @endphp
+                    @forelse ($conv?->messages ?? [] as $msg)
+                        @php
+                            $isMe = $msg->sender_id === auth()->id();
+                            $sender = $msg->sender;
 
-                    @if ($isMe)
-                        <div class="flex flex-col items-end">
-                            <p class="text-xs font-semibold text-slate-500 mb-1.5">
-                                {{ $msg->created_at->format('H:i') }} WIB
-                                <span class="font-normal text-slate-400">Anda</span>
-                            </p>
+                            $currentDate = $msg->created_at->toDateString();
+                            $showDateDivider = $lastDate !== $currentDate;
+                            $lastDate = $currentDate;
 
-                            <div class="max-w-[80%] bg-[#6D28D9] text-white rounded-2xl rounded-tr-sm px-4 py-3">
-                                @if ($msg->type === 'deliverable')
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="px-2 py-0.5 rounded-md bg-lime-300 text-lime-900 text-[10px] font-bold">
-                                            DELIVERABLE
-                                        </span>
-                                    </div>
-                                @endif
-                                <p class="text-sm leading-relaxed whitespace-pre-line">{{ $msg->body }}</p>
+                            if ($showDateDivider) {
+                                $msgDate   = $msg->created_at->copy();
+                                $today     = now()->startOfDay();
+                                $yesterday = now()->subDay()->startOfDay();
+                                $msgDay    = $msgDate->copy()->startOfDay();
 
-                                @foreach ($msg->attachments as $att)
-                                    <div class="mt-3 bg-white/10 border border-white/20 rounded-xl p-3 flex items-center justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold truncate">{{ $att->file_name }}</p>
-                                            <p class="text-xs text-violet-100">
-                                                {{ number_format(($att->file_size ?? 0) / 1024 / 1024, 1) }} MB
-                                            </p>
-                                        </div>
-                                        
-                                        <a href="{{ route('customer.pesanan.attachment.download', ['order' => $order->id, 'attachment' => $att->id]) }}"
-                                        class="shrink-0 inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-lime-300 text-lime-900 hover:bg-lime-400 transition">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
-                                            </svg>
-                                            Unduh
-                                        </a>
-                                    </div>
-                                @endforeach
+                                if ($msgDay->equalTo($today)) {
+                                    $dateLabel = 'Hari Ini';
+                                } elseif ($msgDay->equalTo($yesterday)) {
+                                    $dateLabel = 'Kemarin';
+                                } else {
+                                    $dateLabel = $msgDate->translatedFormat('d F Y');
+                                }
+                            }
+                        @endphp
+
+                        @if ($showDateDivider)
+                            <div class="flex items-center gap-3 py-2">
+                                <div class="flex-1 h-px bg-slate-200"></div>
+                                <span class="px-3 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-500">
+                                    {{ $dateLabel }}
+                                </span>
+                                <div class="flex-1 h-px bg-slate-200"></div>
                             </div>
-                        </div>
-                    @else
-                        <div class="max-w-[80%]">
-                            <p class="text-xs font-semibold text-slate-500 mb-1.5">
-                                {{ $sender->full_name ?? 'Designer' }}
-                                <span class="font-normal text-slate-400">{{ $msg->created_at->format('H:i') }} WIB</span>
-                            </p>
-                            <div class="bg-slate-50 rounded-2xl rounded-tl-sm px-4 py-3">
-                                <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{{ $msg->body }}</p>
+                        @endif
 
-                                @foreach ($msg->attachments as $att)
-                                    <div class="mt-3 bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-slate-800 truncate">{{ $att->file_name }}</p>
-                                            <p class="text-xs text-slate-400">
-                                                {{ number_format(($att->file_size ?? 0) / 1024 / 1024, 1) }} MB
-                                            </p>
+                        @if ($isMe)
+                            <div class="flex flex-col items-end" data-msg-date="{{ $msg->created_at->toDateString() }}">
+                                <p class="text-xs font-semibold text-slate-500 mb-1.5">
+                                    {{ $msg->created_at->format('H:i') }} WIB
+                                    <span class="font-normal text-slate-400">Anda</span>
+                                </p>
+
+                                <div class="max-w-[80%] bg-[#6D28D9] text-white rounded-2xl rounded-tr-sm px-4 py-3">
+                                    @if ($msg->type === 'deliverable')
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="px-2 py-0.5 rounded-md bg-lime-300 text-lime-900 text-[10px] font-bold">
+                                                DELIVERABLE
+                                            </span>
                                         </div>
-                                        <a href="{{ route('customer.pesanan.attachment.download', ['order' => $order->id, 'attachment' => $att->id]) }}"
+                                    @endif
+                                    <p class="text-sm leading-relaxed whitespace-pre-line">{{ $msg->body }}</p>
+
+                                    @foreach ($msg->attachments as $att)
+                                        <div class="mt-3 bg-white/10 border border-white/20 rounded-xl p-3 flex items-center justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold truncate">{{ $att->file_name }}</p>
+                                                <p class="text-xs text-violet-100">
+                                                    {{ number_format(($att->file_size ?? 0) / 1024 / 1024, 1) }} MB
+                                                </p>
+                                            </div>
+                                            <a href="{{ route('customer.pesanan.attachment.download', ['order' => $order->id, 'attachment' => $att->id]) }}"
                                             class="shrink-0 inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-lime-300 text-lime-900 hover:bg-lime-400 transition">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
-                                            </svg>
-                                            Unduh
-                                        </a>
-                                    </div>
-                                @endforeach
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+                                                </svg>
+                                                Unduh
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
+                        @else
+                            <div class="max-w-[80%]" data-msg-date="{{ $msg->created_at->toDateString() }}">
+                                <p class="text-xs font-semibold text-slate-500 mb-1.5">
+                                    {{ $sender->full_name ?? 'Designer' }}
+                                    <span class="font-normal text-slate-400">{{ $msg->created_at->format('H:i') }} WIB</span>
+                                </p>
+                                <div class="bg-slate-50 rounded-2xl rounded-tl-sm px-4 py-3">
+                                    <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{{ $msg->body }}</p>
+
+                                    @foreach ($msg->attachments as $att)
+                                        <div class="mt-3 bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold text-slate-800 truncate">{{ $att->file_name }}</p>
+                                                <p class="text-xs text-slate-400">
+                                                    {{ number_format(($att->file_size ?? 0) / 1024 / 1024, 1) }} MB
+                                                </p>
+                                            </div>
+                                            <a href="{{ route('customer.pesanan.attachment.download', ['order' => $order->id, 'attachment' => $att->id]) }}"
+                                            class="shrink-0 inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-lime-300 text-lime-900 hover:bg-lime-400 transition">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+                                                </svg>
+                                                Unduh
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @empty
+                        <div class="flex items-center justify-center h-full">
+                            <p class="text-sm text-slate-400">Belum ada pesan.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <div class="px-4">
+                    @if ($errors->any())
+                        <div id="error-notif" class="mt-3 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-3">
+                            <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+                            </svg>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-red-700">Pesan tidak dapat dikirim</p>
+                                <ul class="text-xs text-red-600 mt-1 list-disc list-inside space-y-0.5">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            <button type="button"
+                                    onclick="document.getElementById('error-notif').remove()"
+                                    class="text-red-400 hover:text-red-600 shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
                         </div>
                     @endif
-                @empty
-                    <div class="flex items-center justify-center h-full">
-                        <p class="text-sm text-slate-400">Belum ada pesan.</p>
-                    </div>
-                @endforelse
-            </div>
-
-            <form method="POST"
-                action="{{ route('customer.pesanan.kirimPesan', $order->id) }}"
-                enctype="multipart/form-data"
-                class="border-t border-slate-100 px-4 py-3 relative">
-
-                @csrf
-
-                <div id="file-preview" class="hidden mb-2 px-2">
-                    <div class="inline-flex items-center gap-2 bg-slate-100 rounded-full pl-3 pr-2 py-1.5 text-sm">
-                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5l4-4a3 3 0 10-4.24-4.24l-6 6a3 3 0 000 4.24m3 3.5l-4 4a3 3 0 11-4.24-4.24l6-6a3 3 0 014.24 0"/>
-                        </svg>
-                        <span id="file-name" class="text-slate-700 max-w-[200px] truncate"></span>
-                        <button type="button" onclick="clearFileInput()"
-                                class="w-6 h-6 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-500">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
                 </div>
 
-                <div class="flex items-center gap-2">
 
-                    <button type="button"
-                            onclick="document.getElementById('attachment-input').click()"
-                            class="shrink-0 w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-[#6D28D9] transition"
-                            title="Lampirkan file">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
-                        </svg>
+                <form method="POST"
+                    action="{{ route('customer.pesanan.kirimPesan', $order->id) }}"
+                    enctype="multipart/form-data"
+                    class="border-t border-slate-100 px-4 py-3 relative">
 
-                    </button>
+                    @csrf
 
-                    <input type="file"
-                        id="attachment-input"
-                        name="attachment"
-                        class="hidden"
-                        accept="*/*"
-                        onchange="showFilePreview(this)">
-
-                    <input type="text"
-                        name="isi"
-                        id="chat-input"
-                        placeholder="Tulis pesan atau diskusi dengan desainer..."
-                        class="flex-1 bg-slate-50 rounded-full px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30"
-                        required>
-
-                    <button type="button"
-                            onclick="document.getElementById('emoji-picker').classList.toggle('hidden')"
-                            class="shrink-0 w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-[#6D28D9] transition"
-                            title="Emoji">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" />
-                        </svg>
-
-                    </button>
-
-                    <button type="submit"
-                            class="shrink-0 inline-flex items-center gap-1.5 bg-[#6D28D9] hover:bg-[#5B21B6] text-white text-sm font-semibold px-4 py-2.5 rounded-full transition"
-                            title="Kirim">
-                        <span class="hidden sm:inline">Kirim</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-                            <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-                        </svg>
-
-                    </button>
-
-                    <div id="emoji-picker"
-                        class="hidden absolute bottom-20 right-6 bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-40 w-[280px]">
-                        <div class="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
-                            @foreach (['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','👽','👾','🤖','🎃'] as $emoji)
-                                <button type="button"
-                                        onclick="insertEmoji('{{ $emoji }}')"
-                                        class="w-8 h-8 rounded-lg hover:bg-slate-100 text-lg flex items-center justify-center transition">
-                                    {{ $emoji }}
-                                </button>
-                            @endforeach
+                    <div id="file-preview" class="hidden mb-2 px-2">
+                        <div class="inline-flex items-center gap-2 bg-slate-100 rounded-full pl-3 pr-2 py-1.5 text-sm">
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5l4-4a3 3 0 10-4.24-4.24l-6 6a3 3 0 000 4.24m3 3.5l-4 4a3 3 0 11-4.24-4.24l6-6a3 3 0 014.24 0"/>
+                            </svg>
+                            <span id="file-name" class="text-slate-700 max-w-[200px] truncate"></span>
+                            <button type="button" onclick="clearFileInput()"
+                                    class="w-6 h-6 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-500">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
-                </div>
+                    <div class="flex items-center gap-2">
 
-                <p class="text-xs text-slate-400 mt-2 ml-1">
-                    Format didukung: PNG, JPG, ZIP, PDF (Maks. 25 MB)
-                </p>
-            </form>
+                        <button type="button"
+                                onclick="document.getElementById('attachment-input').click()"
+                                class="shrink-0 w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-[#6D28D9] transition"
+                                title="Lampirkan file">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
+                            </svg>
+
+                        </button>
+
+                        <input type="file"
+                            id="attachment-input"
+                            name="attachment"
+                            class="hidden"
+                            accept="*/*"
+                            onchange="showFilePreview(this)">
+
+                        <input type="text"
+                            name="isi"
+                            id="chat-input"
+                            value="{{ old('isi') }}"
+                            placeholder="Tulis pesan atau diskusi dengan desainer..."
+                            class="flex-1 bg-slate-50 rounded-full px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30"
+                            required>
+
+                        <button type="button"
+                                onclick="document.getElementById('emoji-picker').classList.toggle('hidden')"
+                                class="shrink-0 w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-[#6D28D9] transition"
+                                title="Emoji">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" />
+                            </svg>
+
+                        </button>
+
+                        <button type="submit"
+                                class="shrink-0 inline-flex items-center gap-1.5 bg-[#6D28D9] hover:bg-[#5B21B6] text-white text-sm font-semibold px-4 py-2.5 rounded-full transition"
+                                title="Kirim">
+                            <span class="hidden sm:inline">Kirim</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
+                                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                            </svg>
+
+                        </button>
+
+                        <div id="emoji-picker"
+                            class="hidden absolute bottom-20 right-6 bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-40 w-[280px]">
+                            <div class="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
+                                @foreach (['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','👽','👾','🤖','🎃'] as $emoji)
+                                    <button type="button"
+                                            onclick="insertEmoji('{{ $emoji }}')"
+                                            class="w-8 h-8 rounded-lg hover:bg-slate-100 text-lg flex items-center justify-center transition">
+                                        {{ $emoji }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <p class="text-xs text-slate-400 mt-2 ml-1">
+                        Format didukung: PNG, JPG, ZIP, PDF (Maks. 25 MB)
+                    </p>
+                </form>
+            </div>
         </div>
 
     </div>
