@@ -250,4 +250,10 @@ class Order extends Model
     {
         return $this->reassign_count > 0;
     }
+    
+    // ==================== Helper untuk cek order udah ada di payment atau blm ====================
+    public function hasUploadedPayment(): bool
+    {
+        return $this->payments()->where('type', Payment::TYPE_ORDER)->exists();
+    }
 }

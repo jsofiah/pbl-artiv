@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class PemesananController extends Controller
 {
@@ -191,7 +192,7 @@ class PemesananController extends Controller
                         'mime_type' => $file->getMimeType(),
                     ];
                 } catch (\Exception $e) {
-                    \Log::error('R2 upload failed: ' . $e->getMessage());
+                    Log::error('R2 upload failed: ' . $e->getMessage());
                 }
             }
         }
@@ -211,6 +212,7 @@ class PemesananController extends Controller
 
     public function showRingkasan(Product $product)
     {
+        
         $pemesananData = session('pemesanan_data');
         $references = session('pemesanan_references', []);
 
@@ -299,7 +301,7 @@ class PemesananController extends Controller
             session()->forget(['pemesanan_data', 'pemesanan_references']);
             DB::commit();
 
-            return view('customer.pemesanan.pembayaran-placeholder', compact('product', 'pemesananData', 'order'));
+            return redirect()->route('customer.pemesanan.pembayaran', $order->id);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -324,7 +326,7 @@ class PemesananController extends Controller
                     $storage = app(R2StorageService::class);
                     $storage->deletePrivate($ref['file_url']);
                 } catch (\Exception $e) {
-                    \Log::error('Gagal hapus file R2: ' . $e->getMessage());
+                    Log::error('Gagal hapus file R2: ' . $e->getMessage());
                 }
             }
 
