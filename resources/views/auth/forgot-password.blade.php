@@ -1,9 +1,6 @@
 <x-guest-layout>
-
-    <!-- Form (full-width, center) -->
     <div class="flex flex-col justify-center px-6 py-10 sm:px-12 lg:col-span-2 max-w-md mx-auto w-full">
 
-        <!-- Brand -->
         <div class="mb-8 flex items-center gap-2">
             <img
                 src="{{ asset('assets/logo.png') }}"
@@ -22,15 +19,24 @@
         </p>
 
         @if (session('status'))
-            <div class="mb-6 text-sm font-medium text-green-600">
-                {{ session('status') }}
+            <div class="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <div class="text-sm">
+                        <p class="font-medium text-green-800">{{ session('status') }}</p>
+                        <p class="text-green-700 mt-1">
+                            Email tidak masuk? Coba cek folder <strong>Spam</strong> atau <strong>Promotions</strong> di inbox kamu.
+                        </p>
+                    </div>
+                </div>
             </div>
         @endif
 
         <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
             @csrf
 
-            <!-- Email -->
             <div>
                 <label for="email" class="block text-xs font-medium text-gray-500 mb-1.5">
                     Alamat Email
@@ -59,7 +65,6 @@
                 @enderror
             </div>
 
-            <!-- Submit -->
             <div class="pt-2">
                 <button
                     type="submit"

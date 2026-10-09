@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\PemesananController;
 use App\Http\Controllers\Customer\PesananController;
@@ -24,6 +25,10 @@ Route::get('/', function () {
         default    => redirect()->route('customer.beranda'),
     };
 });
+
+Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+
 
 
 // ============ CUSTOMER (bisa diakses guest) ============
