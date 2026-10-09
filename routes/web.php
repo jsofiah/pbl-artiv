@@ -47,14 +47,18 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/pesanan/{order}', [PesananController::class, 'show'])->name('pesanan.show');
         Route::post('/pesanan/{order}/pesan', [PesananController::class, 'kirimPesan'])->name('pesanan.kirimPesan');
 
-        Route::get('/pesanan/{order}/reference/{reference}/download',
-            [PesananController::class, 'downloadReference'])
+        Route::get(
+            '/pesanan/{order}/reference/{reference}/download',
+            [PesananController::class, 'downloadReference']
+        )
             ->name('pesanan.reference.download');
 
-        Route::get('/pesanan/{order}/attachment/{attachment}/download',
-            [PesananController::class, 'downloadAttachment'])
+        Route::get(
+            '/pesanan/{order}/attachment/{attachment}/download',
+            [PesananController::class, 'downloadAttachment']
+        )
             ->name('pesanan.attachment.download');
-            
+
         Route::get('/pemesanan/{product}', [PemesananController::class, 'create'])->name('pemesanan.create');
         Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');
         Route::get('/pemesanan/{product}/ringkasan', [PemesananController::class, 'showRingkasan'])->name('pemesanan.ringkasan.show');
@@ -69,7 +73,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
             ->name('pemesanan.pembayaran.store');
 
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
-        ->name('pemesanan.sukses');
+            ->name('pemesanan.sukses');
     });
 });
 
@@ -102,6 +106,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/monitoring', [AdminDashboardController::class, 'monitoring'])->name('monitoring');
         Route::get('/laporan', [AdminDashboardController::class, 'laporan'])->name('laporan');
         Route::get('/pengaturan', [AdminDashboardController::class, 'pengaturan'])->name('pengaturan');
+    });
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+        Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+        Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
     });
 });
 
