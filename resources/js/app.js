@@ -1,4 +1,6 @@
 import Alpine from 'alpinejs';
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
 
 Alpine.data('pemesananForm', (tiers, expressFees, defaults) => ({
     selectedTier: defaults.selectedTier,
@@ -46,7 +48,7 @@ Alpine.data('pemesananForm', (tiers, expressFees, defaults) => ({
     get maxDuration() {
         if (!Array.isArray(this.expressFees) || !this.expressFees.length) return 0;
         return Math.max(...this.expressFees.map(f => Number(f.days)));
-  },
+   },
 
     parseDuration(name) {
         const match = String(name).match(/\d+/);
@@ -111,5 +113,21 @@ Alpine.data('pemesananForm', (tiers, expressFees, defaults) => ({
 }));
 
 window.Alpine = Alpine;
+window.Pusher = Pusher;
+window.Echo = new Echo({
+    broadcaster: 'reverb',
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST,
+    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
+    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+    enabledTransports: ['ws', 'wss'],
+});
 
 Alpine.start();
+
+/**
+ * Echo exposes an expressive API for subscribing to channels and listening
+ * for events that are broadcast by Laravel. Echo and event broadcasting
+ * allow your team to quickly build robust real-time web applications.
+ */

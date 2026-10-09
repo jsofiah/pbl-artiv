@@ -11,6 +11,9 @@ class BlacklistKeyword extends Model
     use HasFactory, HasUuids;
 
     protected $table = 'blacklist_keywords';
+    protected $keyType = 'string';
+    public $incrementing = false;
+    
 
     protected $fillable = [
         'keyword',
@@ -25,14 +28,11 @@ class BlacklistKeyword extends Model
         ];
     }
 
-    // ==================== Konstanta Type ====================
-
     public const TYPE_LINK = 'link';
     public const TYPE_PHONE = 'phone';
     public const TYPE_EMAIL = 'email';
     public const TYPE_WORD = 'word';
 
-    // ==================== Scope ====================
 
     public function scopeActive($query)
     {
