@@ -270,25 +270,24 @@ class PesananController extends Controller
         }
 
         DB::transaction(function () use ($orderModel, $deliverableModel) {
-            $deliverableModel->update([
-                'status'      => 'approved',
-                'approved_at' => now(),
-            ]);
+    $deliverableModel->update([
+        'status'      => 'approved',
+        'approved_at' => now(),
+    ]);
 
-            $orderModel->update([
-                'status'       => 'completed',
-                'approved_at'  => now(),
-                'completed_at' => now(),
-            ]);
+    $orderModel->update([
+        'status'       => 'completed',
+        'completed_at' => now(),
+    ]);
 
-            OrderLog::create([
-                'order_id' => $orderModel->id,
-                'actor_id' => Auth::id(),
-                'action'   => 'deliverable_approved',
-                'status'   => 'completed',
-                'note'     => 'Customer menyetujui hasil desain.',
-            ]);
-        });
+    OrderLog::create([
+        'order_id' => $orderModel->id,
+        'actor_id' => Auth::id(),
+        'action'   => 'deliverable_approved',
+        'status'   => 'completed',
+        'note'     => 'Customer menyetujui hasil desain.',
+    ]);
+});
 
 
         return redirect()
