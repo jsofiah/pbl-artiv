@@ -212,7 +212,7 @@
                     </div>
 
                     <p class="text-sm text-slate-400">
-                        {{ $order->productTier->name }} • {{ $order->order_code }}
+                        {{ $order->productTier->name ?? '-'}} • {{ $order->order_code }}
                     </p>
 
                     {{-- Progress bar --}}
