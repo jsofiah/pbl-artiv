@@ -83,9 +83,7 @@ class Order extends Model
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
 
-    // ==================== Konstanta Tampilan "Pesanan Saya" (BARU) ====================
 
-    // Tab "Pesanan Aktif" dan "Riwayat Selesai"
     public const AKTIF = [
         self::STATUS_PENDING,
         self::STATUS_IN_PROGRESS,
@@ -103,7 +101,6 @@ class Order extends Model
         self::STATUS_APPROVED,
     ];
 
-    // Nama status untuk dropdown filter
     public const STATUS_LABELS = [
         self::STATUS_PENDING                   => 'Menunggu Kreator',
         self::STATUS_IN_PROGRESS               => 'Sedang Dikerjakan',
@@ -118,8 +115,6 @@ class Order extends Model
         self::STATUS_CANCELLED                 => 'Dibatalkan',
     ];
 
-    // Tahap + persen progres untuk badge dan progress bar.
-    // step 0 = tidak ada progress bar (status khusus / sudah berakhir).
     public const STAGES = [
         self::STATUS_PENDING                   => ['step' => 1, 'label' => 'Brief Diterima',          'percent' => 10],
         self::STATUS_IN_PROGRESS               => ['step' => 2, 'label' => 'Eksplorasi Konsep',       'percent' => 65],
@@ -134,24 +129,20 @@ class Order extends Model
         self::STATUS_CANCELLED                 => ['step' => 0, 'label' => 'Dibatalkan',              'percent' => 0],
     ];
 
-    // Label 3 tahap di bawah progress bar
     public const STEP_LABELS = [
         1 => 'Brief Diterima',
         2 => 'Eksplorasi Konsep',
         3 => 'Finishing',
     ];
 
-    // ==================== Konstanta Decision ====================
 
     public const DECISION_REFUND = 'refund';
     public const DECISION_CONTINUE = 'continue';
 
-    // ==================== Konstanta Aturan ====================
 
     public const FREE_REVISION_LIMIT = 3;
     public const REASSIGN_DEADLINE_DAYS = 3;
 
-    // ==================== Relasi ====================
 
     public function customer(): BelongsTo
     {
@@ -218,17 +209,12 @@ class Order extends Model
         return $this->hasOne(Review::class);
     }
 
-    // ==================== Accessor (BARU) ====================
-
-    // Dipakai view sebagai $order->progress
     protected function progress(): Attribute
     {
         return Attribute::get(
             fn () => (self::STAGES[$this->status] ?? self::STAGES[self::STATUS_PENDING]) + ['total' => 3]
         );
     }
-
-    // ==================== Scope ====================
 
     public function scopeUrgent($query)
     {
@@ -244,8 +230,6 @@ class Order extends Model
             ]);
     }
 
-    // ----- Scope untuk halaman "Pesanan Saya" (BARU) -----
-
     public function scopeAktif(Builder $q): Builder
     {
         return $q->whereIn('status', self::AKTIF);
@@ -260,7 +244,6 @@ class Order extends Model
     {
         return $q
             ->when($f['q'] ?? null, function ($q, $term) {
-                // ilike = pencarian tidak peka huruf besar/kecil (khusus PostgreSQL)
                 $q->where(function ($q) use ($term) {
                     $q->where('order_code', 'ilike', "%{$term}%")
                       ->orWhereHas('product', fn ($p) => $p->where('name', 'ilike', "%{$term}%"))
@@ -277,11 +260,9 @@ class Order extends Model
         return match ($by) {
             'terbaru' => $q->latest(),
             'terlama' => $q->oldest(),
-            default   => $q->orderByRaw('deadline asc nulls last'),   // deadline terdekat
+            default   => $q->orderByRaw('deadline asc nulls last'),
         };
     }
-
-    // ==================== Helper Status ====================
 
     public function isPending(): bool
     {
@@ -329,8 +310,6 @@ class Order extends Model
             && $this->status === self::STATUS_REASSIGNMENT_NEEDED;
     }
 
-    // ==================== Helper Revisi ====================
-
     public function canRequestFreeRevision(): bool
     {
         return $this->revision_count < self::FREE_REVISION_LIMIT;
@@ -340,8 +319,6 @@ class Order extends Model
     {
         return $this->revision_count >= self::FREE_REVISION_LIMIT;
     }
-
-    // ==================== Helper Deadline ====================
 
     public function isDeadlineMissed(): bool
     {
@@ -354,10 +331,37 @@ class Order extends Model
             ]);
     }
 
-    // ==================== Helper Reassignment ====================
-
     public function hasBeenReassigned(): bool
     {
         return $this->reassign_count > 0;
+    }
+
+
+    public function isChatOpen(): bool
+    {
+        if (!in_array($this->status, ['completed', 'cancelled', 'refunded'])) {
+            return true;
+        }
+
+        if (in_array($this->status, ['cancelled', 'refunded'])) {
+            return false;
+        }
+
+        if ($this->status === 'completed' && $this->completed_at) {
+            $graceHours = (int) config('order.chat_grace_hours', 24);
+            return $this->completed_at->copy()->addHours($graceHours)->isFuture();
+        }
+
+        return true;
+    }
+
+    public function chatClosesAt(): ?\Carbon\Carbon
+    {
+        if ($this->status === 'completed' && $this->completed_at) {
+            $graceHours = (int) config('order.chat_grace_hours', 24);
+            return $this->completed_at->copy()->addHours($graceHours);
+        }
+
+        return null;
     }
 }

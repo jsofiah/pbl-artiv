@@ -43,6 +43,12 @@ class MessageSent implements ShouldBroadcast
                 'name'   => $this->sender->full_name,
                 'avatar' => $this->sender->avatar_url,
             ],
+            'attachments' => $this->message->attachments->map(fn ($a) => [
+                'id'        => $a->id,
+                'file_name' => $a->file_name,
+                'file_size' => $a->file_size,
+                'file_url'  => $a->file_url,
+            ])->toArray(),
         ];
     }
 }
