@@ -3,24 +3,29 @@
     $stats    = $designer?->designerStats;
 
     $statusMap = [
-        'pending'          => ['amber',   'Menunggu Konfirmasi'],
-        'waiting_designer' => ['amber',   'Mencari Desainer'],
-        'in_progress'      => ['blue',    'Sedang Dikerjakan'],
-        'deliverable_sent' => ['violet',  'Menunggu Review'],
-        'revision_needed'  => ['orange',  'Perlu Revisi'],
-        'review'           => ['violet',  'Menunggu Review'],
-        'completed'        => ['emerald', 'Selesai'],
-        'cancelled'        => ['red',     'Dibatalkan'],
+        'pending'                   => ['amber',   'Menunggu Konfirmasi'],
+        'waiting_designer'          => ['amber',   'Mencari Kreator'],
+        'in_progress'               => ['blue',    'Sedang Dikerjakan'],
+        'deliverable_sent'          => ['violet',  'Menunggu Review'],
+        'revision_needed'           => ['orange',  'Perlu Revisi'],
+        'waiting_customer_decision' => ['orange',  'Menunggu Keputusan'],
+        'refund_requested'          => ['red',     'Refund Diajukan'],
+        'refunded'                  => ['slate',   'Refund Selesai'],
+        'completed'                 => ['emerald', 'Selesai'],
+        'cancelled'                 => ['red',     'Dibatalkan'],
     ];
 
     $logMap = [
-        'pending'          => ['Menunggu Konfirmasi', 'bg-amber-100 text-amber-700'],
-        'waiting_designer' => ['Mencari Desainer',    'bg-amber-100 text-amber-700'],
-        'in_progress'      => ['Sedang Dikerjakan',   'bg-blue-100 text-blue-700'],
-        'deliverable_sent' => ['Draf Dikirim',        'bg-violet-100 text-violet-700'],
-        'revision_needed'  => ['Revisi Diminta',      'bg-orange-100 text-orange-700'],
-        'completed'        => ['Pesanan Selesai',     'bg-emerald-100 text-emerald-700'],
-        'cancelled'        => ['Pesanan Dibatalkan',  'bg-red-100 text-red-700'],
+        'pending'                   => ['Menunggu Konfirmasi', 'bg-amber-100 text-amber-700'],
+        'waiting_designer'          => ['Mencari Kreator',     'bg-amber-100 text-amber-700'],
+        'in_progress'               => ['Sedang Dikerjakan',   'bg-blue-100 text-blue-700'],
+        'deliverable_sent'          => ['Draf Dikirim',        'bg-violet-100 text-violet-700'],
+        'revision_needed'           => ['Revisi Diminta',      'bg-orange-100 text-orange-700'],
+        'waiting_customer_decision' => ['Menunggu Keputusan',  'bg-orange-100 text-orange-700'],
+        'refund_requested'          => ['Refund Diajukan',     'bg-red-100 text-red-700'],
+        'refunded'                  => ['Refund Selesai',      'bg-slate-100 text-slate-700'],
+        'completed'                 => ['Pesanan Selesai',     'bg-emerald-100 text-emerald-700'],
+        'cancelled'                 => ['Pesanan Dibatalkan',  'bg-red-100 text-red-700'],
     ];
 
     $formatLogTime = function($date) {

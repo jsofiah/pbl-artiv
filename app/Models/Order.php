@@ -43,7 +43,6 @@ class Order extends Model
         'is_urgent',
         'original_deadline',
         'reassign_count',
-        'approved_at',
         'completed_at',
         'cancelled_at',
     ];
@@ -51,46 +50,43 @@ class Order extends Model
     protected function casts(): array
     {
         return [
-            'unit_price' => 'decimal:2',
-            'express_fee' => 'decimal:2',
-            'total_price' => 'decimal:2',
-            'is_express' => 'boolean',
-            'is_late' => 'boolean',
-            'is_urgent' => 'boolean',
-            'deadline' => 'datetime',
-            'assigned_at' => 'datetime',
-            'late_at' => 'datetime',
-            'cannot_continue_at' => 'datetime',
+            'unit_price'           => 'decimal:2',
+            'express_fee'          => 'decimal:2',
+            'total_price'          => 'decimal:2',
+            'is_express'           => 'boolean',
+            'is_late'              => 'boolean',
+            'is_urgent'            => 'boolean',
+            'deadline'             => 'datetime',
+            'assigned_at'          => 'datetime',
+            'late_at'              => 'datetime',
+            'cannot_continue_at'   => 'datetime',
             'customer_decision_at' => 'datetime',
-            'original_deadline' => 'datetime',
-            'approved_at' => 'datetime',
-            'completed_at' => 'datetime',
-            'cancelled_at' => 'datetime',
+            'original_deadline'    => 'datetime',
+            'completed_at'         => 'datetime',
+            'cancelled_at'         => 'datetime',
         ];
     }
 
     // ==================== Konstanta Status ====================
 
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_IN_PROGRESS = 'in_progress';
-    public const STATUS_REVISION_NEEDED = 'revision_needed';
-    public const STATUS_DELIVERABLE_SENT = 'deliverable_sent';
+    public const STATUS_PENDING                   = 'pending';
+    public const STATUS_WAITING_DESIGNER          = 'waiting_designer';
+    public const STATUS_IN_PROGRESS               = 'in_progress';
+    public const STATUS_REVISION_NEEDED           = 'revision_needed';
+    public const STATUS_DELIVERABLE_SENT          = 'deliverable_sent';
     public const STATUS_WAITING_CUSTOMER_DECISION = 'waiting_customer_decision';
-    public const STATUS_APPROVED = 'approved';
-    public const STATUS_REASSIGNMENT_NEEDED = 'reassignment_needed';
-    public const STATUS_REFUND_REQUESTED = 'refund_requested';
-    public const STATUS_REFUNDED = 'refunded';
-    public const STATUS_COMPLETED = 'completed';
-    public const STATUS_CANCELLED = 'cancelled';
-
+    public const STATUS_REFUND_REQUESTED          = 'refund_requested';
+    public const STATUS_REFUNDED                  = 'refunded';
+    public const STATUS_COMPLETED                 = 'completed';
+    public const STATUS_CANCELLED                 = 'cancelled';
 
     public const AKTIF = [
         self::STATUS_PENDING,
+        self::STATUS_WAITING_DESIGNER,
         self::STATUS_IN_PROGRESS,
         self::STATUS_REVISION_NEEDED,
         self::STATUS_DELIVERABLE_SENT,
         self::STATUS_WAITING_CUSTOMER_DECISION,
-        self::STATUS_REASSIGNMENT_NEEDED,
         self::STATUS_REFUND_REQUESTED,
     ];
 
@@ -98,31 +94,28 @@ class Order extends Model
         self::STATUS_COMPLETED,
         self::STATUS_CANCELLED,
         self::STATUS_REFUNDED,
-        self::STATUS_APPROVED,
     ];
 
     public const STATUS_LABELS = [
-        self::STATUS_PENDING                   => 'Menunggu Kreator',
+        self::STATUS_PENDING                   => 'Menunggu Konfirmasi',
+        self::STATUS_WAITING_DESIGNER          => 'Mencari Kreator',
         self::STATUS_IN_PROGRESS               => 'Sedang Dikerjakan',
         self::STATUS_REVISION_NEEDED           => 'Revisi Diperlukan',
         self::STATUS_DELIVERABLE_SENT          => 'Hasil Dikirim',
         self::STATUS_WAITING_CUSTOMER_DECISION => 'Menunggu Keputusan Anda',
-        self::STATUS_APPROVED                  => 'Disetujui',
-        self::STATUS_REASSIGNMENT_NEEDED       => 'Mencari Kreator Baru',
         self::STATUS_REFUND_REQUESTED          => 'Pengajuan Refund',
-        self::STATUS_COMPLETED                 => 'Selesai',
         self::STATUS_REFUNDED                  => 'Dana Dikembalikan',
+        self::STATUS_COMPLETED                 => 'Selesai',
         self::STATUS_CANCELLED                 => 'Dibatalkan',
     ];
 
     public const STAGES = [
         self::STATUS_PENDING                   => ['step' => 1, 'label' => 'Brief Diterima',          'percent' => 10],
+        self::STATUS_WAITING_DESIGNER          => ['step' => 1, 'label' => 'Mencari Kreator',         'percent' => 15],
         self::STATUS_IN_PROGRESS               => ['step' => 2, 'label' => 'Eksplorasi Konsep',       'percent' => 65],
         self::STATUS_REVISION_NEEDED           => ['step' => 2, 'label' => 'Revisi',                  'percent' => 70],
         self::STATUS_DELIVERABLE_SENT          => ['step' => 3, 'label' => 'Menunggu Review',         'percent' => 90],
         self::STATUS_WAITING_CUSTOMER_DECISION => ['step' => 0, 'label' => 'Menunggu Keputusan Anda', 'percent' => 0],
-        self::STATUS_APPROVED                  => ['step' => 3, 'label' => 'Disetujui',               'percent' => 100],
-        self::STATUS_REASSIGNMENT_NEEDED       => ['step' => 0, 'label' => 'Mencari Kreator Baru',    'percent' => 0],
         self::STATUS_REFUND_REQUESTED          => ['step' => 0, 'label' => 'Pengajuan Refund',        'percent' => 0],
         self::STATUS_COMPLETED                 => ['step' => 3, 'label' => 'Selesai',                 'percent' => 100],
         self::STATUS_REFUNDED                  => ['step' => 0, 'label' => 'Dana Dikembalikan',       'percent' => 0],
@@ -135,14 +128,13 @@ class Order extends Model
         3 => 'Finishing',
     ];
 
-
-    public const DECISION_REFUND = 'refund';
+    public const DECISION_REFUND   = 'refund';
     public const DECISION_CONTINUE = 'continue';
 
-
-    public const FREE_REVISION_LIMIT = 3;
+    public const FREE_REVISION_LIMIT    = 3;
     public const REASSIGN_DEADLINE_DAYS = 3;
 
+    // ==================== Relations ====================
 
     public function customer(): BelongsTo
     {
@@ -209,6 +201,8 @@ class Order extends Model
         return $this->hasOne(Review::class);
     }
 
+    // ==================== Accessors & Scopes ====================
+
     protected function progress(): Attribute
     {
         return Attribute::get(
@@ -226,7 +220,7 @@ class Order extends Model
         return $query->whereNull('designer_id')
             ->whereIn('status', [
                 self::STATUS_PENDING,
-                self::STATUS_REASSIGNMENT_NEEDED,
+                self::STATUS_WAITING_DESIGNER,
             ]);
     }
 
@@ -264,9 +258,16 @@ class Order extends Model
         };
     }
 
+    // ==================== Status Helpers ====================
+
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isWaitingDesigner(): bool
+    {
+        return $this->status === self::STATUS_WAITING_DESIGNER;
     }
 
     public function isInProgress(): bool
@@ -277,11 +278,6 @@ class Order extends Model
     public function isWaitingCustomerDecision(): bool
     {
         return $this->status === self::STATUS_WAITING_CUSTOMER_DECISION;
-    }
-
-    public function isReassignmentNeeded(): bool
-    {
-        return $this->status === self::STATUS_REASSIGNMENT_NEEDED;
     }
 
     public function isRefundRequested(): bool
@@ -304,11 +300,12 @@ class Order extends Model
         return $this->status === self::STATUS_CANCELLED;
     }
 
-    public function isUrgentReassignment(): bool
+    public function isUrgent(): bool
     {
-        return $this->is_urgent
-            && $this->status === self::STATUS_REASSIGNMENT_NEEDED;
+        return (bool) $this->is_urgent;
     }
+
+    // ==================== Business Logic ====================
 
     public function canRequestFreeRevision(): bool
     {
@@ -336,18 +333,30 @@ class Order extends Model
         return $this->reassign_count > 0;
     }
 
+    // ==================== Chat ====================
 
     public function isChatOpen(): bool
     {
-        if (!in_array($this->status, ['completed', 'cancelled', 'refunded'])) {
-            return true;
-        }
-
-        if (in_array($this->status, ['cancelled', 'refunded'])) {
+        if ($this->conversation && $this->conversation->status === 'closed') {
             return false;
         }
 
-        if ($this->status === 'completed' && $this->completed_at) {
+        if (!in_array($this->status, [
+            self::STATUS_COMPLETED,
+            self::STATUS_CANCELLED,
+            self::STATUS_REFUNDED,
+        ])) {
+            return true;
+        }
+
+        if (in_array($this->status, [
+            self::STATUS_CANCELLED,
+            self::STATUS_REFUNDED,
+        ])) {
+            return false;
+        }
+
+        if ($this->status === self::STATUS_COMPLETED && $this->completed_at) {
             $graceHours = (int) config('order.chat_grace_hours', 24);
             return $this->completed_at->copy()->addHours($graceHours)->isFuture();
         }
@@ -357,7 +366,7 @@ class Order extends Model
 
     public function chatClosesAt(): ?\Carbon\Carbon
     {
-        if ($this->status === 'completed' && $this->completed_at) {
+        if ($this->status === self::STATUS_COMPLETED && $this->completed_at) {
             $graceHours = (int) config('order.chat_grace_hours', 24);
             return $this->completed_at->copy()->addHours($graceHours);
         }

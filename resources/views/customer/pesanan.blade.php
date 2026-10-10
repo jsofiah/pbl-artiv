@@ -176,13 +176,15 @@
         <div class="bg-white rounded-2xl p-5 shadow-sm mb-4 border border-slate-100 hover:border-[#6D28D9] hover:shadow-md transition">
             <div class="flex items-center gap-5">
 
-                {{-- Thumbnail --}}
-                <div class="w-38 h-48 shrink-0 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center
-                            text-xs font-semibold text-slate-400 uppercase">
+                <div style="width: 144px; height: 192px;" 
+                    class="shrink-0 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center">
                     @if ($thumbUrl)
-                        <img src="{{ $thumbUrl }}" alt="{{ $order->product->name }}" class="w-full h-full object-cover">
+                        <img src="{{ $thumbUrl }}"
+                            alt="{{ $order->product->name }}"
+                            class="w-full h-full object-cover object-center"
+                            style="width: 100%; height: 100%;">
                     @else
-                        Preview Jasa
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Preview Jasa</span>
                     @endif
                 </div>
 
