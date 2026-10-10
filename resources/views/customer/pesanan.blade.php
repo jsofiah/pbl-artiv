@@ -175,7 +175,11 @@
 
         <div class="bg-white rounded-2xl p-5 shadow-sm mb-4 border border-slate-100 hover:border-[#6D28D9] hover:shadow-md transition">
             <div class="flex items-center gap-5">
+<<<<<<< HEAD
                 {{-- Thumbnail --}}
+=======
+
+>>>>>>> origin/main
                 <div style="width: 144px; height: 192px;" 
                     class="shrink-0 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center">
                     @if ($thumbUrl)
@@ -214,7 +218,9 @@
                     </div>
 
                     <p class="text-sm text-slate-400">
+
                        {{ $order->productTier->name ?? '-' }} • {{ $order->order_code }}
+
                     </p>
 
                     {{-- Progress bar --}}

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\PemesananController;
 use App\Http\Controllers\Customer\PesananController;
@@ -25,6 +26,10 @@ Route::get('/', function () {
     };
 });
 
+Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+
+
 
 // ============ CUSTOMER (bisa diakses guest) ============
 Route::prefix('customer')->name('customer.')->group(function () {
@@ -46,6 +51,20 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/pesanan/{order}/attachment/{attachment}/download',
             [PesananController::class, 'downloadAttachment'])
             ->name('pesanan.attachment.download');
+        Route::get('/pesanan/{order}/reference/{reference}/preview',
+            [PesananController::class, 'previewReference'])
+            ->name('pesanan.reference.preview');
+        Route::get('/pesanan/{order}/attachment/{attachment}/preview',
+            [PesananController::class, 'previewAttachment'])
+            ->name('pesanan.attachment.preview');
+
+        Route::post('/pesanan/{order}/deliverable/{deliverable}/approve',
+            [PesananController::class, 'approveDeliverable'])
+            ->name('pesanan.deliverable.approve');
+        Route::post('/pesanan/{order}/deliverable/{deliverable}/revisi',
+            [PesananController::class, 'requestRevision'])
+            ->name('pesanan.deliverable.revisi');
+
             
         Route::get('/pemesanan/{product}', [PemesananController::class, 'create'])->name('pemesanan.create');
         Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');

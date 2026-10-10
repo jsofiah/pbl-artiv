@@ -19,6 +19,7 @@ class User extends Authenticatable
     protected $keyType = 'string';
 
     protected $fillable = [
+        'google_id',
         'username',
         'email',
         'full_name',

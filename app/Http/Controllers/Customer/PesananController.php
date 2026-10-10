@@ -8,13 +8,16 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Order;
+use App\Models\OrderLog;
 use App\Models\OrderReference;
+use App\Models\Deliverable;
 use App\Services\BlacklistFilter;
 use App\Services\R2StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
 
 class PesananController extends Controller
 {
@@ -75,6 +78,12 @@ class PesananController extends Controller
 
         $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
 
+        if (!$orderModel->isChatOpen()) {
+            return back()->withErrors([
+                'isi' => 'Percakapan sudah ditutup karena pesanan telah selesai.',
+            ]);
+        }
+
         $conversation = $orderModel->conversation;
 
         if (!$conversation && $orderModel->designer_id) {
@@ -114,6 +123,8 @@ class PesananController extends Controller
                 'file_type'  => $file->getClientOriginalExtension(),
             ]);
         }
+
+        $message->load('attachments');
 
         broadcast(new MessageSent($message, Auth::user()))->toOthers();
 
@@ -182,5 +193,153 @@ class PesananController extends Controller
         );
 
         return redirect()->away($url);
+    }
+
+    public function previewReference(string $order, string $reference)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        $ref = OrderReference::where('order_id', $orderModel->id)
+            ->where('id', $reference)
+            ->firstOrFail();
+
+        if ($ref->type !== 'file' || !$ref->file_url) {
+            return response()->json(['error' => 'File tidak ditemukan.'], 404);
+        }
+
+        $imageMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
+        if (!in_array(strtolower($ref->mime_type ?? ''), $imageMimes)) {
+            return response()->json(['error' => 'Preview hanya untuk gambar.'], 404);
+        }
+
+        $path = ltrim($ref->file_url, '/');
+        if (preg_match('#^https?://[^/]+/(.+)$#', $path, $m)) {
+            $path = $m[1];
+        }
+
+        $url = Storage::disk('r2')->temporaryUrl($path, now()->addMinutes(15));
+
+        return response()->json([
+            'url'  => $url,
+            'name' => $ref->file_name,
+        ]);
+    }
+
+    public function previewAttachment(string $order, string $attachment)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        $att = MessageAttachment::whereHas('message.conversation', function ($q) use ($orderModel) {
+                $q->where('conversation_id', $orderModel->conversation?->id);
+            })
+            ->where('id', $attachment)
+            ->firstOrFail();
+
+        $imageMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
+        if (!in_array(strtolower($att->mime_type ?? ''), $imageMimes)) {
+            return response()->json(['error' => 'Preview hanya untuk gambar.'], 404);
+        }
+
+        $path = ltrim($att->file_url, '/');
+        if (preg_match('#^https?://[^/]+/(.+)$#', $path, $m)) {
+            $path = $m[1];
+        }
+
+        $url = Storage::disk('r2')->temporaryUrl($path, now()->addMinutes(15));
+
+        return response()->json([
+            'url'  => $url,
+            'name' => $att->file_name,
+        ]);
+    }
+
+    public function approveDeliverable(string $order, string $deliverable)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        $deliverableModel = Deliverable::where('order_id', $orderModel->id)
+            ->where('id', $deliverable)
+            ->firstOrFail();
+
+        if ($deliverableModel->status !== 'pending') {
+            return back()->withErrors(['deliverable' => 'Deliverable ini sudah diproses.']);
+        }
+
+        if ($orderModel->status === 'completed') {
+            return back()->withErrors(['deliverable' => 'Pesanan sudah selesai.']);
+        }
+
+        DB::transaction(function () use ($orderModel, $deliverableModel) {
+    $deliverableModel->update([
+        'status'      => 'approved',
+        'approved_at' => now(),
+    ]);
+
+    $orderModel->update([
+        'status'       => 'completed',
+        'completed_at' => now(),
+    ]);
+
+    OrderLog::create([
+        'order_id' => $orderModel->id,
+        'actor_id' => Auth::id(),
+        'action'   => 'deliverable_approved',
+        'status'   => 'completed',
+        'note'     => 'Customer menyetujui hasil desain.',
+    ]);
+});
+
+
+        return redirect()
+            ->route('customer.pesanan.show', $orderModel->id)
+            ->with('status', 'Hasil desain disetujui. Pesanan selesai!');
+    }
+
+    public function requestRevision(Request $request, string $order, string $deliverable)
+    {
+        $validated = $request->validate([
+            'revision_note' => 'required|string|min:5|max:2000',
+        ], [
+            'revision_note.required' => 'Catatan revisi wajib diisi.',
+            'revision_note.min'      => 'Catatan revisi minimal 5 karakter.',
+        ]);
+
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        $deliverableModel = Deliverable::where('order_id', $orderModel->id)
+            ->where('id', $deliverable)
+            ->firstOrFail();
+
+        if ($deliverableModel->status !== 'pending') {
+            return back()->withErrors(['deliverable' => 'Deliverable ini sudah diproses.']);
+        }
+
+        if ($orderModel->status === 'completed') {
+            return back()->withErrors(['deliverable' => 'Pesanan sudah selesai, tidak bisa revisi.']);
+        }
+
+        DB::transaction(function () use ($orderModel, $deliverableModel, $validated) {
+            $deliverableModel->update([
+                'status'        => 'revision_requested',
+                'revision_note' => $validated['revision_note'],
+            ]);
+
+            $orderModel->update([
+                'status'         => 'revision_needed',
+                'revision_count' => $orderModel->revision_count + 1,
+            ]);
+
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => Auth::id(),
+                'action'   => 'revision_requested',
+                'status'   => 'revision_needed',
+                'note'     => $validated['revision_note'],
+            ]);
+        });
+
+        return redirect()
+            ->route('customer.pesanan.show', $orderModel->id)
+            ->with('status', 'Permintaan revisi terkirim ke designer.');
     }
 }
