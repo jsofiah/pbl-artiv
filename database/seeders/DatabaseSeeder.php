@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             ExpressFeeSeeder::class,
             RevisionFeeSeeder::class,
             BlacklistKeywordSeeder::class,
+            UserSeeder::class,
         ]);
     }
 }
