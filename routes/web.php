@@ -8,7 +8,7 @@ use App\Http\Controllers\Designer\DashboardController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-
+use App\Http\Controllers\Customer\ReviewController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -37,7 +37,6 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::middleware(['auth', 'role:customer'])->group(function () {
         Route::get('/pesanan', [BerandaController::class, 'pesanan'])->name('pesanan');
         Route::get('/pesanan/{order}', [PesananController::class, 'show'])->name('pesanan.show');
-        Route::get('/pesanan/{order}', [PesananController::class, 'show'])->name('pesanan.show');
         Route::post('/pesanan/{order}/pesan', [PesananController::class, 'kirimPesan'])->name('pesanan.kirimPesan');
 
         Route::get('/pesanan/{order}/reference/{reference}/download',
@@ -54,6 +53,13 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::post('/pemesanan/{product}/konfirmasi', [PemesananController::class, 'konfirmasi'])->name('pemesanan.konfirmasi');
         Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])
         ->name('pemesanan.hapus-referensi');
+
+         // Review & rating
+        Route::prefix('/pesanan/{order}/review')->name('pesanan.review.')->group(function () {
+            Route::get('/', [ReviewController::class, 'create'])->name('create');
+            Route::post('/', [ReviewController::class, 'store'])->name('store');
+            Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
+        });
     });
 });
 
