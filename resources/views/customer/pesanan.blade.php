@@ -39,7 +39,7 @@
                class="pb-3 text-sm font-semibold flex items-center gap-2 transition
                       {{ $tab === $key ? 'text-[#6D28D9] border-b-2 border-[#6D28D9]' : 'text-slate-500 hover:text-[#6D28D9]' }}">
                 {{ $label }}
-                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-[#6D28D9] font-bold">{{ $count }}</span>
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-[#6D28D9] font-bold bg-white">{{ $count }}</span>
             </a>
         @endforeach
     </div>
@@ -175,7 +175,11 @@
 
         <div class="bg-white rounded-2xl p-5 shadow-sm mb-4 border border-slate-100 hover:border-[#6D28D9] hover:shadow-md transition">
             <div class="flex items-center gap-5">
+<<<<<<< HEAD
+                {{-- Thumbnail --}}
+=======
 
+>>>>>>> origin/main
                 <div style="width: 144px; height: 192px;" 
                     class="shrink-0 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center">
                     @if ($thumbUrl)
@@ -214,7 +218,9 @@
                     </div>
 
                     <p class="text-sm text-slate-400">
-                        {{ $order->productTier->name ?? '-'}} • {{ $order->order_code }}
+
+                       {{ $order->productTier->name ?? '-' }} • {{ $order->order_code }}
+
                     </p>
 
                     {{-- Progress bar --}}

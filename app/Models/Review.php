@@ -13,11 +13,28 @@ class Review extends Model
 
     protected $table = 'reviews';
 
+    // ==================== Konstanta (dipakai view & controller) ====================
+
+    public const ASPECTS = [
+        'komunikasi'  => ['label' => 'Komunikasi Cepat',          'icon' => '⚡'],
+        'kualitas'    => ['label' => 'Kualitas Desain Memuaskan', 'icon' => '🪄'],
+        'tepat_waktu' => ['label' => 'Tepat Waktu',               'icon' => '🕒'],
+    ];
+
+    public const RATING_LABELS = [
+        1 => 'Sangat Kurang',
+        2 => 'Kurang Puas',
+        3 => 'Cukup',
+        4 => 'Puas',
+        5 => 'Luar Biasa / Sangat Puas',
+    ];
+
     protected $fillable = [
         'order_id',
         'customer_id',
         'designer_id',
         'rating',
+        'aspects',
         'comment',
         'is_public',
     ];
@@ -26,6 +43,7 @@ class Review extends Model
     {
         return [
             'rating' => 'integer',
+            'aspects' => 'array',
             'is_public' => 'boolean',
         ];
     }
