@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Customer\ReviewController;
+use App\Http\Controllers\Customer\NotificationController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -78,6 +79,10 @@ Route::prefix('customer')->name('customer.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
             Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
+
+            // Notifikasi
+        Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
+        Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
         });
     });
 });
