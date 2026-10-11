@@ -22,7 +22,7 @@
             <h2 class="text-lg font-bold text-slate-900">Bagaimana Pengalaman Anda?</h2>
             <p class="text-xs text-slate-500">
                 {{ $order->product->name ?? 'Layanan Desain' }} oleh
-                <span class="font-semibold text-[#6D28D9]">{{ $order->creator->name ?? '-' }}</span>
+                <span class="font-semibold text-[#6D28D9]">{{ $order->designer->full_name ?? '-' }}</span>
             </p>
         </div>
 
@@ -69,13 +69,13 @@
             <span class="text-[11px] text-slate-400"><span id="char-count">0</span> / 500 Karakter</span>
         </div>
         <textarea id="comment" name="comment" rows="4" maxlength="500"
-                  placeholder="Ceritakan pengalaman Anda bekerja dengan kreator ini..."
-                  class="mt-2 w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm italic text-slate-700 placeholder:not-italic placeholder:text-slate-400 focus:border-[#6D28D9] focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/20">{{ old('comment') }}</textarea>
+                placeholder="Ceritakan pengalaman Anda bekerja dengan kreator ini..."
+                class="mt-2 w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm italic text-slate-700 placeholder:not-italic placeholder:text-slate-400 focus:border-[#6D28D9] focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/20">{{ old('comment') }}</textarea>
         @error('comment') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
 
         <label class="mt-4 flex items-center gap-2 text-xs text-slate-600">
             <input type="checkbox" name="is_public" value="1" checked
-                   class="h-4 w-4 rounded border-slate-300 text-[#6D28D9] focus:ring-[#6D28D9]">
+                class="h-4 w-4 rounded border-slate-300 text-[#6D28D9] focus:ring-[#6D28D9]">
             Tampilkan ulasan ini secara publik di halaman profil kreator
         </label>
 
@@ -83,7 +83,7 @@
 
         <div class="flex justify-end gap-3">
             <a href="{{ route('customer.pesanan') }}"
-               class="rounded-full border border-[#6D28D9] px-6 py-2.5 text-xs font-semibold text-[#6D28D9] hover:bg-violet-50">
+                class="rounded-full border border-[#6D28D9] px-6 py-2.5 text-xs font-semibold text-[#6D28D9] hover:bg-violet-50">
                 Lewati
             </a>
             <button type="submit" id="btn-submit" disabled

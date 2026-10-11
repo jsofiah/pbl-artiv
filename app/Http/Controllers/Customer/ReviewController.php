@@ -15,7 +15,7 @@ class ReviewController extends Controller
         $this->authorizeOrder($order);
 
         if ($order->review) {
-            return redirect()->route('customer.pesanan.review.sukses', $order);
+            return redirect()->route('customer.review.sukses', $order);
         }
 
         $order->loadMissing(['product', 'designer']);
@@ -56,7 +56,7 @@ class ReviewController extends Controller
             'is_public'   => $request->boolean('is_public'),
         ]);
 
-        return redirect()->route('customer.pesanan.review.sukses', $order);
+        return redirect()->route('customer.review.sukses', $order);
     }
 
     public function sukses(Order $order)

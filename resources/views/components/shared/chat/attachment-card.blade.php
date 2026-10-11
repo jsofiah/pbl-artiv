@@ -8,35 +8,33 @@
 @php
     $imageMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
     $isImage = in_array(strtolower($att->mime_type ?? ''), $imageMimes);
+    $isDark  = $theme === 'dark';
 
-    $isDark = $theme === 'dark';
-
-    $containerCls = $isDark
-        ? 'bg-white/10 border-white/20'
-        : 'bg-white border-slate-200';
-    $thumbBgCls = $isDark ? 'bg-white/20' : 'bg-slate-100';
-    $iconCls    = $isDark ? 'text-white' : 'text-slate-500';
-    $fileNameCls = $isDark ? 'text-white' : 'text-slate-800';
-    $fileSizeCls = $isDark ? 'text-violet-100' : 'text-slate-400';
+    $containerCls = $isDark ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200';
+    $thumbBgCls   = $isDark ? 'bg-white/20' : 'bg-slate-100';
+    $iconCls      = $isDark ? 'text-white' : 'text-slate-500';
+    $fileNameCls  = $isDark ? 'text-white' : 'text-slate-800';
+    $fileSizeCls  = $isDark ? 'text-violet-100' : 'text-slate-400';
     $previewBtnCls = $isDark
         ? 'bg-white/20 text-white hover:bg-white/30'
         : 'bg-violet-50 text-[#6D28D9] hover:bg-violet-100';
 
-    // Auto-detect route prefix
     if (!$routePrefix) {
-        $routePrefix = request()->routeIs('designer.*') ? 'designer' : 'customer';
+        $routePrefix = request()->routeIs('designer.*')
+            ? 'designer.pekerjaan'
+            : 'customer.pesanan';
     }
 
-    $previewRoute  = "{$routePrefix}.pesanan.attachment.preview";
-    $downloadRoute = "{$routePrefix}.pesanan.attachment.download";
+    $previewRoute  = "{$routePrefix}.attachment.preview";
+    $downloadRoute = "{$routePrefix}.attachment.download";
 
     $previewUrl  = route($previewRoute,  ['order' => $order->id, 'attachment' => $att->id]);
     $downloadUrl = route($downloadRoute, ['order' => $order->id, 'attachment' => $att->id]);
     $safeName    = addslashes($att->file_name ?? 'Gambar');
 @endphp
 
-<div class="mt-3 {{ $containerCls }} border rounded-xl p-3 flex items-center justify-between gap-3">
-    <div class="flex items-center gap-3 min-w-0">
+<div class="mt-3 {{ $containerCls }} border rounded-xl p-3 flex items-center justify-between gap-3 max-w-md overflow-hidden">
+    <div class="flex items-center gap-3 min-w-0 flex-1">
         @if ($isImage)
             <button type="button"
                     onclick="previewImage('{{ $previewUrl }}', '{{ $downloadUrl }}', '{{ $safeName }}')"
@@ -57,7 +55,7 @@
             </div>
         @endif
 
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold {{ $fileNameCls }} truncate">{{ $att->file_name }}</p>
             <p class="text-xs {{ $fileSizeCls }}">
                 {{ number_format(($att->file_size ?? 0) / 1024 / 1024, 1) }} MB

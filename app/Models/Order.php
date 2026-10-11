@@ -373,4 +373,15 @@ class Order extends Model
 
         return null;
     }
+
+    public function hasReview(): bool
+    {
+        return $this->review()->exists();
+    }
+
+    public function canBeReviewed(): bool
+    {
+        return $this->isCompleted() && !$this->hasReview();
+    }
+
 }

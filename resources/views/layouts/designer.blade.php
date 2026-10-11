@@ -2,6 +2,9 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') — Designer Artiv</title>
@@ -18,13 +21,13 @@
 </head>
 <body class="bg-[#F3F1FA] antialiased">
 
-    <div class="flex min-h-screen">
+    <div class="flex h-screen overflow-hidden">
 
         {{-- Sidebar --}}
         <x-designer.sidebar />
 
         {{-- Main area --}}
-        <div class="flex-1 flex flex-col min-w-0">
+        <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
             {{-- Topbar --}}
             <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-30">
@@ -39,12 +42,12 @@
             </header>
 
             {{-- Content --}}
-            <main class="flex-1 p-6">
+            <main class="flex-1 p-6 overflow-y-auto">
                 @yield('content')
             </main>
 
         </div>
     </div>
-
+@stack('scripts')
 </body>
 </html>

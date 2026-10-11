@@ -21,7 +21,7 @@
             </div>
         </div>
 
-        <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4" id="chat-container">
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 py-5 space-y-4" id="chat-container">
             @php $lastDate = null; @endphp
 
             @forelse ($conv?->messages ?? [] as $msg)

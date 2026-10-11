@@ -59,6 +59,44 @@
     </x-slot:footer>
 </x-shared.modals.base>
 
+{{-- Modal Konfirmasi Approve --}}
+<div id="approve-modal"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+     onclick="if(event.target === this) closeApproveModal()">
+
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div class="px-6 py-5">
+            <div class="flex items-start gap-3">
+                <div class="w-12 h-12 rounded-full bg-[#D5FC55] flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6 text-neutral-900" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-lg text-slate-900">Setujui Hasil Desain?</h3>
+                    <p class="text-sm text-slate-500 mt-1 leading-relaxed">
+                        Setelah disetujui, pesanan akan <strong>ditandai selesai</strong> dan Anda tidak bisa meminta revisi lagi.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-2">
+            <button type="button"
+                    onclick="closeApproveModal()"
+                    class="px-5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-100 transition">
+                Batal
+            </button>
+            <button type="button"
+                    onclick="submitApprove()"
+                    class="px-5 py-2 rounded-xl bg-[#D5FC55] text-neutral-900 text-sm font-bold hover:bg-[#c5ec45] transition
+                           shadow-[0_2px_8px_-2px_rgba(213,252,85,0.5)]">
+                Ya, Setujui
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="image-preview-modal"
      class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
      onclick="if(event.target === this) closeImagePreview()">
@@ -97,6 +135,5 @@
                 Unduh
             </a>
         </div>
-
     </div>
 </div>
