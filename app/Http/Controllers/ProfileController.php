@@ -6,7 +6,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
+use App\Http\Requests\ProfileUpdateRequest;
 use App\Services\R2StorageService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -26,19 +26,12 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
-            'username'  => ['required', 'string', 'max:100', Rule::unique('users')->ignore($user->id)],
-            'email'     => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'phone'     => ['nullable', 'string', 'max:20'],
-        ]);
-
-        $user->fill($request->only(['full_name', 'username', 'email', 'phone']));
+        $user->fill($request->validated());
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
