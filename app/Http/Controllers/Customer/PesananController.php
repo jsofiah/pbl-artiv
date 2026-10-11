@@ -270,25 +270,33 @@ class PesananController extends Controller
         }
 
         DB::transaction(function () use ($orderModel, $deliverableModel) {
-    $deliverableModel->update([
-        'status'      => 'approved',
-        'approved_at' => now(),
-    ]);
+            $deliverableModel->update([
+                'status'      => 'approved',
+                'approved_at' => now(),
+            ]);
 
-    $orderModel->update([
-        'status'       => 'completed',
-        'completed_at' => now(),
-    ]);
+            $orderModel->update([
+                'status'       => 'completed',
+                'completed_at' => now(),
+            ]);
 
-    OrderLog::create([
-        'order_id' => $orderModel->id,
-        'actor_id' => Auth::id(),
-        'action'   => 'deliverable_approved',
-        'status'   => 'completed',
-        'note'     => 'Customer menyetujui hasil desain.',
-    ]);
-});
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => Auth::id(),
+                'action'   => 'deliverable_approved',
+                'status'   => 'completed',
+                'note'     => 'Customer menyetujui hasil desain.',
+            ]);
+        });
 
+        // Broadcast real-time
+        if ($orderModel->conversation) {
+            broadcast(new \App\Events\DeliverableUpdated(
+                $deliverableModel->fresh(),
+                $orderModel->conversation->id,
+                'approved'
+            ))->toOthers();
+        }
 
         return redirect()
             ->route('customer.pesanan.show', $orderModel->id)
@@ -318,6 +326,12 @@ class PesananController extends Controller
             return back()->withErrors(['deliverable' => 'Pesanan sudah selesai, tidak bisa revisi.']);
         }
 
+        if (!$orderModel->canRequestFreeRevision()) {
+            return back()->withErrors([
+                'deliverable' => 'Batas revisi gratis (' . \App\Models\Order::FREE_REVISION_LIMIT . 'x) sudah habis.',
+            ]);
+        }
+
         DB::transaction(function () use ($orderModel, $deliverableModel, $validated) {
             $deliverableModel->update([
                 'status'        => 'revision_requested',
@@ -334,9 +348,18 @@ class PesananController extends Controller
                 'actor_id' => Auth::id(),
                 'action'   => 'revision_requested',
                 'status'   => 'revision_needed',
-                'note'     => $validated['revision_note'],
+                'note'     => 'Customer meminta revisi hasil desain.',
             ]);
         });
+
+        // Broadcast real-time
+        if ($orderModel->conversation) {
+            broadcast(new \App\Events\DeliverableUpdated(
+                $deliverableModel->fresh(),
+                $orderModel->conversation->id,
+                'revision_requested'
+            ))->toOthers();
+        }
 
         return redirect()
             ->route('customer.pesanan.show', $orderModel->id)

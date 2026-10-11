@@ -6,6 +6,7 @@ use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\PemesananController;
 use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
+use App\Http\Controllers\Designer\PekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -74,7 +75,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
         ->name('pemesanan.hapus-referensi');
 
          // Review & rating
-        Route::prefix('/pesanan/{order}/review')->name('pesanan.review.')->group(function () {
+        Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
             Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
@@ -91,13 +92,34 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Designer
-    Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
+        Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/job-pool', [DashboardController::class, 'jobPool'])->name('job-pool');
-        Route::get('/pekerjaan-saya', [DashboardController::class, 'pekerjaanSaya'])->name('pekerjaan-saya');
+
+        // ============ PEKERJAAN ============
+        Route::get('/pekerjaan-saya', [PekerjaanController::class, 'index'])->name('pekerjaan.index');
+        Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
+        Route::post('/pekerjaan-saya/{order}/pesan', [PekerjaanController::class, 'kirimPesan'])->name('pekerjaan.kirimPesan');
+
+        Route::get('/pekerjaan-saya/{order}/attachment/{attachment}/download',
+            [PekerjaanController::class, 'downloadAttachment'])->name('pekerjaan.attachment.download');
+
+        Route::get('/pekerjaan-saya/{order}/reference/{reference}/download',
+            [PekerjaanController::class, 'downloadReference'])->name('pekerjaan.reference.download');
+
+        Route::get('/pekerjaan-saya/{order}/attachment/{attachment}/preview',
+            [PekerjaanController::class, 'previewAttachment'])->name('pekerjaan.attachment.preview');
+
+        Route::get('/pekerjaan-saya/{order}/reference/{reference}/preview',
+            [PekerjaanController::class, 'previewReference'])->name('pekerjaan.reference.preview');
+            
+        Route::post('/pekerjaan-saya/{order}/deliverable',
+            [PekerjaanController::class, 'kirimDeliverable'])
+            ->name('pekerjaan.kirimDeliverable');
         Route::get('/notifikasi', [DashboardController::class, 'notifikasi'])->name('notifikasi');
         Route::get('/riwayat', [DashboardController::class, 'riwayat'])->name('riwayat');
     });
+
 
     // Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {

@@ -22,8 +22,13 @@
             DELIVERABLE
         </x-shared.ui.badge>
 
-        <x-shared.ui.badge :variant="$status['variant']" size="sm" :pill="false">
+        <span data-deliverable-badge
+              class="inline-flex items-center gap-1.5 border font-semibold rounded-md text-[10px] px-2 py-0.5
+                     @if($status['variant'] === 'solid-amber') bg-amber-400 text-amber-900 border-transparent
+                     @elseif($status['variant'] === 'solid-emerald') bg-emerald-500 text-white border-transparent
+                     @else bg-slate-100 text-slate-600 border-slate-200
+                     @endif">
             {{ $status['label'] }}
-        </x-shared.ui.badge>
+        </span>
     </div>
 @endif
