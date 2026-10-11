@@ -74,18 +74,19 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])
         ->name('pemesanan.hapus-referensi');
 
-         // Review & rating
+                // Review & rating
         Route::prefix('/pesanan/{order}/review')->name('pesanan.review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
             Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
+        });
 
-            // Notifikasi
+        // Notifikasi
         Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
         Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
-        });
     });
 });
+
 
 // ============ ROUTE WAJIB LOGIN ============
 Route::middleware('auth')->group(function () {

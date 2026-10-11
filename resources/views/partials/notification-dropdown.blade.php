@@ -11,23 +11,24 @@
 <div class="relative" id="notif-root">
     {{-- Tombol lonceng --}}
     <button type="button" id="notif-toggle" aria-expanded="false" aria-label="Notifikasi"
-            class="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/30 text-white transition hover:bg-white/10">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
-        </svg>
-        @if ($notifUnread > 0)
-            <span class="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#D5FC55] ring-2 ring-[#745BB8]"></span>
-        @endif
-    </button>
+        class="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/30 text-white transition hover:bg-white/10">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
+    </svg>
+    @if ($notifUnread > 0)
+        <span style="position:absolute; top:2px; right:2px; width:10px; height:10px; border-radius:9999px; background:#D5FC55; box-shadow:0 0 0 2px #745BB8;"></span>
+    @endif
+</button>
 
     {{-- Panel popup --}}
     <div id="notif-panel"
-         class="absolute right-0 top-full z-50 mt-3 hidden w-[380px] max-w-[92vw] overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl">
+     style="width:400px; max-width:92vw;"
+     class="absolute right-0 top-full z-50 mt-3 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl">
 
         {{-- Header --}}
-        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <div class="flex items-center gap-2">
+        <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
+            <div class="flex items-center gap-2 whitespace-nowrap">
                 <h3 class="text-lg font-bold text-slate-900">Notifikasi</h3>
                 @if ($notifUnread > 0)
                     <span class="rounded-full bg-slate-900 px-2.5 py-0.5 text-xs font-semibold text-white">
