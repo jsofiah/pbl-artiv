@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -102,17 +103,24 @@ class R2StorageService
         /**
      * Pindahkan file PRIVATE dari satu folder ke folder lain di R2.
      */
-    public function movePrivate(string $fromPath, string $toPath): bool
+    public function movePrivate(string $from, string $to): bool
     {
-        $disk = Storage::disk('r2');
-        
-        if (!$disk->exists($fromPath)) {
+        try {
+            $disk = Storage::disk('r2');
+
+            if (!$disk->exists($from)) {
+                Log::warning("R2 movePrivate: source tidak ada — {$from}");
+                return false;
+            }
+
+            // Copy dulu, baru delete (true move)
+            $disk->copy($from, $to);
+            $disk->delete($from);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error("R2 movePrivate gagal: {$from} → {$to}: " . $e->getMessage());
             return false;
         }
-        
-        $disk->copy($fromPath, $toPath);
-        $disk->delete($fromPath);
-        
-        return true;
     }
 }

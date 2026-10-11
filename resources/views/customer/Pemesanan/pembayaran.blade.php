@@ -30,7 +30,7 @@
         @endif --}}
 
         <!-- Form Pembayaran -->
-        <form action="{{ route('customer.pemesanan.pembayaran.store', $order->id) }}" method="POST"
+        <form action="{{ route('customer.pemesanan.pembayaran.store', $product->id) }}" method="POST"
             enctype="multipart/form-data" class="space-y-6" @submit="isSubmitting = true">
             @csrf
 
@@ -80,7 +80,7 @@
 
                         <!-- Batas Waktu Bayar -->
                         <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between"
-                            x-data="paymentCountdown('{{ $order->created_at->addDay()->toIso8601String() }}')" x-init="init()">
+                            x-data="paymentCountdown('{{ now()->addDay()->toIso8601String() }}')" x-init="init()">
                             <div>
                                 <p class="text-xs font-bold text-amber-800 uppercase tracking-wide">Batas Waktu Pembayaran
                                 </p>

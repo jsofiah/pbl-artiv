@@ -37,21 +37,22 @@ Route::prefix('customer')->name('customer.')->group(function () {
     // Halaman wajib login + role customer
     Route::middleware(['auth', 'role:customer'])->group(function () {
         Route::get('/pesanan', [BerandaController::class, 'pesanan'])->name('pesanan');
-        Route::get('/pemesanan/{product}', [PemesananController::class, 'create'])->name('pemesanan.create');
-        Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');
-        Route::get('/pemesanan/{product}/ringkasan', [PemesananController::class, 'showRingkasan'])->name('pemesanan.ringkasan.show');
-        Route::post('/pemesanan/{product}/konfirmasi', [PemesananController::class, 'konfirmasi'])->name('pemesanan.konfirmasi');
-        Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])->name('pemesanan.hapus-referensi');
-        Route::get('/pemesanan/{order}/pembayaran', [PembayaranController::class, 'showByOrder'])
-            ->middleware(EnsureOrderCanBePaid::class)
+        Route::get('/pemesanan/{product}', [PemesananController::class, 'create'])
+            ->name('pemesanan.create');
+        Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])
+            ->name('pemesanan.ringkasan');
+        Route::get('/pemesanan/{product}/ringkasan', [PemesananController::class, 'showRingkasan'])
+            ->name('pemesanan.ringkasan.show');
+        Route::post('/pemesanan/{product}/konfirmasi', [PemesananController::class, 'konfirmasi'])
+            ->name('pemesanan.konfirmasi');
+        Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])
+            ->name('pemesanan.hapus-referensi');
+        Route::get('/pemesanan/{product}/pembayaran', [PembayaranController::class, 'show'])
             ->name('pemesanan.pembayaran');
-
-        Route::post('/pemesanan/{order}/pembayaran', [PembayaranController::class, 'store'])
-            ->middleware(EnsureOrderCanBePaid::class)
+        Route::post('/pemesanan/{product}/pembayaran', [PembayaranController::class, 'store'])
             ->name('pemesanan.pembayaran.store');
-
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
-        ->name('pemesanan.sukses');
+            ->name('pemesanan.sukses');
     });
 });
 
