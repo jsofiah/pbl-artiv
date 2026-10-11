@@ -1,17 +1,38 @@
+import './bootstrap';
+
 import Alpine from 'alpinejs';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import gsap from 'gsap';
+import ScrollTrigger from 'gsap/ScrollTrigger';
 
-Alpine.data('pemesananForm', (tiers, expressFees, defaults) => ({
-    selectedTier: defaults.selectedTier,
-    quantity: defaults.quantity,
-    deadlineOption: defaults.deadlineOption,
-    targetDeadline: defaults.targetDeadline,
-    briefNote: defaults.briefNote,
-    tiers: tiers,
-    expressFees: expressFees,
+window.Alpine = Alpine;
+window.Pusher = Pusher;
+window.gsap = gsap;
+window.ScrollTrigger = ScrollTrigger;
 
-    init() {
+Alpine.data('pemesananForm', () => ({
+    tiers: [],
+    expressFees: [],
+    selectedTier: '',
+    quantity: 1,
+    deadlineOption: 'default',
+    targetDeadline: '',
+    briefNote: '',
+    hasTiers: true,
+    productPrice: 0,
+
+    setup(data) {
+        this.tiers = data.tiers || [];
+        this.expressFees = data.expressFees || [];
+        this.selectedTier = data.selectedTier || '';
+        this.quantity = data.quantity || 1;
+        this.deadlineOption = data.deadlineOption || 'default';
+        this.targetDeadline = data.targetDeadline || '';
+        this.briefNote = data.briefNote || '';
+        this.hasTiers = data.hasTiers ?? true;
+        this.productPrice = Number(data.productPrice) || 0;
+
         if (this.durationDays < 2 || this.durationDays > this.maxDuration) {
             this.targetDeadline = this.addDays(this.today, 2);
         }
@@ -42,17 +63,14 @@ Alpine.data('pemesananForm', (tiers, expressFees, defaults) => ({
     get minDate() {
         return this.addDays(this.today, 2);
     },
+
     get maxDate() {
         return this.addDays(this.today, this.maxDuration);
     },
+
     get maxDuration() {
         if (!Array.isArray(this.expressFees) || !this.expressFees.length) return 0;
         return Math.max(...this.expressFees.map(f => Number(f.days)));
-   },
-
-    parseDuration(name) {
-        const match = String(name).match(/\d+/);
-        return match ? parseInt(match[0], 10) : 0;
     },
 
     get selectedFee() {
@@ -67,28 +85,32 @@ Alpine.data('pemesananForm', (tiers, expressFees, defaults) => ({
         return Number(this.selectedFee.fee) || 0;
     },
 
+    get tierPrice() {
+        if (this.hasTiers) {
+            const tier = this.tiers.find(t => t.id == this.selectedTier);
+            return tier ? (Number(tier.price) || 0) : 0;
+        }
+        return this.productPrice;
+    },
+
     get basePrice() {
-        const tier = this.tiers.find(t => t.id == this.selectedTier);
-        if (!tier) return 0;
-        const price = Number(tier.price) || 0;
-        const qty = Number(this.quantity) || 0;
-        return price * qty;
+        return this.tierPrice * (Number(this.quantity) || 0);
     },
 
     get totalPrice() {
-        const base = this.basePrice;
         const express = this.deadlineOption === 'express' ? this.expressFee : 0;
-        return base + express;
+        return this.basePrice + express;
     },
 
     get selectedTierName() {
+        if (!this.hasTiers) return 'Standar';
         if (!Array.isArray(this.tiers)) return '-';
         const tier = this.tiers.find(t => t.id == this.selectedTier);
         return tier ? (tier.name || 'Paket') : '-';
     },
 
     get isFormValid() {
-        if (!this.selectedTier) return false;
+        if (this.hasTiers && !this.selectedTier) return false;
         if (this.deadlineOption === 'express') {
             if (this.durationDays < 2) return false;
             if (!this.selectedFee) return false;
@@ -101,19 +123,20 @@ Alpine.data('pemesananForm', (tiers, expressFees, defaults) => ({
     incrementQty() {
         if (this.quantity < 99) this.quantity++;
     },
+
     decrementQty() {
         if (this.quantity > 1) this.quantity--;
     },
 
     formatNumber(n) {
-      const num = Number(n);
-      if (isNaN(num)) return '0';
-      return new Intl.NumberFormat('id-ID').format(num);
-  },
+        const num = Number(n);
+        if (isNaN(num)) return '0';
+        return new Intl.NumberFormat('id-ID').format(num);
+    },
 }));
 
-window.Alpine = Alpine;
-window.Pusher = Pusher;
+gsap.registerPlugin(ScrollTrigger);
+
 window.Echo = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -125,9 +148,3 @@ window.Echo = new Echo({
 });
 
 Alpine.start();
-
-/**
- * Echo exposes an expressive API for subscribing to channels and listening
- * for events that are broadcast by Laravel. Echo and event broadcasting
- * allow your team to quickly build robust real-time web applications.
- */

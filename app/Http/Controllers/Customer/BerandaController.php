@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 
 class BerandaController extends Controller
 {
-    // Dipakai bersama oleh halaman Katalog dan Pesanan Saya
     private const CATEGORIES = [
         'Poster',
         'Logo',
@@ -39,18 +38,58 @@ class BerandaController extends Controller
                 }
             ])
             ->orderByDesc('orders_count')
-            ->limit(4)
+            ->limit(8)
             ->get();
 
         if ($popularProducts->sum('orders_count') === 0) {
             $popularProducts = Product::where('is_active', true)
                 ->with(['tiers' => fn($q) => $q->where('is_active', true)])
                 ->orderByDesc('created_at')
-                ->limit(4)
+                ->limit(8)
                 ->get();
         }
 
-        return view('customer.beranda', compact('popularProducts'));
+        $heroProducts = Product::where('is_active', true)
+            ->with(['tiers' => fn($q) => $q->where('is_active', true)])
+            ->latest()
+            ->take(2)
+            ->get();
+
+        $categoryGroups = [
+            'Promosi & Informasi' => [
+                'slug' => 'promosi',
+                'items' => ['Poster', 'Banner', 'Brosur', 'Postingan', 'Infografis', 'Twibbon'],
+            ],
+            'Branding & Identitas' => [
+                'slug' => 'branding',
+                'items' => ['Logo', 'Sticker', 'UI', 'Pin', 'Keychain'],
+            ],
+            'Presentasi & Personal' => [
+                'slug' => 'presentasi',
+                'items' => ['Presentasi', 'Scrapbook', 'PowerPoint'],
+            ],
+        ];
+
+        $categoryThumbs = [];
+        foreach ($categoryGroups as $label => $group) {
+            $thumbs = Product::where('is_active', true)
+                ->where(function ($q) use ($group) {
+                    foreach ($group['items'] as $keyword) {
+                        $q->orWhere('name', 'ilike', "%{$keyword}%");
+                    }
+                })
+                ->whereNotNull('thumbnail_url')
+                ->latest()
+                ->take(3)
+                ->pluck('thumbnail_url')
+                ->map(fn($url) => \App\Helpers\R2Helper::url($url))
+                ->values()
+                ->toArray();
+
+            $categoryThumbs[$label] = $thumbs;
+        }
+
+        return view('customer.beranda', compact('popularProducts', 'heroProducts', 'categoryGroups', 'categoryThumbs'));
     }
 
     public function katalog(Request $request)
@@ -64,7 +103,7 @@ class BerandaController extends Controller
             $search = $request->q;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
-                ->orWhere('description', 'ilike', "%{$search}%");
+                  ->orWhere('description', 'ilike', "%{$search}%");
             });
         }
 
@@ -72,22 +111,49 @@ class BerandaController extends Controller
             $query->where('name', 'ilike', "%{$request->category}%");
         }
 
-        if ($request->filled('price')) {
-            match ($request->price) {
-                'under_500'   => $query->where('price', '<', 500000),
-                '500_1000'    => $query->whereBetween('price', [500000, 1000000]),
-                'above_1000'  => $query->where('price', '>', 1000000),
-                default       => null,
-            };
+        if ($request->filled('categories')) {
+            $categories = array_filter(explode(',', $request->categories));
+            if (!empty($categories)) {
+                $query->where(function ($q) use ($categories) {
+                    foreach ($categories as $keyword) {
+                        $q->orWhere('name', 'ilike', "%{$keyword}%");
+                    }
+                });
+            }
         }
 
+        $allProducts = $query->get();
+
         match ($request->sort) {
-            'cheapest'  => $query->orderBy('price', 'asc'),
-            'expensive' => $query->orderBy('price', 'desc'),
-            default     => $query->orderBy('name', 'asc'),
+            'cheapest' => $allProducts = $allProducts->sortBy(function ($product) {
+                return $product->tiers->min('price') ?? PHP_INT_MAX;
+            })->values(),
+
+            'expensive' => $allProducts = $allProducts->sortByDesc(function ($product) {
+                return $product->tiers->min('price') ?? 0;
+            })->values(),
+
+            'popular' => $allProducts = $allProducts->sortByDesc(function ($product) {
+                return $product->orders()
+                    ->whereNotIn('status', [
+                        \App\Models\Order::STATUS_CANCELLED,
+                        \App\Models\Order::STATUS_REFUNDED,
+                    ])
+                    ->count();
+            })->values(),
+
+            default => $allProducts = $allProducts->sortBy('name')->values(),
         };
 
-        $products = $query->paginate(12)->withQueryString();
+        $page = $request->get('page', 1);
+        $perPage = 12;
+        $products = new \Illuminate\Pagination\LengthAwarePaginator(
+            $allProducts->forPage($page, $perPage)->values(),
+            $allProducts->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         $categories = self::CATEGORIES;
 
@@ -105,22 +171,19 @@ class BerandaController extends Controller
         return view('customer.katalog-detail', compact('product'));
     }
 
-    // ==================== Pesanan Saya ====================
-
     public function pesanan(Request $request)
     {
         $tab = $request->query('tab') === 'riwayat' ? 'riwayat' : 'aktif';
 
-        // Hanya pesanan milik customer yang sedang login
         $mine = Order::where('customer_id', $request->user()->id);
 
         $orders = (clone $mine)
-            ->with(['product', 'productTier', 'designer'])      // cegah N+1 query
+            ->with(['product', 'productTier', 'designer'])
             ->when($tab === 'aktif', fn ($q) => $q->aktif(), fn ($q) => $q->riwayat())
             ->filter($request->only(['q', 'status', 'kategori']))
             ->urutkan($request->query('urut', 'deadline'))
             ->paginate(10)
-            ->withQueryString();                                // filter tetap aktif saat pindah halaman
+            ->withQueryString();
 
         return view('customer.pesanan', [
             'orders'        => $orders,
