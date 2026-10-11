@@ -9,6 +9,22 @@ use Illuminate\Http\Request;
 
 class BerandaController extends Controller
 {
+    private const CATEGORIES = [
+        'Poster',
+        'Logo',
+        'Banner',
+        'Brosur / Leaflet',
+        'Postingan Sosial Media',
+        'Sticker',
+        'Scrapbook',
+        'Presentasi (PowerPoint)',
+        'Twibbon',
+        'Infografis',
+        'UI Design',
+        'Pin Button',
+        'Keychain',
+    ];
+
     public function index()
     {
         $popularProducts = Product::where('is_active', true)
@@ -39,7 +55,6 @@ class BerandaController extends Controller
             ->take(2)
             ->get();
 
-        // Mapping grup → keyword yang dicocokkan ke name
         $categoryGroups = [
             'Promosi & Informasi' => [
                 'slug' => 'promosi',
@@ -55,7 +70,6 @@ class BerandaController extends Controller
             ],
         ];
 
-        // Ambil 3 thumbnail per grup — pakai name ilike
         $categoryThumbs = [];
         foreach ($categoryGroups as $label => $group) {
             $thumbs = Product::where('is_active', true)
@@ -85,21 +99,18 @@ class BerandaController extends Controller
                 $q->where('is_active', true)->orderBy('price');
             }]);
 
-        // Search
         if ($request->filled('q')) {
             $search = $request->q;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
-                ->orWhere('description', 'ilike', "%{$search}%");
+                  ->orWhere('description', 'ilike', "%{$search}%");
             });
         }
 
-        /// Filter kategori tunggal (dropdown) — pakai name
         if ($request->filled('category') && $request->category !== 'Semua Kategori') {
             $query->where('name', 'ilike', "%{$request->category}%");
         }
 
-        // Filter multi-kategori (dari beranda) — pakai name
         if ($request->filled('categories')) {
             $categories = array_filter(explode(',', $request->categories));
             if (!empty($categories)) {
@@ -144,12 +155,7 @@ class BerandaController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        $categories = Product::where('is_active', true)
-        ->select('name')
-        ->distinct()
-        ->pluck('name')
-        ->take(20)
-        ->toArray();
+        $categories = self::CATEGORIES;
 
         return view('customer.katalog', compact('products', 'categories'));
     }
@@ -165,8 +171,28 @@ class BerandaController extends Controller
         return view('customer.katalog-detail', compact('product'));
     }
 
-    public function pesanan()
+    public function pesanan(Request $request)
     {
-        return view('customer.pesanan');
+        $tab = $request->query('tab') === 'riwayat' ? 'riwayat' : 'aktif';
+
+        $mine = Order::where('customer_id', $request->user()->id);
+
+        $orders = (clone $mine)
+            ->with(['product', 'productTier', 'designer'])
+            ->when($tab === 'aktif', fn ($q) => $q->aktif(), fn ($q) => $q->riwayat())
+            ->filter($request->only(['q', 'status', 'kategori']))
+            ->urutkan($request->query('urut', 'deadline'))
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('customer.pesanan', [
+            'orders'        => $orders,
+            'tab'           => $tab,
+            'countAktif'    => (clone $mine)->aktif()->count(),
+            'countRiwayat'  => (clone $mine)->riwayat()->count(),
+            'statusOptions' => collect($tab === 'aktif' ? Order::AKTIF : Order::RIWAYAT)
+                ->mapWithKeys(fn ($s) => [$s => Order::STATUS_LABELS[$s]]),
+            'categories'    => self::CATEGORIES,
+        ]);
     }
 }

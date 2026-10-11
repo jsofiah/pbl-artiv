@@ -16,7 +16,6 @@
         body { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
     </style>
 
-    {{-- WAJIB: tampung @push('styles') dari view --}}
     @stack('styles')
 </head>
 <body class="bg-[#F3F1FA] antialiased min-h-screen">
@@ -29,10 +28,6 @@
 
     <x-customer.footer />
 
-    {{-- Alpine dulu (defer = dieksekusi setelah HTML selesai) --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-    {{-- Baru custom script --}}
     @stack('scripts')
 </body>
 </html>

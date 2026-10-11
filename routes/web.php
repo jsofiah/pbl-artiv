@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\Customer\BerandaController;
+use App\Http\Controllers\Customer\PemesananController;
+use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-
+use App\Http\Controllers\Customer\ReviewController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -23,6 +26,10 @@ Route::get('/', function () {
     };
 });
 
+Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+
+
 
 // ============ CUSTOMER (bisa diakses guest) ============
 Route::prefix('customer')->name('customer.')->group(function () {
@@ -34,6 +41,44 @@ Route::prefix('customer')->name('customer.')->group(function () {
     // Halaman wajib login + role customer
     Route::middleware(['auth', 'role:customer'])->group(function () {
         Route::get('/pesanan', [BerandaController::class, 'pesanan'])->name('pesanan');
+        Route::get('/pesanan/{order}', [PesananController::class, 'show'])->name('pesanan.show');
+        Route::post('/pesanan/{order}/pesan', [PesananController::class, 'kirimPesan'])->name('pesanan.kirimPesan');
+
+        Route::get('/pesanan/{order}/reference/{reference}/download',
+            [PesananController::class, 'downloadReference'])
+            ->name('pesanan.reference.download');
+
+        Route::get('/pesanan/{order}/attachment/{attachment}/download',
+            [PesananController::class, 'downloadAttachment'])
+            ->name('pesanan.attachment.download');
+        Route::get('/pesanan/{order}/reference/{reference}/preview',
+            [PesananController::class, 'previewReference'])
+            ->name('pesanan.reference.preview');
+        Route::get('/pesanan/{order}/attachment/{attachment}/preview',
+            [PesananController::class, 'previewAttachment'])
+            ->name('pesanan.attachment.preview');
+
+        Route::post('/pesanan/{order}/deliverable/{deliverable}/approve',
+            [PesananController::class, 'approveDeliverable'])
+            ->name('pesanan.deliverable.approve');
+        Route::post('/pesanan/{order}/deliverable/{deliverable}/revisi',
+            [PesananController::class, 'requestRevision'])
+            ->name('pesanan.deliverable.revisi');
+
+            
+        Route::get('/pemesanan/{product}', [PemesananController::class, 'create'])->name('pemesanan.create');
+        Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');
+        Route::get('/pemesanan/{product}/ringkasan', [PemesananController::class, 'showRingkasan'])->name('pemesanan.ringkasan.show');
+        Route::post('/pemesanan/{product}/konfirmasi', [PemesananController::class, 'konfirmasi'])->name('pemesanan.konfirmasi');
+        Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])
+        ->name('pemesanan.hapus-referensi');
+
+         // Review & rating
+        Route::prefix('/pesanan/{order}/review')->name('pesanan.review.')->group(function () {
+            Route::get('/', [ReviewController::class, 'create'])->name('create');
+            Route::post('/', [ReviewController::class, 'store'])->name('store');
+            Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
+        });
     });
 });
 

@@ -25,6 +25,17 @@ export default {
                     lime:   '#C9FF3D',
                     navy:   '#15172A',
                 },
+                primary: {
+                    DEFAULT: '#6D28D9',
+                    dark:    '#5B21B6',
+                },
+                lime: {
+                    DEFAULT: '#D5FC55',
+                    hover:   '#C5EC45',
+                },
+                ink:    '#0F172A',
+                muted:  '#64748B',
+                line:   '#E2E8F0',
             },
         },
     },
