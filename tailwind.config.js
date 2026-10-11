@@ -9,10 +9,22 @@ export default {
         './resources/views/**/*.blade.php',
     ],
 
+    safelist: [],
+
     theme: {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+            },
+
+            colors: {
+                artiv: {
+                    bg:     '#F3F1FA',
+                    purple: '#6F35D9',
+                    deep:   '#4B1FA8',
+                    lime:   '#C9FF3D',
+                    navy:   '#15172A',
+                },
             },
         },
     },
