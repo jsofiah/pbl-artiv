@@ -4,12 +4,14 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\PemesananController;
+use App\Http\Controllers\Customer\PembayaranController;
 use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
 use App\Http\Controllers\Designer\PekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
 use App\Http\Controllers\Customer\ReviewController;
 
 // Route::get('/', function () {
@@ -71,8 +73,17 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');
         Route::get('/pemesanan/{product}/ringkasan', [PemesananController::class, 'showRingkasan'])->name('pemesanan.ringkasan.show');
         Route::post('/pemesanan/{product}/konfirmasi', [PemesananController::class, 'konfirmasi'])->name('pemesanan.konfirmasi');
-        Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])
-        ->name('pemesanan.hapus-referensi');
+        Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])->name('pemesanan.hapus-referensi');
+        Route::get('/pemesanan/{order}/pembayaran', [PembayaranController::class, 'showByOrder'])
+            ->middleware(EnsureOrderCanBePaid::class)
+            ->name('pemesanan.pembayaran');
+
+        Route::post('/pemesanan/{order}/pembayaran', [PembayaranController::class, 'store'])
+            ->middleware(EnsureOrderCanBePaid::class)
+            ->name('pemesanan.pembayaran.store');
+
+        Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
+        ->name('pemesanan.sukses');
 
          // Review & rating
         Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
@@ -136,4 +147,4 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
