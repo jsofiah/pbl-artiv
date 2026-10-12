@@ -39,7 +39,7 @@
 
             <div class="flex items-center gap-4">
                 @auth
-                    <x-shared.notification-icon />
+                   @include('partials.notification-dropdown')
                     <x-shared.user-menu />
                 @else
                     <a href="{{ route('login') }}"
