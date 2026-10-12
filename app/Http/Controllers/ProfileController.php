@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\R2StorageService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -26,15 +28,35 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        /** @var \App\Models\User $user */
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->fill($request->validated());
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return redirect()->route('profile.edit')->with('success', 'Profil berhasil diperbarui.');
+    }
+
+    /**
+     * Update user password.
+     */
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password'         => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return redirect()->route('profile.edit')->with('success', 'Kata sandi berhasil diperbarui.');
     }
 
     /**
@@ -55,6 +77,58 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return redirect('/');
+    }
+
+    /**
+     * Memperbarui foto profil / avatar user ke Cloudflare R2.
+     */
+    public function updateAvatar(Request $request, R2StorageService $r2Storage): RedirectResponse
+    {
+        $request->validate([
+            'avatar' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        if ($user->avatar_url) {
+            try {
+                $r2Storage->delete($user->avatar_url, R2StorageService::DISK_PUBLIC);
+            } catch (\Exception $e) {
+                Log::error('Gagal menghapus avatar lama di R2: ' . $e->getMessage());
+            }
+        }
+
+        $avatarUrl = $r2Storage->upload($request->file('avatar'), 'avatars', R2StorageService::DISK_PUBLIC);
+
+        $user->update([
+            'avatar_url' => $avatarUrl,
+        ]);
+
+        return redirect()->route('profile.edit')->with('success', 'Foto profil berhasil diperbarui.');
+    }
+
+    /**
+     * Menghapus foto profil / avatar user.
+     */
+    public function destroyAvatar(Request $request, R2StorageService $r2Storage): RedirectResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        if ($user->avatar_url) {
+            try {
+                $r2Storage->delete($user->avatar_url, R2StorageService::DISK_PUBLIC);
+            } catch (\Exception $e) {
+                Log::error('Gagal menghapus file avatar di R2: ' . $e->getMessage());
+            }
+
+            $user->update([
+                'avatar_url' => null,
+            ]);
+        }
+
+        return redirect()->route('profile.edit')->with('success', 'Foto profil berhasil dihapus.');
     }
 }
