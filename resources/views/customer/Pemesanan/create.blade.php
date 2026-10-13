@@ -1,3 +1,6 @@
+create
+
+
 @extends('layouts.customer')
 
 @section('title', 'Form Pemesanan')
@@ -12,7 +15,8 @@
                 quantity: {{ old('quantity', $pemesananData['quantity'] ?? 1) }},
                 deadlineOption: '{{ old('deadline_option', ($pemesananData['is_express'] ?? false) ? 'express' : 'default') }}',
                 targetDeadline: '{{ old('target_deadline', isset($pemesananData['deadline']) ? \Carbon\Carbon::parse($pemesananData['deadline'])->format('Y-m-d') : now()->addDays(2)->format('Y-m-d')) }}',
-                briefNote: '{{ old('brief_note', $pemesananData['brief_note'] ?? '') }}'
+                briefNote: '{{ old('brief_note', $pemesananData['brief_note'] ?? '') }}',
+                productPrice: {{ $product->price ?? 0 }}
             }
         )">
 
@@ -49,7 +53,11 @@
                 </span>
                 <h2 class="font-bold text-xl text-slate-900">{{ $product->name }}</h2>
                 <p class="text-sm text-slate-500">
-                    Harga mulai dari Rp {{ number_format($product->tiers->min('price') ?? 0, 0, ',', '.') }}
+                    @if ($hasTiers)
+                        Harga mulai dari Rp {{ number_format($product->tiers->min('price'), 0, ',', '.') }}
+                    @else
+                        Harga Rp {{ number_format($product->price, 0, ',', '.') }}
+                    @endif
                 </p>
             </div>
             <a href="{{ route('customer.katalog.detail', $product->id) }}"
@@ -62,17 +70,13 @@
     <form action="{{ route('customer.pemesanan.ringkasan', $product->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
 
-        <div class="mb-8">
-            <h3 class="flex items-center gap-2 font-bold text-lg text-slate-900 mb-4">
-                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">1</span>
-                Pilih Paket Desain
-            </h3>
+        @if ($hasTiers)
+            <div class="mb-8">
+                <h3 class="flex items-center gap-2 font-bold text-lg text-slate-900 mb-4">
+                    <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">1</span>
+                    Pilih Paket Desain
+                </h3>
 
-            @if ($product->tiers->isEmpty())
-                <div class="bg-white rounded-2xl p-8 text-center border border-slate-100">
-                    <p class="text-slate-500">Belum ada paket tersedia untuk jasa ini.</p>
-                </div>
-            @else
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     @foreach ($product->tiers as $tier)
                         @php
@@ -123,15 +127,19 @@
                         </label>
                     @endforeach
                 </div>
-            @endif
-            @error('product_tier_id')
-                <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
-            @enderror
-        </div>
+                @error('product_tier_id')
+                    <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                @enderror
+            </div>
+        @else
+            <input type="hidden" name="product_tier_id" value="">
+        @endif
 
         <div class="mb-8">
             <h3 class="flex items-center gap-2 font-bold text-lg text-slate-900 mb-4">
-                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">2</span>
+                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">
+                    {{ $hasTiers ? 2 : 1 }}
+                </span>
                 Jumlah Pesanan
             </h3>
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center justify-between gap-4">
@@ -164,7 +172,9 @@
 
         <div class="mb-8">
             <h3 class="flex items-center gap-2 font-bold text-lg text-slate-900 mb-4">
-                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">3</span>
+                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">
+                    {{ $hasTiers ? 3 : 2 }}
+                </span>
                 Pilih Deadline Pengerjaan
             </h3>
 
@@ -266,7 +276,9 @@
 
         <div class="mb-8">
             <h3 class="flex items-center gap-2 font-bold text-lg text-slate-900 mb-4">
-                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">4</span>
+                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">
+                    {{ $hasTiers ? 4 : 3 }}
+                </span>
                 File & Tautan Referensi
             </h3>
 
@@ -428,7 +440,9 @@
 
         <div class="mb-8">
             <h3 class="flex items-center gap-2 font-bold text-lg text-slate-900 mb-4">
-                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">5</span>
+                <span class="w-7 h-7 rounded-full bg-[#6D28D9] text-white flex items-center justify-center text-sm font-bold">
+                    {{ $hasTiers ? 5 : 4 }}
+                </span>
                 Catatan Brief Desain
             </h3>
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">

@@ -1,17 +1,62 @@
 import Alpine from 'alpinejs';
 
-Alpine.data('pemesananForm', (tiers, expressFees, defaults) => ({
-    selectedTier: defaults.selectedTier,
-    quantity: defaults.quantity,
-    deadlineOption: defaults.deadlineOption,
-    targetDeadline: defaults.targetDeadline,
-    briefNote: defaults.briefNote,
-    tiers: tiers,
-    expressFees: expressFees,
+window.Alpine = Alpine;
+window.Pusher = Pusher;
+window.gsap = gsap;
+window.ScrollTrigger = ScrollTrigger;
+
+Alpine.data('pemesananForm', (tiersData = [], expressFeesData = [], initialData = {}) => ({
+    tiers: [],
+    expressFees: [],
+    selectedTier: '',
+    quantity: 1,
+    deadlineOption: 'default',
+    targetDeadline: '',
+    briefNote: '',
+    hasTiers: true,
+    productPrice: 0,
 
     init() {
-        if (this.durationDays < 2 || this.durationDays > this.maxDuration) {
-            this.targetDeadline = this.addDays(this.today, 2);
+        this.setup({
+            tiers: tiersData,
+            expressFees: expressFeesData,
+            selectedTier: initialData.selectedTier,
+            quantity: initialData.quantity,
+            deadlineOption: initialData.deadlineOption,
+            targetDeadline: initialData.targetDeadline,
+            briefNote: initialData.briefNote,
+            hasTiers: tiersData.length > 0,
+            productPrice: initialData.productPrice ?? 0,
+        });
+    },
+
+    setup(data) {
+        this.tiers = (data.tiers || []).map(t => ({
+            ...t,
+            id: String(t.id),
+            price: Number(t.price),
+        }));
+        this.expressFees = (data.expressFees || []).map(f => ({
+            ...f,
+            days: Number(f.days),
+            fee: Number(f.fee),
+        }));
+        this.selectedTier = data.selectedTier != null ? String(data.selectedTier) : '';
+        this.quantity = Number(data.quantity) || 1;
+        this.deadlineOption = data.deadlineOption || 'default';
+        this.briefNote = data.briefNote || '';
+        this.hasTiers = data.hasTiers ?? true;
+        this.productPrice = Number(data.productPrice) || 0;
+
+        // set targetDeadline setelah semua data siap
+        const fallback = this.addDays(this.today, 2);
+        this.targetDeadline = data.targetDeadline || fallback;
+
+        // koreksi kalau di luar range
+        if (this.durationDays < 2) {
+            this.targetDeadline = fallback;
+        } else if (this.maxDuration > 0 && this.durationDays > this.maxDuration) {
+            this.targetDeadline = this.addDays(this.today, this.maxDuration);
         }
     },
 
