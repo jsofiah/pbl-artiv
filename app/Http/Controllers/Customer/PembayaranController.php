@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
-use App\Models\OrderLog;
-use App\Models\OrderReference;
 use App\Models\Payment;
-use App\Models\Product;
+use App\Models\Order;
 use App\Services\R2StorageService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -24,36 +21,22 @@ class PembayaranController extends Controller
         $this->r2Storage = $r2Storage;
     }
 
-    public function show(Product $product)
+    /**
+     * Customer mengunggah bukti pembayaran (untuk order baru atau revision_fee).
+     */
+    public function store(Request $request, Order $order)
     {
-        $draft = session('pemesanan_draft');
-
-        if (!$draft || ($draft['product_id'] ?? null) !== $product->id) {
-            return redirect()
-                ->route('customer.pemesanan.create', $product->id)
-                ->withErrors(['error' => 'Sesi pemesanan telah berakhir. Silakan isi ulang.']);
+        if ($order->customer_id !== Auth::id()) {
+            abort(403);
         }
 
-        $order = new Order([
-            'order_code'  => $draft['order_code'],
-            'total_price' => $draft['data']['total_price'],
-        ]);
+        if ($order->created_at->addDay()->isPast()) {
 
-        return view('customer.pemesanan.pembayaran', [
-            'product' => $product,
-            'order'   => $order,
-            'draft'   => $draft,
-        ]);
-    }
+            // $order->update(['status' => 'gagal']); 
 
-    public function store(Request $request, Product $product)
-    {
-        $draft = session('pemesanan_draft');
-
-        if (!$draft || ($draft['product_id'] ?? null) !== $product->id) {
-            return redirect()
-                ->route('customer.pemesanan.create', $product->id)
-                ->withErrors(['error' => 'Sesi pemesanan telah berakhir. Silakan isi ulang.']);
+            return back()->withErrors([
+                'error' => 'Maaf, waktu pembayaran telah kadaluwarsa (lebih dari 1 hari).'
+            ]);
         }
 
         $request->validate([
@@ -61,114 +44,42 @@ class PembayaranController extends Controller
             'amount' => 'required|numeric|min:0',
             'type'   => 'sometimes|in:' . Payment::TYPE_ORDER . ',' . Payment::TYPE_REVISION_FEE,
             'proof'  => 'required|file|image|mimes:jpeg,png,jpg|max:2048',
-        ], [
-            'proof.required' => 'Bukti pembayaran wajib diunggah.',
-            'proof.image'    => 'File harus berupa gambar.',
-            'proof.mimes'    => 'Format bukti harus JPG, JPEG, atau PNG.',
-            'proof.max'      => 'Ukuran bukti maksimal 2MB.',
         ]);
 
-        $pemesananData = $draft['data'];
-        $references    = $draft['references'] ?? [];
-
         $proofPath = null;
+        $storage = $this->r2Storage;
 
         DB::beginTransaction();
         try {
-            $proofPath = $this->r2Storage->uploadPrivate(
-                $request->file('proof'),
-                'payment-proofs'
-            );
+            $proofPath = $storage->uploadPrivate($request->file('proof'), 'payment-proofs');
 
-            $movedReferences = [];
-            foreach ($references as $ref) {
-                if (($ref['type'] ?? null) === 'file' && !empty($ref['file_url'])) {
-                    $oldPath = $ref['file_url'];
-                    $newPath = str_replace('temp/references/', 'references/', $oldPath);
-
-                    if ($this->r2Storage->movePrivate($oldPath, $newPath)) {
-                        $ref['file_url'] = $newPath;
-                    } else {
-                        Log::warning("Gagal pindah file referensi: {$oldPath} → {$newPath}");
-                    }
-                }
-                $movedReferences[] = $ref;
-            }
-
-            $order = Order::create([
-                'order_code'      => $draft['order_code'],
-                'customer_id'     => Auth::id(),
-                'designer_id'     => null,
-                'product_id'      => $product->id,
-                'product_tier_id' => $pemesananData['product_tier_id'],
-                'unit_price'      => $pemesananData['unit_price'],
-                'quantity'        => $pemesananData['quantity'],
-                'deadline'        => $pemesananData['deadline'],
-                'is_express'      => $pemesananData['is_express'],
-                'express_fee_id'  => $pemesananData['express_fee_id'],
-                'express_fee'     => $pemesananData['express_fee'],
-                'brief_note'      => $pemesananData['brief_note'],
-                'total_price'     => $pemesananData['total_price'],
-                'status'          => Order::STATUS_PENDING,
-            ]);
-
-            foreach ($movedReferences as $ref) {
-                OrderReference::create([
-                    'order_id'     => $order->id,
-                    'type'         => $ref['type'],
-                    'file_url'     => $ref['file_url'] ?? null,
-                    'file_name'    => $ref['file_name'] ?? null,
-                    'file_size'    => $ref['file_size'] ?? null,
-                    'mime_type'    => $ref['mime_type'] ?? null,
-                    'external_url' => $ref['external_url'] ?? null,
-                ]);
-            }
-
-            Payment::create([
-                'order_id'  => $order->id,
-                'type'      => $request->input('type', Payment::TYPE_ORDER),
-                'method'    => $request->input('method'),
-                'amount'    => $request->input('amount'),
-                'proof_url' => $proofPath,
-                'status'    => Payment::STATUS_PENDING,
-                'paid_at'   => now(),
-            ]);
-
-            OrderLog::create([
-                'order_id' => $order->id,
-                'actor_id' => Auth::id(),
-                'action'   => OrderLog::ACTION_CREATE,
-                'status'   => Order::STATUS_PENDING,
-                'note'     => 'Order dibuat oleh customer dan menunggu designer mengambil pekerjaan.',
-            ]);
-
-            session()->forget([
-                'pemesanan_data',
-                'pemesanan_references',
-                'pemesanan_draft',
+            $payment = Payment::create([
+                'order_id'   => $order->id,
+                'type'       => $request->input('type', Payment::TYPE_ORDER),
+                'method'     => $request->method,
+                'amount'     => $request->amount,
+                'proof_url'  => $proofPath,
+                'status'     => Payment::STATUS_PENDING,
+                'paid_at'    => now(),
             ]);
 
             DB::commit();
 
-            return redirect()
-                ->route('customer.pemesanan.sukses', $order->id)
-                ->with('success', 'Pesanan berhasil dibuat. Menunggu verifikasi pembayaran.');
-
+            return redirect()->route('customer.pemesanan.sukses', $order->id)
+                ->with('success', 'Bukti pembayaran berhasil diunggah dan sedang menunggu verifikasi admin.');
         } catch (\Exception $e) {
             DB::rollBack();
 
             if ($proofPath) {
                 try {
-                    $this->r2Storage->deletePrivate($proofPath);
+                    $storage->deletePrivate($proofPath);
                 } catch (\Exception $ex) {
-                    Log::error('Gagal hapus bukti R2 saat rollback: ' . $ex->getMessage());
+                    Log::error('Gagal menghapus file R2 saat rollback pembayaran: ' . $ex->getMessage());
                 }
             }
 
             Log::error('Gagal memproses pembayaran: ' . $e->getMessage());
-            return back()
-                ->withErrors(['error' => 'Gagal memproses pembayaran: ' . $e->getMessage()])
-                ->withInput();
+            return back()->withErrors(['error' => 'Gagal memproses pembayaran: ' . $e->getMessage()])->withInput();
         }
     }
     /**
@@ -210,7 +121,9 @@ class PembayaranController extends Controller
     //     });
     // }
 
-    
+    /**
+     * Menampilkan riwayat pembayaran berdasarkan order.
+     */
     public function showByOrder(Order $order)
     {
         $payments = $order->payments()->latest()->get()->map(function ($payment) {
@@ -223,10 +136,17 @@ class PembayaranController extends Controller
         return view('customer.pemesanan.pembayaran', compact('order'));
     }
 
+    /**
+     * Menampilkan halaman status menunggu verifikasi pembayaran.
+     */
     public function success(Order $order)
     {
         if ($order->customer_id !== Auth::id()) {
             abort(403);
+        }
+
+        if (!$order->hasUploadedPayment()) {
+            return redirect()->route('customer.pemesanan.pembayaran', $order->id);
         }
 
         $payment = $order->payments()->latest()->first();

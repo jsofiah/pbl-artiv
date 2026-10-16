@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@layer utilities {
+    .line-clamp-4 {
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+@layer utilities {
+    .animate-canopy-horizontal {
+        animation: canopy-x var(--duration, 25s) infinite linear;
+    }
+    .animate-canopy-horizontal.reverse {
+        animation-direction: reverse;
+    }
+    .group:hover .group-hover\:paused {
+        animation-play-state: paused;
+    }
+}
+
+@keyframes canopy-x {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(-100% - var(--gap, 12px))); }
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(109, 40, 217, 0.3);
+    border-radius: 999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(109, 40, 217, 0.5);
+}
+
+.scrollbar-thin {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

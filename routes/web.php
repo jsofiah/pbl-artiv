@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\PemesananController;
 use App\Http\Controllers\Customer\PembayaranController;
+use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
+use App\Http\Controllers\Designer\PekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
 use App\Http\Controllers\Customer\ReviewController;
 use App\Http\Controllers\Customer\NotificationController;
 
@@ -26,25 +30,61 @@ Route::get('/', function () {
     };
 });
 
+Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+
+
 
 // ============ CUSTOMER (bisa diakses guest) ============
 Route::prefix('customer')->name('customer.')->group(function () {
     // Halaman publik
     Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
     Route::get('/katalog', [BerandaController::class, 'katalog'])->name('katalog');
+    Route::get('/katalog/{product}', [BerandaController::class, 'detailKatalog'])->name('katalog.detail');
 
     // Halaman wajib login + role customer
     Route::middleware(['auth', 'role:customer'])->group(function () {
         Route::get('/pesanan', [BerandaController::class, 'pesanan'])->name('pesanan');
+        Route::get('/pesanan/{order}', [PesananController::class, 'show'])->name('pesanan.show');
+        Route::post('/pesanan/{order}/pesan', [PesananController::class, 'kirimPesan'])->name('pesanan.kirimPesan');
+
+        Route::get(
+            '/pesanan/{order}/reference/{reference}/download',
+            [PesananController::class, 'downloadReference']
+        )
+            ->name('pesanan.reference.download');
+
+        Route::get(
+            '/pesanan/{order}/attachment/{attachment}/download',
+            [PesananController::class, 'downloadAttachment']
+        )
+            ->name('pesanan.attachment.download');
+        Route::get('/pesanan/{order}/reference/{reference}/preview',
+            [PesananController::class, 'previewReference'])
+            ->name('pesanan.reference.preview');
+        Route::get('/pesanan/{order}/attachment/{attachment}/preview',
+            [PesananController::class, 'previewAttachment'])
+            ->name('pesanan.attachment.preview');
+
+        Route::post('/pesanan/{order}/deliverable/{deliverable}/approve',
+            [PesananController::class, 'approveDeliverable'])
+            ->name('pesanan.deliverable.approve');
+        Route::post('/pesanan/{order}/deliverable/{deliverable}/revisi',
+            [PesananController::class, 'requestRevision'])
+            ->name('pesanan.deliverable.revisi');
+
+
         Route::get('/pemesanan/{product}', [PemesananController::class, 'create'])->name('pemesanan.create');
         Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');
         Route::get('/pemesanan/{product}/ringkasan', [PemesananController::class, 'showRingkasan'])->name('pemesanan.ringkasan.show');
         Route::post('/pemesanan/{product}/konfirmasi', [PemesananController::class, 'konfirmasi'])->name('pemesanan.konfirmasi');
         Route::post('/pemesanan/{product}/hapus-referensi', [PemesananController::class, 'hapusReferensi'])->name('pemesanan.hapus-referensi');
-        Route::get('/pemesanan/{product}/pembayaran', [PembayaranController::class, 'show'])
+        Route::get('/pemesanan/{order}/pembayaran', [PembayaranController::class, 'showByOrder'])
+            ->middleware(EnsureOrderCanBePaid::class)
             ->name('pemesanan.pembayaran');
 
-        Route::post('/pemesanan/{product}/pembayaran', [PembayaranController::class, 'store'])
+        Route::post('/pemesanan/{order}/pembayaran', [PembayaranController::class, 'store'])
+            ->middleware(EnsureOrderCanBePaid::class)
             ->name('pemesanan.pembayaran.store');
 
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
@@ -63,6 +103,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
     });
 });
 
+
 // ============ ROUTE WAJIB LOGIN ============
 Route::middleware('auth')->group(function () {
 
@@ -72,13 +113,34 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Designer
-    Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
+        Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/job-pool', [DashboardController::class, 'jobPool'])->name('job-pool');
-        Route::get('/pekerjaan-saya', [DashboardController::class, 'pekerjaanSaya'])->name('pekerjaan-saya');
+
+        // ============ PEKERJAAN ============
+        Route::get('/pekerjaan-saya', [PekerjaanController::class, 'index'])->name('pekerjaan.index');
+        Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
+        Route::post('/pekerjaan-saya/{order}/pesan', [PekerjaanController::class, 'kirimPesan'])->name('pekerjaan.kirimPesan');
+
+        Route::get('/pekerjaan-saya/{order}/attachment/{attachment}/download',
+            [PekerjaanController::class, 'downloadAttachment'])->name('pekerjaan.attachment.download');
+
+        Route::get('/pekerjaan-saya/{order}/reference/{reference}/download',
+            [PekerjaanController::class, 'downloadReference'])->name('pekerjaan.reference.download');
+
+        Route::get('/pekerjaan-saya/{order}/attachment/{attachment}/preview',
+            [PekerjaanController::class, 'previewAttachment'])->name('pekerjaan.attachment.preview');
+
+        Route::get('/pekerjaan-saya/{order}/reference/{reference}/preview',
+            [PekerjaanController::class, 'previewReference'])->name('pekerjaan.reference.preview');
+            
+        Route::post('/pekerjaan-saya/{order}/deliverable',
+            [PekerjaanController::class, 'kirimDeliverable'])
+            ->name('pekerjaan.kirimDeliverable');
         Route::get('/notifikasi', [DashboardController::class, 'notifikasi'])->name('notifikasi');
         Route::get('/riwayat', [DashboardController::class, 'riwayat'])->name('riwayat');
     });
+
 
     // Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
@@ -93,6 +155,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/laporan', [AdminDashboardController::class, 'laporan'])->name('laporan');
         Route::get('/pengaturan', [AdminDashboardController::class, 'pengaturan'])->name('pengaturan');
     });
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+        Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+        Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+    });
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

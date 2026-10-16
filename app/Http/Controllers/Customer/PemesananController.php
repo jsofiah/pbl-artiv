@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class PemesananController extends Controller
 {
@@ -215,7 +216,7 @@ class PemesananController extends Controller
                         'mime_type' => $file->getMimeType(),
                     ];
                 } catch (\Exception $e) {
-                    \Log::error('R2 upload failed: ' . $e->getMessage());
+                    Log::error('R2 upload failed: ' . $e->getMessage());
                 }
             }
         }
@@ -235,6 +236,7 @@ class PemesananController extends Controller
 
     public function showRingkasan(Product $product)
     {
+        
         $pemesananData = session('pemesanan_data');
         $references = session('pemesanan_references', []);
 
@@ -290,7 +292,28 @@ class PemesananController extends Controller
             ],
         ]);
 
-        return redirect()->route('customer.pemesanan.pembayaran', $product->id);
+        try{
+            foreach ($references as $ref) {
+                OrderReference::create([
+                    'order_id' => $order->id,
+                    'type' => $ref['type'],
+                    'file_url' => $ref['file_url'] ?? null,
+                    'file_name' => $ref['file_name'] ?? null,
+                    'file_size' => $ref['file_size'] ?? null,
+                    'mime_type' => $ref['mime_type'] ?? null,
+                    'external_url' => $ref['external_url'] ?? null,
+                ]);
+            }
+
+            session()->forget(['pemesanan_data', 'pemesanan_references']);
+            DB::commit();
+
+            return redirect()->route('customer.pemesanan.pembayaran', $order->id);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Gagal memproses: ' . $e->getMessage()]);
+        }
     }
 
     public function hapusReferensi(Request $request, Product $product)
@@ -310,7 +333,7 @@ class PemesananController extends Controller
                     $storage = app(R2StorageService::class);
                     $storage->deletePrivate($ref['file_url']);
                 } catch (\Exception $e) {
-                    \Log::error('Gagal hapus file R2: ' . $e->getMessage());
+                    Log::error('Gagal hapus file R2: ' . $e->getMessage());
                 }
             }
 
