@@ -16,9 +16,6 @@ use Illuminate\View\View;
 
 class JobPoolController extends Controller
 {
-    /**
-     * Daftar Job Pool — order yang belum diambil designer.
-     */
     public function index(Request $request): View
     {
         $q        = trim((string) $request->query('q', ''));
@@ -30,7 +27,6 @@ class JobPoolController extends Controller
             ->whereIn('status', ['pending', 'waiting_designer'])
             ->with(['product', 'productTier', 'customer', 'references']);
 
-        // Search
         if ($q !== '') {
             $query->where(function ($sub) use ($q) {
                 $sub->where('order_code', 'ilike', "%{$q}%")
@@ -38,12 +34,10 @@ class JobPoolController extends Controller
             });
         }
 
-        // Filter Kategori
         if ($kategori && $kategori !== 'semua') {
             $query->whereHas('product', fn($p) => $p->where('name', 'ilike', "%{$kategori}%"));
         }
 
-        // Sort
         match ($urutkan) {
             'deadline_asc'  => $query->orderBy('deadline', 'asc'),
             'deadline_desc' => $query->orderBy('deadline', 'desc'),
@@ -74,9 +68,6 @@ class JobPoolController extends Controller
         ]);
     }
 
-    /**
-     * Detail Job.
-     */
     public function show(string $order): View
     {
         $order = Order::with([
@@ -93,9 +84,6 @@ class JobPoolController extends Controller
         return view('designer.detail-job', compact('order'));
     }
 
-    /**
-     * Ambil Order + Konfirmasi.
-     */
     public function ambil(Request $request, string $order)
     {
         $orderModel = Order::whereNull('designer_id')
@@ -143,9 +131,6 @@ class JobPoolController extends Controller
         }
     }
 
-    /**
-     * Halaman Sukses.
-     */
     public function sukses(string $order): View
     {
         $order = Order::with(['customer', 'product', 'productTier', 'expressFee'])
@@ -191,7 +176,6 @@ class JobPoolController extends Controller
             return response()->json(['error' => 'Preview hanya untuk gambar.'], 404);
         }
 
-        // Generate temporary URL dari R2
         $path = ltrim($ref->file_url, '/');
         if (preg_match('#^https?://[^/]+/(.+)$#', $path, $m)) {
             $path = $m[1];
@@ -215,9 +199,6 @@ class JobPoolController extends Controller
         ]);
     }
 
-    /**
-     * Stream file dari R2.
-     */
     private function streamFileFromR2(string $path, string $filename)
     {
         $response = Http::withOptions([
