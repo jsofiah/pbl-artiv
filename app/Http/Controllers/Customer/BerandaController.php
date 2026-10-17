@@ -125,13 +125,10 @@ class BerandaController extends Controller
         $allProducts = $query->get();
 
         match ($request->sort) {
-            'cheapest' => $allProducts = $allProducts->sortBy(function ($product) {
-                return $product->tiers->min('price') ?? PHP_INT_MAX;
-            })->values(),
-
-            'expensive' => $allProducts = $allProducts->sortByDesc(function ($product) {
-                return $product->tiers->min('price') ?? 0;
-            })->values(),
+            'cheapest', 'expensive' => $allProducts = $allProducts->sortBy(function ($product) {
+                $minTier = $product->tiers->min('price');
+                return $minTier !== null ? (float) $minTier : (float) ($product->price ?? PHP_INT_MAX);
+            }, descending: $request->sort === 'expensive')->values(),
 
             'popular' => $allProducts = $allProducts->sortByDesc(function ($product) {
                 return $product->orders()
