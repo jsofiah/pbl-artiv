@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\ExpressFee;
 use App\Models\Order;
+use App\Models\OrderLog;
 use App\Models\OrderReference;
 use App\Models\Product;
 use App\Models\ProductTier;
@@ -282,28 +283,59 @@ class PemesananController extends Controller
                 ->withErrors(['error' => 'Data pemesanan tidak sesuai.']);
         }
 
-        session([
-            'pemesanan_draft' => [
-                'order_code' => 'ARTIV-' . strtoupper(Str::random(8)),
-                'product_id' => $product->id,
-                'data'       => $pemesananData,
-                'references' => $references,
-                'created_at' => now()->toDateTimeString(),
-            ],
-        ]);
+        $storage = app(R2StorageService::class);
+        $movedReferences = [];
 
-        try{
-            foreach ($references as $ref) {
+        foreach ($references as $ref) {
+            if (($ref['type'] ?? null) === 'file' && !empty($ref['file_url'])) {
+                $newPath = str_replace('temp/references/', 'references/', $ref['file_url']);
+                if ($storage->movePrivate($ref['file_url'], $newPath)) {
+                    $ref['file_url'] = $newPath;
+                }
+            }
+            $movedReferences[] = $ref;
+        }
+
+        DB::beginTransaction();
+        try {
+            // ✅ Buat Order (TEMUAN 4: status pending)
+            $order = Order::create([
+                'order_code'      => 'ARTIV-' . strtoupper(Str::random(8)),
+                'customer_id'     => Auth::id(),
+                'designer_id'     => null,
+                'product_id'      => $product->id,
+                'product_tier_id' => $pemesananData['product_tier_id'],
+                'unit_price'      => $pemesananData['unit_price'],
+                'quantity'        => $pemesananData['quantity'],
+                'deadline'        => $pemesananData['deadline'],
+                'is_express'      => $pemesananData['is_express'],
+                'express_fee_id'  => $pemesananData['express_fee_id'],
+                'express_fee'     => $pemesananData['express_fee'],
+                'brief_note'      => $pemesananData['brief_note'],
+                'total_price'     => $pemesananData['total_price'],
+                'status'          => Order::STATUS_PENDING,   // ✅ TEMUAN 4
+            ]);
+
+            // ✅ Buat OrderReference (pakai $movedReferences yang sudah dipindah)
+            foreach ($movedReferences as $ref) {
                 OrderReference::create([
-                    'order_id' => $order->id,
-                    'type' => $ref['type'],
-                    'file_url' => $ref['file_url'] ?? null,
-                    'file_name' => $ref['file_name'] ?? null,
-                    'file_size' => $ref['file_size'] ?? null,
-                    'mime_type' => $ref['mime_type'] ?? null,
+                    'order_id'     => $order->id,              // ✅ sekarang aman
+                    'type'         => $ref['type'],
+                    'file_url'     => $ref['file_url'] ?? null, // ✅ path baru references/
+                    'file_name'    => $ref['file_name'] ?? null,
+                    'file_size'    => $ref['file_size'] ?? null,
+                    'mime_type'    => $ref['mime_type'] ?? null,
                     'external_url' => $ref['external_url'] ?? null,
                 ]);
             }
+
+             OrderLog::create([
+                'order_id' => $order->id,
+                'actor_id' => Auth::id(),
+                'action'   => OrderLog::ACTION_CREATE,
+                'status'   => Order::STATUS_PENDING,
+                'note'     => 'Order dibuat oleh customer dan menunggu designer mengambil pekerjaan.',
+            ]);
 
             session()->forget(['pemesanan_data', 'pemesanan_references']);
             DB::commit();

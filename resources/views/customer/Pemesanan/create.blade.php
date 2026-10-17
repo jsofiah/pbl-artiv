@@ -1,24 +1,21 @@
-create
-
-
 @extends('layouts.customer')
 
 @section('title', 'Form Pemesanan')
 
 @section('content')
 <div class="max-w-5xl mx-auto py-8">
-        <div x-data="pemesananForm(
-            {{ Js::from($tiers) }},
-            {{ Js::from($expressFeeMap) }},
-            {
-                selectedTier: '{{ old('product_tier_id', $pemesananData['product_tier_id'] ?? $defaultTier?->id) }}',
-                quantity: {{ old('quantity', $pemesananData['quantity'] ?? 1) }},
-                deadlineOption: '{{ old('deadline_option', ($pemesananData['is_express'] ?? false) ? 'express' : 'default') }}',
-                targetDeadline: '{{ old('target_deadline', isset($pemesananData['deadline']) ? \Carbon\Carbon::parse($pemesananData['deadline'])->format('Y-m-d') : now()->addDays(2)->format('Y-m-d')) }}',
-                briefNote: '{{ old('brief_note', $pemesananData['brief_note'] ?? '') }}',
-                productPrice: {{ $product->price ?? 0 }}
-            }
-        )">
+        <div x-data="pemesananForm" x-init="setup(@js([
+            'tiers' => $tiers,
+            'expressFees' => $expressFeeMap,
+            'hasTiers' => $hasTiers,
+            'productPrice' => (float) ($product->price ?? 0),
+            'productName' => $product->name,
+            'selectedTier' => old('product_tier_id', $pemesananData['product_tier_id'] ?? $defaultTier?->id),
+            'quantity' => (int) old('quantity', $pemesananData['quantity'] ?? 1),
+            'deadlineOption' => old('deadline_option', ($pemesananData['is_express'] ?? false) ? 'express' : 'default'),
+            'targetDeadline' => old('target_deadline', isset($pemesananData['deadline']) ? \Carbon\Carbon::parse($pemesananData['deadline'])->format('Y-m-d') : now()->addDays(2)->format('Y-m-d')),
+            'briefNote' => old('brief_note', $pemesananData['brief_note'] ?? ''),
+        ]))">
 
     {{-- Header --}}
     <div class="mb-8">
