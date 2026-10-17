@@ -35,6 +35,16 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    { name: 'setup', testMatch: '**/auth-setup.spec.js'},
+    
+    // {
+    //   name: 'chromium',
+    //   use: { ...devices['Desktop Chrome'],
+    //     storageState: 'e2e/.auth/customer.json'
+    //   },
+    //   dependencies: ['setup'],
+    // },
+
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
