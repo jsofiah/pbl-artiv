@@ -298,7 +298,6 @@ class PemesananController extends Controller
 
         DB::beginTransaction();
         try {
-            // ✅ Buat Order (TEMUAN 4: status pending)
             $order = Order::create([
                 'order_code'      => 'ARTIV-' . strtoupper(Str::random(8)),
                 'customer_id'     => Auth::id(),
@@ -313,15 +312,14 @@ class PemesananController extends Controller
                 'express_fee'     => $pemesananData['express_fee'],
                 'brief_note'      => $pemesananData['brief_note'],
                 'total_price'     => $pemesananData['total_price'],
-                'status'          => Order::STATUS_PENDING,   // ✅ TEMUAN 4
+                'status'          => Order::STATUS_PENDING,
             ]);
 
-            // ✅ Buat OrderReference (pakai $movedReferences yang sudah dipindah)
             foreach ($movedReferences as $ref) {
                 OrderReference::create([
-                    'order_id'     => $order->id,              // ✅ sekarang aman
+                    'order_id'     => $order->id,
                     'type'         => $ref['type'],
-                    'file_url'     => $ref['file_url'] ?? null, // ✅ path baru references/
+                    'file_url'     => $ref['file_url'] ?? null,
                     'file_name'    => $ref['file_name'] ?? null,
                     'file_size'    => $ref['file_size'] ?? null,
                     'mime_type'    => $ref['mime_type'] ?? null,
