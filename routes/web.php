@@ -91,7 +91,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
             ->name('pemesanan.sukses');
 
                 // Review & rating
-        Route::prefix('/pesanan/{order}/review')->name('pesanan.review.')->group(function () {
+        Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
             Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
@@ -115,6 +115,10 @@ Route::middleware('auth')->group(function () {
     // Designer
         Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        
+        Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])
+            ->name('availability.toggle');
+            
         Route::get('/job-pool', [DashboardController::class, 'jobPool'])->name('job-pool');
 
         // ============ PEKERJAAN ============
