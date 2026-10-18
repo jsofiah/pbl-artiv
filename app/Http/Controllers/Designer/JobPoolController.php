@@ -91,10 +91,10 @@ class JobPoolController extends Controller
             ->findOrFail($order);
 
         if ($orderModel->deadline && $orderModel->deadline->isPast()) {
-        return back()->withErrors([
-            'error' => 'Order ini sudah lewat deadline dan tidak bisa diambil.',
-        ]);
-    }
+            return back()->withErrors([
+                'error' => 'Order ini sudah lewat deadline dan tidak bisa diambil.',
+            ]);
+        }
 
         DB::beginTransaction();
         try {
@@ -124,7 +124,6 @@ class JobPoolController extends Controller
             return redirect()
                 ->route('designer.job-pool.sukses', $orderModel->id)
                 ->with('status', 'Order berhasil diambil.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Gagal mengambil order: ' . $e->getMessage()]);
@@ -181,17 +180,18 @@ class JobPoolController extends Controller
             $path = $m[1];
         }
 
-        $r2Url = \Storage::disk('r2')->temporaryUrl($path, now()->addMinutes(15));
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $r2Disk */
+        $r2Disk = Storage::disk('r2');
+        $r2Url  = $r2Disk->temporaryUrl($path, now()->addMinutes(15));
 
-        // ⬇️ FETCH DARI SERVER + RETURN BASE64
-        $response = \Illuminate\Support\Facades\Http::get($r2Url);
+        $response = Http::get($r2Url);
 
         if ($response->failed()) {
             return response()->json(['error' => 'Gagal fetch file.'], 404);
         }
 
         $base64 = base64_encode($response->body());
-        $mime = $ref->mime_type ?? 'image/jpeg';
+        $mime   = $ref->mime_type ?? 'image/jpeg';
 
         return response()->json([
             'url'  => "data:{$mime};base64,{$base64}",

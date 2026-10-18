@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="utf-8">
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
@@ -16,9 +17,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        body { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
+        [x-cloak] {
+            display: none !important;
+        }
+
+        body {
+            font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+        }
     </style>
 </head>
+
 <body class="bg-[#F3F1FA] antialiased">
 
     <div class="flex h-screen overflow-hidden">
@@ -30,7 +38,8 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
             {{-- Topbar --}}
-            <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-30">
+            <header
+                class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-30">
                 <h1 class="text-lg font-semibold text-gray-900">
                     @yield('title', 'Dashboard')
                 </h1>
@@ -53,4 +62,5 @@
     @stack('scripts')
 
 </body>
+
 </html>
