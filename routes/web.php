@@ -9,6 +9,7 @@ use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
 use App\Http\Controllers\Designer\PekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\MonitoringController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
@@ -59,18 +60,26 @@ Route::prefix('customer')->name('customer.')->group(function () {
             [PesananController::class, 'downloadAttachment']
         )
             ->name('pesanan.attachment.download');
-        Route::get('/pesanan/{order}/reference/{reference}/preview',
-            [PesananController::class, 'previewReference'])
+        Route::get(
+            '/pesanan/{order}/reference/{reference}/preview',
+            [PesananController::class, 'previewReference']
+        )
             ->name('pesanan.reference.preview');
-        Route::get('/pesanan/{order}/attachment/{attachment}/preview',
-            [PesananController::class, 'previewAttachment'])
+        Route::get(
+            '/pesanan/{order}/attachment/{attachment}/preview',
+            [PesananController::class, 'previewAttachment']
+        )
             ->name('pesanan.attachment.preview');
 
-        Route::post('/pesanan/{order}/deliverable/{deliverable}/approve',
-            [PesananController::class, 'approveDeliverable'])
+        Route::post(
+            '/pesanan/{order}/deliverable/{deliverable}/approve',
+            [PesananController::class, 'approveDeliverable']
+        )
             ->name('pesanan.deliverable.approve');
-        Route::post('/pesanan/{order}/deliverable/{deliverable}/revisi',
-            [PesananController::class, 'requestRevision'])
+        Route::post(
+            '/pesanan/{order}/deliverable/{deliverable}/revisi',
+            [PesananController::class, 'requestRevision']
+        )
             ->name('pesanan.deliverable.revisi');
 
 
@@ -90,7 +99,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
             ->name('pemesanan.sukses');
 
-                // Review & rating
+        // Review & rating
         Route::prefix('/pesanan/{order}/review')->name('pesanan.review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
@@ -113,7 +122,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Designer
-        Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
+    Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/job-pool', [DashboardController::class, 'jobPool'])->name('job-pool');
 
@@ -122,20 +131,30 @@ Route::middleware('auth')->group(function () {
         Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
         Route::post('/pekerjaan-saya/{order}/pesan', [PekerjaanController::class, 'kirimPesan'])->name('pekerjaan.kirimPesan');
 
-        Route::get('/pekerjaan-saya/{order}/attachment/{attachment}/download',
-            [PekerjaanController::class, 'downloadAttachment'])->name('pekerjaan.attachment.download');
+        Route::get(
+            '/pekerjaan-saya/{order}/attachment/{attachment}/download',
+            [PekerjaanController::class, 'downloadAttachment']
+        )->name('pekerjaan.attachment.download');
 
-        Route::get('/pekerjaan-saya/{order}/reference/{reference}/download',
-            [PekerjaanController::class, 'downloadReference'])->name('pekerjaan.reference.download');
+        Route::get(
+            '/pekerjaan-saya/{order}/reference/{reference}/download',
+            [PekerjaanController::class, 'downloadReference']
+        )->name('pekerjaan.reference.download');
 
-        Route::get('/pekerjaan-saya/{order}/attachment/{attachment}/preview',
-            [PekerjaanController::class, 'previewAttachment'])->name('pekerjaan.attachment.preview');
+        Route::get(
+            '/pekerjaan-saya/{order}/attachment/{attachment}/preview',
+            [PekerjaanController::class, 'previewAttachment']
+        )->name('pekerjaan.attachment.preview');
 
-        Route::get('/pekerjaan-saya/{order}/reference/{reference}/preview',
-            [PekerjaanController::class, 'previewReference'])->name('pekerjaan.reference.preview');
-            
-        Route::post('/pekerjaan-saya/{order}/deliverable',
-            [PekerjaanController::class, 'kirimDeliverable'])
+        Route::get(
+            '/pekerjaan-saya/{order}/reference/{reference}/preview',
+            [PekerjaanController::class, 'previewReference']
+        )->name('pekerjaan.reference.preview');
+
+        Route::post(
+            '/pekerjaan-saya/{order}/deliverable',
+            [PekerjaanController::class, 'kirimDeliverable']
+        )
             ->name('pekerjaan.kirimDeliverable');
         Route::get('/notifikasi', [DashboardController::class, 'notifikasi'])->name('notifikasi');
         Route::get('/riwayat', [DashboardController::class, 'riwayat'])->name('riwayat');
@@ -154,6 +173,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/monitoring', [AdminDashboardController::class, 'monitoring'])->name('monitoring');
         Route::get('/laporan', [AdminDashboardController::class, 'laporan'])->name('laporan');
         Route::get('/pengaturan', [AdminDashboardController::class, 'pengaturan'])->name('pengaturan');
+        Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+        Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
+        Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
     });
 
     Route::middleware('auth')->group(function () {
