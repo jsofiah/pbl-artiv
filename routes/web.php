@@ -8,6 +8,7 @@ use App\Http\Controllers\Customer\PembayaranController;
 use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
 use App\Http\Controllers\Designer\PekerjaanController;
+use App\Http\Controllers\Designer\RiwayatPekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -138,7 +139,12 @@ Route::middleware('auth')->group(function () {
             [PekerjaanController::class, 'kirimDeliverable'])
             ->name('pekerjaan.kirimDeliverable');
         Route::get('/notifikasi', [DashboardController::class, 'notifikasi'])->name('notifikasi');
-        Route::get('/riwayat', [DashboardController::class, 'riwayat'])->name('riwayat');
+        Route::get('/riwayat', [RiwayatPekerjaanController::class, 'index'])->name('riwayat');
+        Route::get('/riwayat/ekspor-csv', [RiwayatPekerjaanController::class, 'exportCsv'])->name('riwayat.csv');
+        Route::get('/riwayat/cetak', [RiwayatPekerjaanController::class, 'cetak'])->name('riwayat.cetak');
+        Route::get('/riwayat/{order}', [RiwayatPekerjaanController::class, 'show'])->whereUuid('order')->name('riwayat.show');
+        Route::get('/riwayat/{order}/hasil/{attachment}/download', [RiwayatPekerjaanController::class, 'downloadHasil'])
+            ->whereUuid(['order', 'attachment'])->name('riwayat.hasil.download');
     });
 
 
