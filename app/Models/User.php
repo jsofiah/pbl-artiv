@@ -151,4 +151,9 @@ class User extends Authenticatable
     {
         return $this->role === self::ROLE_ADMIN;
     }
+
+    public function designerStat(): HasOne
+    {
+        return $this->hasOne(DesignerStat::class, 'designer_id');
+    }
 }
