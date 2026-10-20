@@ -32,7 +32,7 @@ class ReviewController extends Controller
         $this->authorizeOrder($order);
 
         if ($order->review) {
-            return redirect()->route('customer.pesanan.review.sukses', $order);
+            return redirect()->route('customer.review.sukses', $order);
         }
 
         $data = $request->validate([

@@ -5,6 +5,8 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
+import Chart from 'chart.js/auto';
+window.Chart = Chart;
 
 window.Alpine = Alpine;
 window.Pusher = Pusher;
