@@ -43,6 +43,7 @@ class Notification extends Model
     public const TYPE_DELIVERABLE_SENT = 'deliverable_sent';
     public const TYPE_ORDER_COMPLETED = 'order_completed';
     public const TYPE_SUSPENSION = 'suspension';
+    public const TYPE_NEW_CHAT = 'new_chat';
 
     // ==================== Relasi ====================
 

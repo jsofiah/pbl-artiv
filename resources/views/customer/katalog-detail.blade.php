@@ -19,15 +19,30 @@
         $minPrice = $product->tiers->min('price') ?? $product->price ?? 0;
 
         // ============ GALERI GAMBAR ============
-        // Karena belum ada tabel product_images, kita pakai array manual.
-        // Nanti kalau ada tabel galeri, tinggal ganti dengan:
-        // $images = $product->images->pluck('url')->toArray();
-        $images = array_filter([
-            $mainThumb,   //
-            // 'https://...',
-            // 'https://...',
-        ]);
-        $images = array_values($images); // re-index
+        // Gambar utama (thumbnail produk) + thumbnail tiap tier.
+        // Index 0 = produk, index 1..n = tier.
+        $images = [];
+
+        if ($mainThumb) {
+            $images[] = [
+                'url'   => $mainThumb,
+                'label' => 'Utama',
+                'tier'  => null,
+            ];
+        }
+
+        foreach ($product->tiers as $tier) {
+            $tierThumb = \App\Helpers\R2Helper::url($tier->thumbnail_url);
+            if ($tierThumb) {
+                $images[] = [
+                    'url'   => $tierThumb,
+                    'label' => $tier->name,
+                    'tier'  => $tier->id,
+                ];
+            }
+        }
+
+        $hasImages = count($images) > 0;
     @endphp
 
     {{-- Hero Product --}}
@@ -38,20 +53,19 @@
             <div>
                 {{-- Gambar Utama --}}
                 <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br from-violet-100 to-violet-200 mb-4 relative">
-                    @if (count($images) > 0)
+                    @if ($hasImages)
                         @foreach ($images as $index => $img)
                             <img x-show="activeImage === {{ $index }}" x-transition.opacity
-                                 src="{{ $img }}" alt="{{ $product->name }}"
+                                 src="{{ $img['url'] }}" alt="{{ $product->name }} - {{ $img['label'] }}"
                                  class="w-full h-full object-cover absolute inset-0"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                             <div x-show="activeImage === {{ $index }}" class="w-full h-full hidden items-center justify-center absolute inset-0 bg-gradient-to-br from-violet-100 to-violet-200">
                                 <span class="text-7xl font-extrabold text-[#6D28D9]/40">
-                                    {{ strtoupper(substr($product->name, 0, 1)) }}
+                                    {{ strtoupper(substr($img['label'], 0, 1)) }}
                                 </span>
                             </div>
                         @endforeach
                     @else
-                        {{-- Placeholder kalau tidak ada gambar --}}
                         <div class="w-full h-full flex items-center justify-center">
                             <span class="text-7xl font-extrabold text-[#6D28D9]/40">
                                 {{ strtoupper(substr($product->name, 0, 1)) }}
@@ -65,9 +79,9 @@
                         @foreach ($images as $index => $img)
                             <button type="button"
                                     @click="activeImage = {{ $index }}"
-                                    class="aspect-square rounded-xl overflow-hidden border-2 transition cursor-pointer bg-gradient-to-br from-violet-50 to-violet-100"
+                                    class="aspect-square rounded-xl overflow-hidden border-2 transition cursor-pointer bg-gradient-to-br from-violet-50 to-violet-100 relative"
                                     :class="activeImage === {{ $index }} ? 'border-[#6D28D9] ring-2 ring-[#6D28D9]/20' : 'border-transparent hover:border-[#6D28D9]/40'">
-                                <img src="{{ $img }}" alt="Preview {{ $index + 1 }}"
+                                <img src="{{ $img['url'] }}" alt="Preview {{ $img['label'] }}"
                                         class="w-full h-full object-cover"
                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                 <div class="w-full h-full hidden items-center justify-center">
@@ -75,6 +89,9 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                     </svg>
                                 </div>
+                                <span class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] font-semibold text-center py-0.5 truncate px-1">
+                                    {{ $img['label'] }}
+                                </span>
                             </button>
                         @endforeach
                     </div>
@@ -95,9 +112,6 @@
                     <span class="text-3xl font-extrabold text-[#6D28D9]">
                         Rp {{ number_format($minPrice, 0, ',', '.') }}
                     </span>
-                    <span class="px-2.5 py-1 rounded-md bg-violet-50 text-[#6D28D9] text-xs font-semibold">
-                        <!-- 🕐 Estimasi: 3 Hari -->
-                    </span>
                 </div>
 
                 <p class="text-slate-600 leading-relaxed mb-6">
@@ -113,19 +127,19 @@
                             <svg class="w-5 h-5 text-[#6D28D9] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span>100% Hak Cipta Penuh & Desain Orisinal Eksklusif</span>
+                            <span>Desain Orisinal & Hak Pakai Penuh</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <svg class="w-5 h-5 text-[#6D28D9] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span>Master File Vektor Komplit (AI, EPS, SVG, PNG High-Res)</span>
+                            <span>File Siap Pakai (PNG/JPG High-Res)</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <svg class="w-5 h-5 text-[#6D28D9] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span>Garansi Revisi Aktif & Konsultasi Pra-Cetak Gratis</span>
+                            <span>Garansi Hingga 3x Revisi</span>
                         </li>
                     </ul>
                 </div>
@@ -133,19 +147,22 @@
         </div>
     </div>
 
-    <div class="mb-10">
-        <h2 class="flex items-center gap-3 text-2xl font-extrabold text-slate-900 mb-6">
-            <span class="w-1.5 h-7 bg-[#6D28D9] rounded-full"></span>
-            Paket yang Ditawarkan
-        </h2>
+    @if ($product->tiers->isNotEmpty())
+        <div class="mb-10">
+            <h2 class="flex items-center gap-3 text-2xl font-extrabold text-slate-900 mb-6">
+                <span class="w-1.5 h-7 bg-[#6D28D9] rounded-full"></span>
+                Level Desain
+            </h2>
 
-        @if ($product->tiers->isNotEmpty())
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 @foreach ($product->tiers as $tier)
                     @php
                         $isPopular = $loop->index === 1;
+                        $tierImageIndex = collect($images)->search(fn($img) => $img['tier'] === $tier->id);
+                        if ($tierImageIndex === false) $tierImageIndex = 0;
                     @endphp
-                    <div class="relative bg-white rounded-2xl p-6 shadow-sm border-2 transition
+                    <div @click="activeImage = {{ $tierImageIndex }}"
+                         class="relative bg-white rounded-2xl p-6 shadow-sm border-2 transition cursor-pointer
                                 {{ $isPopular ? 'border-[#6D28D9]' : 'border-slate-100 hover:border-[#6D28D9]/50' }}">
 
                         @if ($isPopular)
@@ -181,21 +198,8 @@
                     </div>
                 @endforeach
             </div>
-        @else
-            {{-- EMPTY STATE: kalau tidak ada paket --}}
-            <div class="bg-white rounded-2xl p-12 text-center shadow-sm border border-slate-100">
-                <div class="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-[#6D28D9]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                    </svg>
-                </div>
-                <p class="font-bold text-slate-900 mb-1">Belum Ada Paket Tersedia</p>
-                <p class="text-sm text-slate-500">
-                    Paket untuk jasa ini sedang dalam proses penambahan. Silakan cek kembali nanti atau hubungi admin.
-                </p>
-            </div>
-        @endif
-    </div>
+        </div>
+    @endif
 
     <div class="mb-10">
         <h2 class="flex items-center gap-3 text-2xl font-extrabold text-slate-900 mb-6">
@@ -212,7 +216,7 @@
                 </div>
                 <p class="font-bold text-slate-900 mb-2">Estimasi Pengerjaan</p>
                 <p class="text-sm text-slate-500 leading-relaxed">
-                    Pengerjaan dimulai setelah pembayaran dan pesanan diterima desainer, dengan estimasi 2–3 hari kerja.
+                    Pengerjaan dimulai setelah pembayaran dan pesanan diterima desainer, dengan estimasi 7 hari kerja.
                 </p>
             </div>
 
@@ -224,7 +228,7 @@
                 </div>
                 <p class="font-bold text-slate-900 mb-2">Revisi & Brief</p>
                 <p class="text-sm text-slate-500 leading-relaxed">
-                    Revisi dilakukan berdasarkan brief dan kebutuhan yang disampaikan saat pemesanan. Jumlah revisi mengikuti paket yang dipilih.
+                    Revisi dilakukan sesuai brief dan kebutuhan yang disampaikan saat pemesanan. Jumlah revisi maksimal 3 kali. Jika hasil masih belum sesuai, pelanggan dapat menambah biaya untuk melanjutkan 1 kali revisi tambahan.
                 </p>
             </div>
 

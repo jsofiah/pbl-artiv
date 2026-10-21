@@ -2,16 +2,14 @@
     $menus = [
         ['label' => 'Dashboard',          'route' => 'designer.dashboard',        'icon' => 'grid'],
         ['label' => 'Job Pool',           'route' => 'designer.job-pool',         'icon' => 'briefcase'],
-        ['label' => 'Pekerjaan Saya',     'route' => 'designer.pekerjaan-saya',   'icon' => 'check'],
+        ['label' => 'Pekerjaan Saya',     'route' => 'designer.pekerjaan.index',   'icon' => 'check'],
         ['label' => 'Riwayat Pekerjaan',  'route' => 'designer.riwayat',          'icon' => 'history'],
     ];
 @endphp
 
-<aside class="flex h-screen w-64 flex-col justify-between bg-[#745BB8]">
+<aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col justify-between bg-[#745BB8]">
 
     <div>
-
-        {{-- Logo --}}
         <div class="flex items-center gap-3 px-6 py-5 border-b border-white/10">
             <img src="{{ asset('assets/logo-putih.png') }}" alt="Artiv" class="h-8 w-auto">
             <div class="leading-tight">
@@ -26,7 +24,10 @@
 
             <ul class="space-y-1">
                 @foreach ($menus as $menu)
-                    @php $active = request()->routeIs($menu['route']); @endphp
+                    @php
+                        $active = request()->routeIs($menu['route'])
+                            || request()->routeIs($menu['route'] . '.*');
+                    @endphp
                     <li>
                         <a href="{{ route($menu['route']) }}"
                            class="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors
@@ -34,12 +35,10 @@
                                         ? 'bg-white/20 text-white font-semibold'
                                         : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
 
-                            {{-- Indikator aktif (strip kuning) --}}
                             @if ($active)
                                 <span class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-[#D5FC55]"></span>
                             @endif
 
-                            {{-- Ikon --}}
                             <span class="flex h-5 w-5 items-center justify-center {{ $active ? 'text-[#D5FC55]' : 'text-white/60 group-hover:text-white' }}">
                                 @switch($menu['icon'])
                                     @case('grid')
@@ -81,7 +80,6 @@
 
     </div>
 
-    {{-- User & Logout --}}
     <div class="border-t border-white/10 p-4">
 
         <div class="mb-3 flex items-center gap-3 px-2">
@@ -106,6 +104,5 @@
                 Keluar
             </button>
         </form>
-
     </div>
 </aside>

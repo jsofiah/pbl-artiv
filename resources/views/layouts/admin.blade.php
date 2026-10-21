@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -13,9 +19,27 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        body { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
+/* Sembunyikan scrollbar vertikal halaman di Brave/Chromium */
+        html, body, main, div {
+            -ms-overflow-style: none !important; /* IE/Edge */
+            scrollbar-width: none !important;    /* Firefox */
+        }
+        
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar,
+        main::-webkit-scrollbar,
+        div::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        body {
+            font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+        }
     </style>
 </head>
+
 <body class="bg-[#F3F1FA] antialiased">
 
     <div class="flex min-h-screen">
@@ -27,7 +51,8 @@
         <div class="flex-1 flex flex-col min-w-0">
 
             {{-- Topbar --}}
-            <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-30">
+            <header
+                class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-30">
                 <h1 class="text-lg font-semibold text-gray-900">
                     @yield('title', 'Dashboard')
                 </h1>
@@ -49,4 +74,5 @@
     @stack('scripts')
 
 </body>
+
 </html>

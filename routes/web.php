@@ -4,14 +4,19 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\PemesananController;
-use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Customer\PembayaranController;
+use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
+use App\Http\Controllers\Designer\JobPoolController;
+use App\Http\Controllers\Designer\PekerjaanController;
+use App\Http\Controllers\Designer\RiwayatPekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\MonitoringController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
-
+use App\Http\Controllers\Customer\ReviewController;
+use App\Http\Controllers\Customer\NotificationController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -44,7 +49,6 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::middleware(['auth', 'role:customer'])->group(function () {
         Route::get('/pesanan', [BerandaController::class, 'pesanan'])->name('pesanan');
         Route::get('/pesanan/{order}', [PesananController::class, 'show'])->name('pesanan.show');
-        Route::get('/pesanan/{order}', [PesananController::class, 'show'])->name('pesanan.show');
         Route::post('/pesanan/{order}/pesan', [PesananController::class, 'kirimPesan'])->name('pesanan.kirimPesan');
 
         Route::get(
@@ -58,6 +62,28 @@ Route::prefix('customer')->name('customer.')->group(function () {
             [PesananController::class, 'downloadAttachment']
         )
             ->name('pesanan.attachment.download');
+        Route::get(
+            '/pesanan/{order}/reference/{reference}/preview',
+            [PesananController::class, 'previewReference']
+        )
+            ->name('pesanan.reference.preview');
+        Route::get(
+            '/pesanan/{order}/attachment/{attachment}/preview',
+            [PesananController::class, 'previewAttachment']
+        )
+            ->name('pesanan.attachment.preview');
+
+        Route::post(
+            '/pesanan/{order}/deliverable/{deliverable}/approve',
+            [PesananController::class, 'approveDeliverable']
+        )
+            ->name('pesanan.deliverable.approve');
+        Route::post(
+            '/pesanan/{order}/deliverable/{deliverable}/revisi',
+            [PesananController::class, 'requestRevision']
+        )
+            ->name('pesanan.deliverable.revisi');
+
 
         Route::get('/pemesanan/{product}', [PemesananController::class, 'create'])->name('pemesanan.create');
         Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');
@@ -74,8 +100,20 @@ Route::prefix('customer')->name('customer.')->group(function () {
 
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
             ->name('pemesanan.sukses');
+
+        // Review & rating
+        Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
+            Route::get('/', [ReviewController::class, 'create'])->name('create');
+            Route::post('/', [ReviewController::class, 'store'])->name('store');
+            Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
+        });
+
+        // Notifikasi
+        Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
+        Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
     });
 });
+
 
 // ============ ROUTE WAJIB LOGIN ============
 Route::middleware('auth')->group(function () {
@@ -91,11 +129,56 @@ Route::middleware('auth')->group(function () {
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        Route::get('/job-pool', [DashboardController::class, 'jobPool'])->name('job-pool');
-        Route::get('/pekerjaan-saya', [DashboardController::class, 'pekerjaanSaya'])->name('pekerjaan-saya');
+        
+        Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])
+            ->name('availability.toggle');
+            
+        // ============ JOB POOL ============
+        Route::get('/job-pool', [JobPoolController::class, 'index'])->name('job-pool');
+        Route::get('/job-pool/{order}', [JobPoolController::class, 'show'])->name('job-pool.show');
+        Route::post('/job-pool/{order}/ambil', [JobPoolController::class, 'ambil'])->name('job-pool.ambil');
+        Route::get('/job-pool/{order}/sukses', [JobPoolController::class, 'sukses'])->name('job-pool.sukses');
+        Route::get('/job-pool/{order}/reference/{reference}/download', [JobPoolController::class, 'downloadReference'])->name('job-pool.reference.download');
+        Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference']) ->name('job-pool.reference.preview');
+        // ============ PEKERJAAN ============
+        Route::get('/pekerjaan-saya', [PekerjaanController::class, 'index'])->name('pekerjaan.index');
+        Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
+        Route::post('/pekerjaan-saya/{order}/pesan', [PekerjaanController::class, 'kirimPesan'])->name('pekerjaan.kirimPesan');
+
+        Route::get(
+            '/pekerjaan-saya/{order}/attachment/{attachment}/download',
+            [PekerjaanController::class, 'downloadAttachment']
+        )->name('pekerjaan.attachment.download');
+
+        Route::get(
+            '/pekerjaan-saya/{order}/reference/{reference}/download',
+            [PekerjaanController::class, 'downloadReference']
+        )->name('pekerjaan.reference.download');
+
+        Route::get(
+            '/pekerjaan-saya/{order}/attachment/{attachment}/preview',
+            [PekerjaanController::class, 'previewAttachment']
+        )->name('pekerjaan.attachment.preview');
+
+        Route::get(
+            '/pekerjaan-saya/{order}/reference/{reference}/preview',
+            [PekerjaanController::class, 'previewReference']
+        )->name('pekerjaan.reference.preview');
+
+        Route::post(
+            '/pekerjaan-saya/{order}/deliverable',
+            [PekerjaanController::class, 'kirimDeliverable']
+        )
+            ->name('pekerjaan.kirimDeliverable');
         Route::get('/notifikasi', [DashboardController::class, 'notifikasi'])->name('notifikasi');
-        Route::get('/riwayat', [DashboardController::class, 'riwayat'])->name('riwayat');
+        Route::get('/riwayat', [RiwayatPekerjaanController::class, 'index'])->name('riwayat');
+        Route::get('/riwayat/ekspor-csv', [RiwayatPekerjaanController::class, 'exportCsv'])->name('riwayat.csv');
+        Route::get('/riwayat/cetak', [RiwayatPekerjaanController::class, 'cetak'])->name('riwayat.cetak');
+        Route::get('/riwayat/{order}', [RiwayatPekerjaanController::class, 'show'])->whereUuid('order')->name('riwayat.show');
+        Route::get('/riwayat/{order}/hasil/{attachment}/download', [RiwayatPekerjaanController::class, 'downloadHasil'])
+            ->whereUuid(['order', 'attachment'])->name('riwayat.hasil.download');
     });
+
 
     // Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
@@ -109,6 +192,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/monitoring', [AdminDashboardController::class, 'monitoring'])->name('monitoring');
         Route::get('/laporan', [AdminDashboardController::class, 'laporan'])->name('laporan');
         Route::get('/pengaturan', [AdminDashboardController::class, 'pengaturan'])->name('pengaturan');
+        Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+        Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
+        Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
     });
 
     Route::middleware('auth')->group(function () {

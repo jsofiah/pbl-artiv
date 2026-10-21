@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\ExpressFee;
 use App\Models\Order;
+use App\Models\OrderLog;
 use App\Models\OrderReference;
 use App\Models\Product;
 use App\Models\ProductTier;
@@ -25,6 +26,12 @@ class PemesananController extends Controller
             $query->where('is_active', true)->orderBy('price');
         }]);
 
+        $hasTiers = $product->tiers->isNotEmpty();
+
+        if (!$hasTiers && empty($product->price)) {
+            abort(404, 'Jasa ini belum memiliki harga.');
+        }
+
         $tiers = $product->tiers->map(function ($tier) {
             return [
                 'id'    => $tier->id,
@@ -41,7 +48,7 @@ class PemesananController extends Controller
             })
             ->values();
 
-        $defaultTier = $product->tiers->first();
+        $defaultTier = $hasTiers ? $product->tiers->first() : null;
         $expressFeeMap = $expressFees->map(function ($fee) {
             return [
                 'id' => $fee->id,
@@ -67,21 +74,24 @@ class PemesananController extends Controller
             'defaultTier',
             'expressFeeMap',
             'pemesananData',
-            'references'
+            'references',
+            'hasTiers'
         ));
     }
 
     public function ringkasan(Request $request, Product $product)
     {
+        $hasTiers = $product->tiers()->where('is_active', true)->exists();
+
         $validated = $request->validate([
-            'product_tier_id' => 'required|exists:product_tiers,id',
+            'product_tier_id' => $hasTiers ? 'required|exists:product_tiers,id' : 'nullable',
             'quantity' => 'required|integer|min:1',
             'deadline_option' => 'required|in:default,express',
             'target_deadline' => 'required_if:deadline_option,express|nullable|date|after:today',
             'brief_note' => 'required|string|min:10|max:1000',
 
             'reference_files.*' => 'nullable|file|max:20480|mimes:jpg,jpeg,png,pdf,zip',
-            'reference_links.*' => 'nullable|url',                         // ← nullable aja
+            'reference_links.*' => 'nullable|url',
             'existing_files.*' => 'nullable|string',
         ], [
             'target_deadline.required_if' => 'Tanggal deadline wajib diisi untuk Express.',
@@ -104,8 +114,24 @@ class PemesananController extends Controller
                 ->withInput();
         }
 
-        $tier = ProductTier::where('product_id', $product->id)
-            ->findOrFail($validated['product_tier_id']);
+        if ($hasTiers) {
+            $tier = ProductTier::where('product_id', $product->id)
+                ->where('is_active', true)
+                ->findOrFail($validated['product_tier_id']);
+
+            $unitPrice = (float) $tier->price;
+            $tierId = $tier->id;
+            $tierName = $tier->name;
+        } else {
+            if (empty($product->price)) {
+                return back()->withErrors(['error' => 'Produk tidak memiliki harga.'])->withInput();
+            }
+
+            $tier = null;
+            $unitPrice = (float) $product->price;
+            $tierId = null;
+            $tierName = $product->name;
+        }
 
         $deadline = now()->addDays(7);
         $expressFee = null;
@@ -143,16 +169,15 @@ class PemesananController extends Controller
             }
         }
 
-        $unitPrice = $tier->price;
         $quantity = $validated['quantity'];
         $subtotal = $unitPrice * $quantity;
-        $expressFeeAmount = $expressFee ? $expressFee->fee : 0;
+        $expressFeeAmount = $expressFee ? (float) $expressFee->fee : 0;
         $totalPrice = $subtotal + $expressFeeAmount;
 
         $pemesananData = [
             'product_id' => $product->id,
-            'product_tier_id' => $tier->id,
-            'product_tier_name' => $tier->name,
+            'product_tier_id' => $tierId,
+            'product_tier_name' => $tierName,
             'quantity' => $quantity,
             'unit_price' => $unitPrice,
             'subtotal' => $subtotal,
@@ -228,10 +253,17 @@ class PemesananController extends Controller
                 ->withErrors(['error' => 'Data pemesanan tidak sesuai.']);
         }
 
-        $tier = ProductTier::find($pemesananData['product_tier_id']);
-        $expressFee = $pemesananData['express_fee_id'] ? ExpressFee::find($pemesananData['express_fee_id']) : null;
+        $tier = !empty($pemesananData['product_tier_id'])
+            ? ProductTier::find($pemesananData['product_tier_id'])
+            : null;
 
-        return view('customer.pemesanan.ringkasan', compact('product', 'pemesananData', 'tier', 'expressFee', 'references'));
+        $expressFee = $pemesananData['express_fee_id']
+            ? ExpressFee::find($pemesananData['express_fee_id'])
+            : null;
+
+        return view('customer.pemesanan.ringkasan', compact(
+            'product', 'pemesananData', 'tier', 'expressFee', 'references'
+        ));
     }
 
     public function konfirmasi(Request $request, Product $product)
@@ -255,48 +287,53 @@ class PemesananController extends Controller
         $movedReferences = [];
 
         foreach ($references as $ref) {
-            if ($ref['type'] === 'file' && !empty($ref['file_url'])) {
+            if (($ref['type'] ?? null) === 'file' && !empty($ref['file_url'])) {
                 $newPath = str_replace('temp/references/', 'references/', $ref['file_url']);
-                
                 if ($storage->movePrivate($ref['file_url'], $newPath)) {
-                    $ref['file_url'] = $newPath;  // update path ke yang baru
+                    $ref['file_url'] = $newPath;
                 }
             }
             $movedReferences[] = $ref;
         }
 
-        $references = $movedReferences;
-
         DB::beginTransaction();
         try {
             $order = Order::create([
-                'order_code' => 'ARTIV-' . strtoupper(Str::random(8)),
-                'customer_id' => Auth::id(),
-                'designer_id' => null,
-                'product_id' => $product->id,
+                'order_code'      => 'ARTIV-' . strtoupper(Str::random(8)),
+                'customer_id'     => Auth::id(),
+                'designer_id'     => null,
+                'product_id'      => $product->id,
                 'product_tier_id' => $pemesananData['product_tier_id'],
-                'unit_price' => $pemesananData['unit_price'],
-                'quantity' => $pemesananData['quantity'],
-                'deadline' => $pemesananData['deadline'],
-                'is_express' => $pemesananData['is_express'],
-                'express_fee_id' => $pemesananData['express_fee_id'],
-                'express_fee' => $pemesananData['express_fee'],
-                'brief_note' => $pemesananData['brief_note'],
-                'total_price' => $pemesananData['total_price'],
-                'status' => 'pending',
+                'unit_price'      => $pemesananData['unit_price'],
+                'quantity'        => $pemesananData['quantity'],
+                'deadline'        => $pemesananData['deadline'],
+                'is_express'      => $pemesananData['is_express'],
+                'express_fee_id'  => $pemesananData['express_fee_id'],
+                'express_fee'     => $pemesananData['express_fee'],
+                'brief_note'      => $pemesananData['brief_note'],
+                'total_price'     => $pemesananData['total_price'],
+                'status'          => Order::STATUS_PENDING,
             ]);
 
-            foreach ($references as $ref) {
+            foreach ($movedReferences as $ref) {
                 OrderReference::create([
-                    'order_id' => $order->id,
-                    'type' => $ref['type'],
-                    'file_url' => $ref['file_url'] ?? null,
-                    'file_name' => $ref['file_name'] ?? null,
-                    'file_size' => $ref['file_size'] ?? null,
-                    'mime_type' => $ref['mime_type'] ?? null,
+                    'order_id'     => $order->id,
+                    'type'         => $ref['type'],
+                    'file_url'     => $ref['file_url'] ?? null,
+                    'file_name'    => $ref['file_name'] ?? null,
+                    'file_size'    => $ref['file_size'] ?? null,
+                    'mime_type'    => $ref['mime_type'] ?? null,
                     'external_url' => $ref['external_url'] ?? null,
                 ]);
             }
+
+             OrderLog::create([
+                'order_id' => $order->id,
+                'actor_id' => Auth::id(),
+                'action'   => OrderLog::ACTION_CREATE,
+                'status'   => Order::STATUS_PENDING,
+                'note'     => 'Order dibuat oleh customer dan menunggu designer mengambil pekerjaan.',
+            ]);
 
             session()->forget(['pemesanan_data', 'pemesanan_references']);
             DB::commit();

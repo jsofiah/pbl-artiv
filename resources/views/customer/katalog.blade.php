@@ -7,9 +7,9 @@
 
     {{-- Header --}}
     <div class="text-center mb-8">
-        <h1 class="text-4xl font-extrabold text-slate-900 mb-3">Temukan Jasa Desain</h1>
+        <h1 class="text-4xl font-extrabold text-slate-900 mb-3">Butuh desain?</h1>
         <p class="text-slate-500 max-w-2xl mx-auto">
-            Jelajahi katalog layanan desain grafis terkurasi dari desainer profesional bersertifikasi.
+            Temukan berbagai layanan desain grafis di sini.
         </p>
     </div>
 
@@ -32,83 +32,39 @@
     </form>
 
     {{-- Filter Bar --}}
-    <div class="flex flex-wrap items-center gap-3 mb-6">
+    <div class="mb-6 flex items-center gap-3">
 
-        {{-- Filter Kategori --}}
-        <div x-data="{ open: false }" class="relative">
-            <button type="button" @click="open = !open"
-                    class="flex items-center gap-2 bg-white border border-slate-200 rounded-full pl-5 pr-4 py-2.5 text-sm font-medium text-slate-700 hover:border-[#6D28D9] transition min-w-[220px] justify-between">
-                <span>{{ request('category') ?: 'Kategori: Semua Kategori' }}</span>
-                <svg class="w-4 h-4 text-slate-500 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </button>
+        {{-- Kategori: scroll horizontal --}}
+        <div class="flex-1 min-w-0 overflow-x-auto scrollbar-thin">
+            <div class="flex items-center gap-2 w-max">
 
-            <div x-show="open" @click.outside="open = false"
-                 class="absolute z-30 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-lg py-2 max-h-72 overflow-y-auto"
-                 style="display: none;">
-                <a href="{{ route('customer.katalog', array_merge(request()->except('category', 'page'), [])) }}"
-                   class="block w-full text-left px-5 py-2 text-sm text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9] transition">
-                    Semua Kategori
+                {{-- Semua --}}
+                <a href="{{ route('customer.katalog', request()->except('category', 'page')) }}"
+                class="shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition border
+                        {{ !request('category') || request('category') === 'Semua Kategori'
+                                ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-[#6D28D9] hover:text-[#6D28D9]' }}">
+                    Semua
                 </a>
+
+                {{-- Kategori dari DB --}}
                 @foreach ($categories as $cat)
                     <a href="{{ route('customer.katalog', array_merge(request()->except('page'), ['category' => $cat])) }}"
-                       class="block w-full text-left px-5 py-2 text-sm transition
-                              {{ request('category') === $cat ? 'bg-violet-50 text-[#6D28D9] font-semibold' : 'text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9]' }}">
+                    class="shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition border
+                            {{ request('category') === $cat
+                                    ? 'bg-[#6D28D9] text-white border-[#6D28D9]'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:border-[#6D28D9] hover:text-[#6D28D9]' }}">
                         {{ $cat }}
                     </a>
                 @endforeach
+
             </div>
         </div>
 
-        {{-- Filter Harga --}}
-        <div x-data="{ open: false }" class="relative">
+        {{-- Sort: tetap di kanan --}}
+        <div x-data="{ open: false }" class="relative shrink-0">
             <button type="button" @click="open = !open"
-                    class="flex items-center gap-2 bg-white border border-slate-200 rounded-full pl-5 pr-4 py-2.5 text-sm font-medium text-slate-700 hover:border-[#6D28D9] transition min-w-[200px] justify-between">
-                <span>
-                    @php
-                        $priceLabels = [
-                            'under_500' => 'Di bawah Rp 500.000',
-                            '500_1000' => 'Rp 500.000 - Rp 1.000.000',
-                            'above_1000' => 'Di atas Rp 1.000.000',
-                        ];
-                    @endphp
-                    {{ $priceLabels[request('price')] ?? 'Rentang Harga: Semua' }}
-                </span>
-                <svg class="w-4 h-4 text-slate-500 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </button>
-
-            <div x-show="open" @click.outside="open = false"
-                 class="absolute z-30 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-lg py-2"
-                 style="display: none;">
-                <a href="{{ route('customer.katalog', request()->except('price', 'page')) }}"
-                   class="block w-full text-left px-5 py-2 text-sm text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9] transition">
-                    Semua Harga
-                </a>
-                <a href="{{ route('customer.katalog', array_merge(request()->except('page'), ['price' => 'under_500'])) }}"
-                   class="block w-full text-left px-5 py-2 text-sm transition
-                          {{ request('price') === 'under_500' ? 'bg-violet-50 text-[#6D28D9] font-semibold' : 'text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9]' }}">
-                    Di bawah Rp 500.000
-                </a>
-                <a href="{{ route('customer.katalog', array_merge(request()->except('page'), ['price' => '500_1000'])) }}"
-                   class="block w-full text-left px-5 py-2 text-sm transition
-                          {{ request('price') === '500_1000' ? 'bg-violet-50 text-[#6D28D9] font-semibold' : 'text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9]' }}">
-                    Rp 500.000 - Rp 1.000.000
-                </a>
-                <a href="{{ route('customer.katalog', array_merge(request()->except('page'), ['price' => 'above_1000'])) }}"
-                    class="block w-full text-left px-5 py-2 text-sm transition
-                            {{ request('price') === 'above_1000' ? 'bg-violet-50 text-[#6D28D9] font-semibold' : 'text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9]' }}">
-                    Di atas Rp 1.000.000
-                </a>
-            </div>
-        </div>
-
-        {{-- Sort --}}
-        <div x-data="{ open: false }" class="relative ml-auto">
-            <button type="button" @click="open = !open"
-                    class="flex items-center gap-2 bg-white border border-slate-200 rounded-full pl-5 pr-4 py-2.5 text-sm font-medium text-slate-700 hover:border-[#6D28D9] transition min-w-[200px] justify-between">
+                    class="flex items-center gap-2 w-max bg-white border border-slate-200 rounded-full pl-5 pr-4 py-2.5 text-sm font-medium text-slate-700 hover:border-[#6D28D9] transition min-w-[200px] justify-between">
                 <span>
                     @php
                         $sortLabels = [
@@ -146,7 +102,7 @@
     </div>
 
     {{-- Info Hasil Pencarian --}}
-    @if (request()->hasAny(['q', 'category', 'price']))
+    @if (request()->hasAny(['q', 'category']))
         <div class="mb-4 text-sm text-slate-500">
             Menampilkan <strong>{{ $products->total() }}</strong> hasil
             @if (request('q')) untuk pencarian "<strong>{{ request('q') }}</strong>"@endif
@@ -243,6 +199,5 @@
 @endsection
 
 @push('scripts')
-{{-- Alpine.js via CDN (khusus halaman ini) --}}
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @endpush
