@@ -7,7 +7,7 @@
     ];
 @endphp
 
-<aside class="flex h-screen w-64 flex-col justify-between bg-[#745BB8]">
+<aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col justify-between bg-[#745BB8]">
 
     <div>
         <div class="flex items-center gap-3 px-6 py-5 border-b border-white/10">

@@ -89,7 +89,33 @@ class BerandaController extends Controller
             $categoryThumbs[$label] = $thumbs;
         }
 
-        return view('customer.beranda', compact('popularProducts', 'heroProducts', 'categoryGroups', 'categoryThumbs'));
+        $reviews = \App\Models\Review::with(['customer'])
+            ->where('rating', '>=', 4)
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function ($review) {
+                $customer = $review->customer;
+
+                return [
+                    'name'        => $customer->name ?? 'Customer',
+                    'handle'      => '@' . \Illuminate\Support\Str::slug($customer->name ?? 'customer'),
+                    'description' => $review->comment ?? 'Pelayanan ARTIV sangat memuaskan!',
+                    'image'       => $customer && $customer->avatar
+                        ? \App\Helpers\R2Helper::url($customer->avatar)
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($customer->name ?? 'C') . '&background=6D28D9&color=fff',
+                    'rating'      => (int) $review->rating,
+                ];
+            })
+            ->toArray();
+
+        return view('customer.beranda', compact(
+            'popularProducts',
+            'heroProducts',
+            'categoryGroups',
+            'categoryThumbs',
+            'reviews'              // ← tambah
+        ));
     }
 
     public function katalog(Request $request)

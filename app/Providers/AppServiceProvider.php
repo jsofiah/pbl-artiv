@@ -5,8 +5,12 @@ namespace App\Providers;
 use App\Models\Message;
 use App\Models\Notification;
 use App\Models\Order;
+use App\Models\Review;
+use App\Models\OrderSplit;
 use App\Observers\MessageObserver;
 use App\Observers\OrderObserver;
+use App\Observers\ReviewObserver;
+use App\Observers\OrderSplitObserver;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Message::observe(MessageObserver::class);
         Order::observe(OrderObserver::class);
+        OrderSplit::observe(OrderSplitObserver::class);
+        Review::observe(ReviewObserver::class);
 
         View::composer('partials.notification-dropdown', function ($view) {
             $user = auth()->user();

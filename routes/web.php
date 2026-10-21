@@ -8,6 +8,7 @@ use App\Http\Controllers\Customer\PembayaranController;
 use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
 use App\Http\Controllers\Designer\PekerjaanController;
+use App\Http\Controllers\Designer\RiwayatPekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\MonitoringController;
 use Illuminate\Support\Facades\Route;
@@ -100,7 +101,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
             ->name('pemesanan.sukses');
 
         // Review & rating
-        Route::prefix('/pesanan/{order}/review')->name('pesanan.review.')->group(function () {
+        Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
             Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
@@ -124,6 +125,10 @@ Route::middleware('auth')->group(function () {
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        
+        Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])
+            ->name('availability.toggle');
+            
         Route::get('/job-pool', [DashboardController::class, 'jobPool'])->name('job-pool');
 
         // ============ PEKERJAAN ============
@@ -157,7 +162,12 @@ Route::middleware('auth')->group(function () {
         )
             ->name('pekerjaan.kirimDeliverable');
         Route::get('/notifikasi', [DashboardController::class, 'notifikasi'])->name('notifikasi');
-        Route::get('/riwayat', [DashboardController::class, 'riwayat'])->name('riwayat');
+        Route::get('/riwayat', [RiwayatPekerjaanController::class, 'index'])->name('riwayat');
+        Route::get('/riwayat/ekspor-csv', [RiwayatPekerjaanController::class, 'exportCsv'])->name('riwayat.csv');
+        Route::get('/riwayat/cetak', [RiwayatPekerjaanController::class, 'cetak'])->name('riwayat.cetak');
+        Route::get('/riwayat/{order}', [RiwayatPekerjaanController::class, 'show'])->whereUuid('order')->name('riwayat.show');
+        Route::get('/riwayat/{order}/hasil/{attachment}/download', [RiwayatPekerjaanController::class, 'downloadHasil'])
+            ->whereUuid(['order', 'attachment'])->name('riwayat.hasil.download');
     });
 
 
