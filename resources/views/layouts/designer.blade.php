@@ -24,10 +24,49 @@
         body {
             font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
         }
+        /* Sembunyikan scrollbar vertikal halaman di Brave/Chromium */
+        html, body, main, div {
+            -ms-overflow-style: none !important; /* IE/Edge */
+            scrollbar-width: none !important;    /* Firefox */
+        }
+        
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar,
+        main::-webkit-scrollbar,
+        div::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        body {
+            font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+        }
     </style>
 </head>
+<body class="bg-[#F3F1FA] antialiased min-h-screen relative"
+      x-data="{ showToast: false, message: '', type: 'success' }"
+      @if(session('success'))
+          x-init="showToast = true; message = {{ json_encode(session('success')) }}; type = 'success'; setTimeout(() => showToast = false, 4000)"
+      @elseif(session('error') || $errors->any())
+          x-init="showToast = true; message = {{ json_encode(session('error') ?? $errors->first()) }}; type = 'error'; setTimeout(() => showToast = false, 4000)"
+      @endif
+>
 
-<body class="bg-[#F3F1FA] antialiased">
+    <!-- Toast Notification -->
+    <div x-show="showToast" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="translate-y-2 opacity-0"
+         x-transition:enter-end="translate-y-0 opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="translate-y-0 opacity-100"
+         x-transition:leave-end="translate-y-2 opacity-0"
+         class="fixed bottom-6 right-6 z-[99999] px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 text-sm text-white font-medium pointer-events-auto"
+         :class="type === 'success' ? 'bg-neutral-900' : 'bg-red-600'"
+         style="display: none;">
+        <span class="w-2.5 h-2.5 rounded-full shrink-0" :class="type === 'success' ? 'bg-[#D5FC55]' : 'bg-white'"></span>
+        <span x-text="message"></span>
+    </div>
 
     <div class="flex h-screen overflow-hidden">
 

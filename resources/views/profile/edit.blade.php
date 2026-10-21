@@ -16,16 +16,6 @@
 @section('content')
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
 
-        <!-- Header / Breadcrumb -->
-        <div class="mb-2">
-            <h1 class="text-2xl sm:text-3xl font-bold text-neutral-900">
-                Profil Saya
-            </h1>
-            <p class="text-sm text-neutral-600 mt-1">
-                Kelola informasi identitas pribadi, keamanan akun, dan pantau ringkasan aktivitas transaksi Anda.
-            </p>
-        </div>
-
         <!-- Card 1: Informasi Pribadi & Kontak -->
         <div class="bg-white rounded-3xl shadow-sm border border-neutral-200/80 p-6 sm:p-8">
             <div class="flex items-center justify-between mb-6 pb-4 border-b border-neutral-100">
@@ -46,64 +36,86 @@
                 </span>
             </div>
 
-            <!-- Avatar & Upload Section -->
-            <div
-                class="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-8 bg-neutral-50/60 border border-neutral-100 rounded-2xl p-5">
-                <div class="relative shrink-0">
-                    @if ($user->avatar_url)
-                        <img src="{{ \App\Helpers\R2Helper::url($user->avatar_url) }}" alt="{{ $user->full_name }}"
-                            class="w-20 h-20 rounded-full object-cover shadow-sm">
-                    @else
-                        <div
-                            class="w-20 h-20 rounded-full bg-[#745BB8] text-white flex items-center justify-center font-bold text-2xl shadow-sm">
-                            {{ strtoupper(substr($user->full_name, 0, 2)) }}
-                        </div>
-                    @endif
-                    <span
-                        class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
-                </div>
-
-                <div class="space-y-2 flex-1">
-                    <!-- Form Upload Foto Terpisah -->
-                    <form action="{{ route('profile.avatar.update') }}" method="POST" enctype="multipart/form-data"
-                        class="flex items-center gap-3">
-                        @csrf
-                        <label class="cursor-pointer font-semibold text-sm text-[#745BB8] hover:underline">
-                            <span>Ubah Foto</span>
-                            <input type="file" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif"
-                                class="hidden" onchange="this.form.submit()">
-                        </label>
-
-                        @if ($user->avatar_url)
-                            <span class="text-neutral-300">|</span>
-                        @endif
-                    </form>
-
-                    <!-- Form Hapus Foto (jika ada) -->
-                    @if ($user->avatar_url)
-                        <form action="{{ route('profile.avatar.destroy') }}" method="POST">
-                            @csrf
-                            @method('delete')
-                            <button type="submit" class="text-xs text-neutral-500 hover:text-red-600 transition">Hapus
-                                Foto</button>
-                        </form>
-                    @endif
-
-                    @error('avatar')
-                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-
-            <!-- Form Update Profile -->
-            <form action="{{ route('profile.update') }}" method="POST" class="space-y-5">
+            <!-- Form Utama Update Profile -->
+            <form action="{{ route('profile.update') }}" method="POST" class="space-y-6">
                 @csrf
                 @method('patch')
 
+                <!-- Avatar & Status Section -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 bg-neutral-50/60 border border-neutral-100 rounded-2xl p-5">
+                    <!-- Kiri: Foto Profil & Upload Form -->
+                    <div class="flex items-center gap-5">
+                        <div class="relative shrink-0">
+                            @if ($user->avatar_url)
+                                <img src="{{ \App\Helpers\R2Helper::url($user->avatar_url) }}" alt="{{ $user->full_name }}"
+                                    class="w-20 h-20 rounded-full object-cover shadow-sm">
+                            @else
+                                <div
+                                    class="w-20 h-20 rounded-full bg-[#745BB8] text-white flex items-center justify-center font-bold text-2xl shadow-sm">
+                                    {{ strtoupper(substr($user->full_name, 0, 2)) }}
+                                </div>
+                            @endif
+                            <span
+                                class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
+                        </div>
+
+                        <div class="space-y-2">
+                            <!-- Form Upload Foto -->
+                            <div class="flex items-center gap-3">
+                                <label class="cursor-pointer font-semibold text-sm text-[#745BB8] hover:underline">
+                                    <span>Ubah Foto</span>
+                                    <input type="file" form="form-avatar-upload" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif"
+                                        class="hidden" onchange="document.getElementById('form-avatar-upload').submit()">
+                                </label>
+
+                                @if ($user->avatar_url)
+                                    <span class="text-neutral-300">|</span>
+                                    <button type="button" onclick="document.getElementById('form-avatar-destroy').submit()" 
+                                        class="text-xs text-neutral-500 hover:text-red-600 transition">Hapus Foto</button>
+                                @endif
+                            </div>
+
+                            @error('avatar')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Kanan: Status Ketersediaan (Khusus Designer) -->
+                    @if ($user->isDesigner() && $user->designerStat)
+                        <div class="min-w-[220px] md:border-l md:border-neutral-200 md:pl-6">
+                            <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                                Status Ketersediaan
+                            </label>
+
+                            @if ($user->designerStat->isSuspended())
+                                <div class="px-3 py-2 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+                                    Akun Ditangguhkan
+                                </div>
+                            @else
+                                <select name="availability_status"
+                                    class="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-2xl text-sm font-medium text-neutral-900 focus:outline-none focus:border-[#745BB8] transition shadow-sm">
+                                    <option value="{{ \App\Models\DesignerStat::STATUS_AVAILABLE }}"
+                                        {{ old('availability_status', $user->designerStat->availability_status) === \App\Models\DesignerStat::STATUS_AVAILABLE ? 'selected' : '' }}>
+                                        Available
+                                    </option>
+                                    <option value="{{ \App\Models\DesignerStat::STATUS_UNAVAILABLE }}"
+                                        {{ old('availability_status', $user->designerStat->availability_status) === \App\Models\DesignerStat::STATUS_UNAVAILABLE ? 'selected' : '' }}>
+                                        Unavailable
+                                    </option>
+                                </select>
+                            @endif
+                            @error('availability_status')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Input Field Profil -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Nama
-                            Lengkap</label>
+                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Nama Lengkap</label>
                         <input type="text" name="full_name" value="{{ old('full_name', $user->full_name) }}" required
                             class="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm text-neutral-900 focus:outline-none focus:border-[#745BB8] focus:bg-white transition">
                         @error('full_name')
@@ -112,8 +124,7 @@
                     </div>
 
                     <div>
-                        <label
-                            class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Username</label>
+                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Username</label>
                         <div class="relative flex items-center">
                             <input type="text" name="username" value="{{ old('username', $user->username) }}" required
                                 class="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm text-neutral-900 focus:outline-none focus:border-[#745BB8] focus:bg-white transition">
@@ -125,8 +136,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Alamat
-                            Email</label>
+                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Alamat Email</label>
                         <div class="relative flex items-center">
                             <input type="email" name="email" value="{{ old('email', $user->email) }}" required
                                 class="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-2xl text-sm text-neutral-900 focus:outline-none focus:border-[#745BB8] focus:bg-white transition">
@@ -144,8 +154,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Nomor Telepon
-                            / WhatsApp</label>
+                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Nomor Telepon / WhatsApp</label>
                         <div class="relative flex items-center">
                             <input type="tel" name="phone" value="{{ old('phone', $user->phone) }}"
                                 placeholder="08123456789" maxlength="15"
@@ -167,18 +176,27 @@
                     </div>
                 </div>
 
+                <!-- Single Submit Button -->
                 <div class="flex justify-end pt-2">
                     <button type="submit"
                         class="px-6 py-3 bg-[#745BB8] hover:bg-[#6349a7] text-white font-bold text-sm rounded-2xl shadow-sm transition flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                            </path>
-                        </svg>
+                        
                         <span>Simpan Perubahan</span>
                     </button>
                 </div>
             </form>
+
+            <!-- Form Hidden Avatar -->
+            <form id="form-avatar-upload" action="{{ route('profile.avatar.update') }}" method="POST" enctype="multipart/form-data" class="hidden">
+                @csrf
+            </form>
+
+            @if ($user->avatar_url)
+                <form id="form-avatar-destroy" action="{{ route('profile.avatar.destroy') }}" method="POST" class="hidden">
+                    @csrf
+                    @method('delete')
+                </form>
+            @endif
         </div>
 
         <!-- Card 2: Keamanan Akun & Kata Sandi -->
@@ -194,10 +212,8 @@
                 @csrf
                 @method('put')
 
-                <!-- Password Lama -->
                 <div>
-                    <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Password
-                        Lama</label>
+                    <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Password Lama</label>
                     <div
                         class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 focus-within:border-[#745BB8] focus-within:ring-2 focus-within:ring-[#745BB8]/15 transition bg-neutral-50">
                         <input id="current_password" type="password" name="current_password" required
@@ -222,10 +238,8 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <!-- Password Baru -->
                     <div>
-                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Password
-                            Baru</label>
+                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Password Baru</label>
                         <div
                             class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 focus-within:border-[#745BB8] focus-within:ring-2 focus-within:ring-[#745BB8]/15 transition bg-neutral-50">
                             <input id="new_password" type="password" name="password" required
@@ -249,10 +263,8 @@
                         @enderror
                     </div>
 
-                    <!-- Konfirmasi Password Baru -->
                     <div>
-                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Konfirmasi
-                            Password Baru</label>
+                        <label class="block text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Konfirmasi Password Baru</label>
                         <div
                             class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3 focus-within:border-[#745BB8] focus-within:ring-2 focus-within:ring-[#745BB8]/15 transition bg-neutral-50">
                             <input id="new_password_confirmation" type="password" name="password_confirmation" required
