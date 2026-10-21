@@ -3,8 +3,6 @@
 @section('title', 'Beranda')
 
 @section('content')
-
-{{-- ==================== 1. LOADING SCREEN ==================== --}}
 <div id="artiv-intro" class="artiv-intro" aria-hidden="true">
     <div class="artiv-intro-logo">ARTIV<span>.</span></div>
     <div class="artiv-intro-caption">IDEA IN MOTION</div>
@@ -495,7 +493,7 @@
             </p>
         </div>
 
-        <x-animated-testimonials />
+        <x-animated-testimonials :testimonials="$reviews ?? []" />
     </div>
 
     <div class="relative rounded-3xl overflow-hidden" style="background: linear-gradient(135deg, #6D28D9 0%, #745BB8 100%);">
@@ -524,10 +522,7 @@
 
 @push('styles')
 <style>
-    /* ============ GLOBAL ============ */
     .artiv-homepage{isolation:isolate;color:#171326}
-    /* Full-bleed: lepas dari container layout. html di-clip (bukan hidden) agar tidak muncul scroll horizontal
-       dan tidak merusak pin GSAP. JANGAN beri overflow pada .artiv-homepage, nanti bleed ikut terpotong. */
     html{overflow-x:clip}
     .artiv-bleed{width:100vw;margin-left:calc(50% - 50vw);max-width:none}
     .artiv-bleed--tilt{width:104vw;margin-left:calc(50% - 52vw)}
@@ -537,7 +532,6 @@
     .artiv-doodle-path--three{stroke:#8B5CF6!important;animation-duration:26s}
     @keyframes artiv-doodle-drift{from{transform:translateX(-24px)}to{transform:translateX(24px)}}
 
-    /* ============ INTRO ============ */
     .artiv-intro{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#6d28d9;animation:artiv-intro-out .8s cubic-bezier(.7,0,.2,1) 1.15s forwards;pointer-events:none}
     .artiv-intro-logo{font-size:clamp(4rem,12vw,8rem);font-weight:900;letter-spacing:-.09em;color:white;animation:artiv-logo-pop .8s cubic-bezier(.2,1.5,.5,1) both}
     .artiv-intro-logo span{color:#d5fc55}
@@ -546,10 +540,8 @@
     @keyframes artiv-caption-in{to{opacity:1}}
     @keyframes artiv-intro-out{to{opacity:0;visibility:hidden}}
 
-    /* ============ HERO ============ */
     .artiv-homepage{--ease-out:cubic-bezier(.22,1,.36,1)}
 
-    /* Ornamen: melayang + berkedip halus, tempo tiap ornamen dibedakan */
     .artiv-ornament{font-weight:900;pointer-events:none;will-change:transform,opacity;
         animation:artiv-ornament-float 5s ease-in-out infinite}
     .artiv-ornament:nth-of-type(even){animation-duration:6.5s}
@@ -559,12 +551,9 @@
         50%{transform:translateY(-14px) rotate(18deg) scale(1.15);opacity:.9}
     }
 
-    /* Glow latar bernafas pelan */
     .artiv-homepage > section:first-of-type .blur-3xl{animation:artiv-breathe 9s ease-in-out infinite alternate;will-change:scale,opacity}
     @keyframes artiv-breathe{from{scale:1;opacity:.75}to{scale:1.12;opacity:1}}
 
-    /* Kartu hero: masuk (blur + scale + naik) lalu melayang.
-    --mx/--my/--depth dipakai parallax mouse (diisi JS), jadi gerakannya menyatu dengan float. */
     .artiv-hero-card{
         --dur:6.5s;--amp:-10px;
         will-change:translate,scale,opacity;
@@ -585,7 +574,6 @@
         50%{translate:calc(var(--mx,0) * var(--depth,0) * 1px) calc(var(--my,0) * var(--depth,0) * 1px + var(--amp))}
     }
 
-    /* Coretan di tablet: tergambar -> tahan -> memudar (tidak lagi "terhapus" kasar) */
     .artiv-draw{stroke-dasharray:700;stroke-dashoffset:700;animation:artiv-draw 7s ease-in-out 1.6s infinite}
     @keyframes artiv-draw{
         0%{stroke-dashoffset:700;opacity:1}
@@ -594,7 +582,6 @@
         96%{stroke-dashoffset:0;opacity:0}
         100%{stroke-dashoffset:700;opacity:0}
     }
-    /* Titik lime di ujung coretan muncul tepat saat garis selesai */
     .artiv-hero-card circle[r="4"]{transform-box:fill-box;transform-origin:center;animation:artiv-dot 7s ease-in-out 1.6s infinite}
     @keyframes artiv-dot{
         0%,46%{opacity:0;transform:scale(0)}
@@ -603,7 +590,6 @@
         96%,100%{opacity:0;transform:scale(0)}
     }
 
-    /* Reveal teks kiri: lebih lembut (expo-out) + blur halus */
     .artiv-reveal{animation:artiv-reveal 1.1s var(--ease-out) calc(var(--artiv-base,0s) + var(--i,0) * .12s) backwards}
     @keyframes artiv-reveal{
         from{opacity:0;translate:0 32px;filter:blur(10px)}
@@ -612,11 +598,9 @@
     .artiv-underline{stroke-dasharray:320;stroke-dashoffset:320;animation:artiv-underline 1.1s cubic-bezier(.65,0,.25,1) calc(var(--artiv-base,0s) + .9s) forwards}
     @keyframes artiv-underline{to{stroke-dashoffset:0}}
 
-    /* Kata "ARTIV" berkilau gradien pelan (tanpa ubah HTML) */
     .artiv-homepage h1 .bg-clip-text{background-size:220% 220%;animation:artiv-shimmer 7s ease-in-out infinite}
     @keyframes artiv-shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 
-    /* Pena (stylus) */
     .artiv-pen{position:absolute;left:0;top:0;display:block;width:16px;height:clamp(170px,24vw,290px);transform:translate(-50%,-100%) rotate(20deg);transform-origin:50% 100%;z-index:40;pointer-events:none;will-change:transform}
     .artiv-pen.is-fixed{position:fixed}
     .artiv-pen-body{position:relative;display:block;width:100%;height:100%;filter:drop-shadow(0 14px 12px rgba(30,16,80,.35));
@@ -626,11 +610,9 @@
     .artiv-pen-band{position:absolute;left:0;right:0;top:16%;height:4.5%;background:#D5FC55}
     .artiv-pen-tip{position:absolute;left:0;right:0;bottom:0;height:11%;background:linear-gradient(90deg,#d9d5ea,#8f89ac);clip-path:polygon(0 0,100% 0,62% 100%,38% 100%)}
 
-    /* ============ TICKER ============ */
     .artiv-marquee{animation:artiv-marquee 28s linear infinite}
     @keyframes artiv-marquee{to{transform:translateX(-50%)}}
 
-    /* ============ CARA KERJA ============ */
     #artiv-how-bg{opacity:0}
     .artiv-how-stage{--row-h:min(78svh,580px);--row-gap:20px}
     @media(min-width:1024px){.artiv-how-stage{--row-h:min(62vh,440px);--row-gap:24px}}
@@ -643,7 +625,6 @@
     .artiv-wheel{animation:artiv-wheel 1.6s ease-in-out infinite}
     @keyframes artiv-wheel{0%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,10px);opacity:0}}
 
-    /* Fallback tanpa GSAP / reduced motion: daftar statis berurutan */
     .artiv-how--static .artiv-how-stage{height:auto;display:block;padding:4rem 0}
     .artiv-how--static #artiv-how-bg{opacity:1}
     .artiv-how--static .artiv-scroll-circle,
@@ -653,7 +634,6 @@
     .artiv-how--static .artiv-row{opacity:1!important;transform:none!important;height:auto;margin-bottom:3rem}
     .artiv-how--static .artiv-card{min-height:18rem}
 
-    /* ============ RESPONSIVE ============ */
     @media(prefers-reduced-motion:reduce){
         .artiv-doodle-path,.artiv-ornament,.artiv-intro-logo,.artiv-intro-caption,.artiv-hero-card,.artiv-marquee,.artiv-wheel,.artiv-draw,.artiv-reveal,.artiv-underline,.artiv-pen-body,
         .artiv-homepage > section:first-of-type .blur-3xl,
@@ -670,8 +650,6 @@
     (() => {
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        // ==================== INTRO ====================
-        // Return true bila intro ditampilkan (animasi hero ditunda sampai intro selesai)
         const initIntro = () => {
             const intro = document.getElementById('artiv-intro');
             if (!intro) return false;
@@ -690,7 +668,6 @@
             }
         };
 
-        // ==================== CARA KERJA — GSAP ====================
         const buildHowScroll = () => {
             const section = document.getElementById('artiv-how-scroll');
             const stage   = document.getElementById('artiv-how-stage');
@@ -706,7 +683,6 @@
 
             gsap.registerPlugin(ScrollTrigger);
 
-            // ----- PENA: lepas dari hero, ikut scroll sampai ke lingkaran -----
             const pen  = document.getElementById('artiv-pen');
             const slot = document.getElementById('artiv-pen-slot');
             const PEN_TILT = 20;
@@ -720,7 +696,6 @@
                     transformOrigin: '50% 100%', x: r0.left, y: r0.top
                 });
 
-                // Posisi awal dihitung dalam koordinat dokumen (aman walau halaman sedang ter-scroll)
                 const slotPoint = () => {
                     const r = slot.getBoundingClientRect();
                     return { x: r.left + window.scrollX, y: r.top + window.scrollY };
@@ -744,7 +719,6 @@
                 );
             }
 
-            // ----- LIFT: daftar langkah naik bersama kartunya -----
             const DIM = { opacity: 0.35, scale: 0.96 };
             const pitch  = () => rows.length > 1 ? rows[1].offsetTop - rows[0].offsetTop : stage.offsetHeight;
             const enterY = () => stage.offsetHeight / 2 + rows[0].offsetHeight / 2 + 24;
@@ -756,7 +730,6 @@
             gsap.set(track, { autoAlpha: 1 });
             gsap.set(rows, { ...DIM });
 
-            // Dot aktif: intro, langkah 1, 2, 3
             const TOTAL = 108;
             const activeAt = [40, 57, 75, 93];
             const setDots = (progress) => {
@@ -780,7 +753,6 @@
                 }
             });
 
-            // Lingkaran membesar menutup layar
             tl.to(circle, {
                 scale: () => (Math.hypot(window.innerWidth, window.innerHeight) / 50) * 1.1,
                 duration: 32,
@@ -790,21 +762,17 @@
             tl.to(circle, { opacity: 0, duration: 10, ease: 'power2.out' }, 32);
             tl.to(dotsEl, { opacity: 1, duration: 6 }, 40);
 
-            // Pena sudah di lingkaran: mengecil & memudar saat lingkaran terus membesar
             if (pen && slot) {
                 tl.to(pen, { autoAlpha: 0, scale: 0.35, duration: 10, ease: 'power2.in' }, 2);
             }
 
-            // Judul section muncul
             tl.to(intro, { opacity: 1, y: 0, duration: 8, ease: 'power2.out' }, 40);
 
-            // Lift 0: judul naik keluar, daftar langkah naik masuk dari bawah
             const LIFT = { duration: 14, ease: 'power1.inOut' };
             tl.to(intro, { y: () => -stage.offsetHeight * 0.6, opacity: 0, ...LIFT }, 50);
             tl.fromTo(track, { y: enterY }, { y: 0, ...LIFT }, 50);
             tl.to(rows[0], { opacity: 1, scale: 1, ...LIFT }, 50);
 
-            // Lift 1 & 2: seluruh daftar naik satu langkah, kartu aktif menyala
             [[1, 68], [2, 86]].forEach(([i, t]) => {
                 tl.fromTo(track,
                     { y: () => -pitch() * (i - 1) },
@@ -814,7 +782,6 @@
                 tl.to(rows[i], { opacity: 1, scale: 1, ...LIFT }, t);
             });
 
-            // Tahan langkah terakhir sampai akhir scroll
             tl.to({}, { duration: 8 }, 100);
         };
 
@@ -826,7 +793,6 @@
 
             if (reduceMotion) return fallback();
 
-            // Tunggu GSAP (bisa dimuat belakangan oleh layout), maksimal ±4 detik
             let tries = 0;
             const tick = () => {
                 if (window.gsap && window.ScrollTrigger) {
@@ -840,17 +806,14 @@
             };
             tick();
         };
-
-        // ==================== HERO PARALLAX (mouse) ====================
         const initHeroParallax = () => {
             if (reduceMotion) return;
-            if (!window.matchMedia('(hover:hover) and (pointer:fine)').matches) return; // hanya desktop/mouse
+            if (!window.matchMedia('(hover:hover) and (pointer:fine)').matches) return;
 
-            const hero = document.querySelector('.artiv-homepage section'); // section hero (pertama)
+            const hero = document.querySelector('.artiv-homepage section');
             const visual = hero?.querySelector('.artiv-hero-card')?.parentElement;
             if (!hero || !visual) return;
 
-            // Kedalaman berdasarkan z-index: makin depan, makin banyak bergeser
             visual.querySelectorAll('.artiv-hero-card').forEach((el) => {
                 const z = parseInt(getComputedStyle(el).zIndex, 10) || 0;
                 el.style.setProperty('--depth', (3 + z * 0.45).toFixed(1));
@@ -858,7 +821,7 @@
 
             let tx = 0, ty = 0, cx = 0, cy = 0, raf = null;
             const loop = () => {
-                cx += (tx - cx) * 0.08;   // lerp = gerakan halus, tidak patah
+                cx += (tx - cx) * 0.08;
                 cy += (ty - cy) * 0.08;
                 visual.style.setProperty('--mx', cx.toFixed(3));
                 visual.style.setProperty('--my', cy.toFixed(3));
@@ -870,14 +833,13 @@
             hero.addEventListener('pointermove', (e) => {
                 if (e.pointerType !== 'mouse') return;
                 const r = hero.getBoundingClientRect();
-                tx = ((e.clientX - r.left) / r.width - 0.5) * 2;   // -1..1
+                tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
                 ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
                 kick();
             }, { passive: true });
             hero.addEventListener('pointerleave', () => { tx = 0; ty = 0; kick(); });
         };
 
-        // ==================== INIT ====================
         const introShown = initIntro();
         document.documentElement.style.setProperty('--artiv-base', introShown ? '1.3s' : '0s');
         initHeroParallax();
