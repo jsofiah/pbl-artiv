@@ -122,6 +122,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::patch('/profile/designer-status', [ProfileController::class, 'updateDesignerStatus'])
+        ->middleware('role:designer')
+        ->name('profile.designer-status.update');
 
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {

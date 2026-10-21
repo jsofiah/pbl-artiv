@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Models\DesignerStat;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\ProfileUpdateRequest;
@@ -18,6 +20,17 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        if ($user->isDesigner()) {
+            // Otomatis buatkan data stat jika belum ada di database
+            $user->designerStat()->firstOrCreate([
+                'designer_id' => $user->id,
+            ], [
+                'availability_status' => \App\Models\DesignerStat::STATUS_AVAILABLE,
+            ]);
+
+            $user->load('designerStat');
+        }
         return view('profile.edit', [
             'user' => $request->user(),
         ]);
@@ -38,6 +51,21 @@ class ProfileController extends Controller
         }
 
         $user->save();
+
+        // Update status ketersediaan jika user adalah designer
+        if ($user->isDesigner() && $request->has('availability_status')) {
+            $designerStat = $user->designerStat;
+
+            if ($designerStat && !$designerStat->isSuspended()) {
+                $request->validate([
+                    'availability_status' => ['required', 'in:' . DesignerStat::STATUS_AVAILABLE . ',' . DesignerStat::STATUS_UNAVAILABLE],
+                ]);
+
+                $designerStat->update([
+                    'availability_status' => $request->availability_status,
+                ]);
+            }
+        }
 
         return redirect()->route('profile.edit')->with('success', 'Profil berhasil diperbarui.');
     }
@@ -130,5 +158,29 @@ class ProfileController extends Controller
         }
 
         return redirect()->route('profile.edit')->with('success', 'Foto profil berhasil dihapus.');
+    }
+
+    public function updateDesignerStatus(Request $request): RedirectResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $designerStat = $user->designerStat;
+
+        if (!$designerStat) {
+            return redirect()->route('profile.edit')->with('error', 'Data statistik designer tidak ditemukan.');
+        }
+
+        // Otorisasi menggunakan Policy (otomatis return 403 jika gagal)
+        Gate::authorize('updateStatus', $designerStat);
+
+        $request->validate([
+            'availability_status' => ['required', 'in:' . DesignerStat::STATUS_AVAILABLE . ',' . DesignerStat::STATUS_UNAVAILABLE],
+        ]);
+
+        $designerStat->update([
+            'availability_status' => $request->availability_status,
+        ]);
+
+        return redirect()->route('profile.edit')->with('success', 'Status ketersediaan berhasil diperbarui.');
     }
 }
