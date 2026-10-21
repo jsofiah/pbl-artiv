@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Designer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Order;
 use App\Models\Product;
@@ -21,8 +20,15 @@ class RiwayatPekerjaanController extends Controller
     {
         $orders = $this->query($request)->paginate(10)->withQueryString();
 
-        // Dropdown kategori: semua layanan (Poster, Banner, dll), bukan hanya yang pernah selesai
-        $kategori = Product::orderBy('name')->get(['id', 'name']);
+        // Dropdown kategori: hanya layanan yang pernah selesai dikerjakan designer ini.
+        // Otomatis bertambah saat ada pekerjaan selesai di kategori baru.
+        $kategori = Product::whereIn('id',
+                Order::where('designer_id', auth()->id())
+                    ->where('status', Order::STATUS_COMPLETED)
+                    ->select('product_id')
+            )
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         return view('designer.riwayat', [
             'orders'   => $orders,
@@ -65,11 +71,10 @@ class RiwayatPekerjaanController extends Controller
             404
         );
 
-        // Hanya lampiran dari pesan bertipe deliverable milik order ini
+        // Hanya lampiran dari pesan yang terhubung ke deliverable order ini
+        // (sama dengan file yang ditampilkan di halaman Lihat Review)
         $att = MessageAttachment::where('id', $attachment)
-            ->whereHas('message', fn ($m) => $m
-                ->where('type', Message::TYPE_DELIVERABLE)
-                ->whereHas('conversation', fn ($c) => $c->where('order_id', $order->id)))
+            ->whereHas('message.deliverable', fn ($d) => $d->where('order_id', $order->id))
             ->firstOrFail();
 
         $key = ltrim($att->file_url, '/');
@@ -78,7 +83,16 @@ class RiwayatPekerjaanController extends Controller
         }
 
         $disk = Storage::disk('r2'); // bucket privat
-        abort_unless($disk->exists($key), 404, 'File hasil tidak ditemukan.');
+        try {
+            $ada = $disk->exists($key);
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', 'Penyimpanan file tidak dapat dihubungi. Coba lagi nanti.');
+        }
+
+        if (! $ada) {
+            return back()->with('error', 'File hasil tidak ditemukan di penyimpanan.');
+        }
 
         return $disk->download($key, $att->file_name ?? 'hasil-desain');
     }
@@ -92,7 +106,12 @@ class RiwayatPekerjaanController extends Controller
 
         return response()->streamDownload(function () use ($orders) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Kode Order', 'Layanan', 'Customer', 'Tanggal Selesai', 'Kompensasi', 'Rating']);
+
+            // BOM supaya Excel membaca UTF-8 dengan benar
+            fwrite($out, "\xEF\xBB\xBF");
+
+            // Pemisah titik koma: Excel dengan pengaturan regional Indonesia memakai ';'
+            fputcsv($out, ['Kode Order', 'Layanan', 'Customer', 'Tanggal Selesai', 'Kompensasi', 'Rating'], ';');
 
             foreach ($orders as $o) {
                 fputcsv($out, [
@@ -100,13 +119,13 @@ class RiwayatPekerjaanController extends Controller
                     $o->product->name ?? '-',
                     $o->customer->full_name ?? '-',
                     optional($o->completed_at ?? $o->updated_at)->format('d/m/Y'),
-                    ($o->split->designer_earning ?? 0),
+                    (int) round($o->split->designer_earning ?? 0),
                     $o->review->rating ?? '-',
-                ]);
+                ], ';');
             }
             fclose($out);
         }, 'riwayat-pekerjaan-' . now()->format('Ymd') . '.csv', [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 
