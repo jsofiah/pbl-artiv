@@ -44,7 +44,6 @@
         }
     </style>
 </head>
-
 <body class="bg-[#F3F1FA] antialiased min-h-screen relative"
       x-data="{ showToast: false, message: '', type: 'success' }"
       @if(session('success'))

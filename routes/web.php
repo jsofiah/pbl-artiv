@@ -101,7 +101,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
             ->name('pemesanan.sukses');
 
-        // Review & rating
+                // Review & rating
         Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
