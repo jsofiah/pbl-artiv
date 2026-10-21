@@ -287,9 +287,12 @@ class PesananController extends Controller
                 'status'   => 'completed',
                 'note'     => 'Customer menyetujui hasil desain.',
             ]);
+
+            if ($orderModel->designer_id) {
+                $this->createOrderSplit($orderModel);
+            }
         });
 
-        // Broadcast real-time
         if ($orderModel->conversation) {
             broadcast(new \App\Events\DeliverableUpdated(
                 $deliverableModel->fresh(),
@@ -364,5 +367,37 @@ class PesananController extends Controller
         return redirect()
             ->route('customer.pesanan.show', $orderModel->id)
             ->with('status', 'Permintaan revisi terkirim ke designer.');
+    }
+
+    private function createOrderSplit(Order $order): void
+    {
+        if (\App\Models\OrderSplit::where('order_id', $order->id)->exists()) {
+            return;
+        }
+
+        $grossAmount = (float) $order->total_price;
+
+        $isReassignment = $order->reassign_count > 0;
+
+        $splitType = $isReassignment
+            ? \App\Models\OrderSplit::TYPE_REASSIGNMENT
+            : \App\Models\OrderSplit::TYPE_NORMAL;
+
+        $commissionRate = $isReassignment
+            ? \App\Models\OrderSplit::COMMISSION_REASSIGNMENT
+            : \App\Models\OrderSplit::COMMISSION_NORMAL;
+
+        $commissionAmount = round($grossAmount * $commissionRate / 100, 2);
+        $designerEarning  = round($grossAmount - $commissionAmount, 2);
+
+        \App\Models\OrderSplit::create([
+            'order_id'          => $order->id,
+            'designer_id'       => $order->designer_id,
+            'split_type'        => $splitType,
+            'commission_rate'   => $commissionRate,
+            'gross_amount'      => $grossAmount,
+            'commission_amount' => $commissionAmount,
+            'designer_earning'  => $designerEarning,
+        ]);
     }
 }

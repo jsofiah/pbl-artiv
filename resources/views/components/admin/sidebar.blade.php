@@ -15,7 +15,7 @@
     ];
 @endphp
 
-<aside class="flex h-screen w-64 flex-col justify-between bg-[#745BB8]">
+<aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col justify-between bg-[#745BB8]">
 
     <div class="overflow-y-auto">
 
