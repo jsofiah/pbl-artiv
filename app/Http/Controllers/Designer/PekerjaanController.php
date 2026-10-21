@@ -218,18 +218,19 @@ class PekerjaanController extends Controller
 
     private function streamFileFromR2(string $path, string $filename)
     {
-        $response = Http::withOptions([
-            'stream' => true,
-            // 'verify' => false, // ⚠️ hanya untuk dev, hapus di production
-        ])->get(\App\Helpers\R2Helper::url($path));
-
-        if ($response->failed()) {
-            abort(404, 'Gagal mengambil file.');
+        $cleanPath = ltrim($path, '/');
+        if (preg_match('#^https?://[^/]+/(.+)$#', $cleanPath, $m)) {
+            $cleanPath = $m[1];
         }
 
-        return response()->streamDownload(function () use ($response) {
-            echo $response->body();
-        }, $filename);
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $r2 */
+        $r2 = Storage::disk('r2');
+
+        if (!$r2->exists($cleanPath)) {
+            abort(404, 'File tidak ditemukan di storage.');
+        }
+
+        return $r2->download($cleanPath, $filename);
     }
 
         public function previewReference(string $order, string $reference)

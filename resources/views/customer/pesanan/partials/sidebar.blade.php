@@ -50,13 +50,19 @@
                 @endif
             </div>
             <div>
-                <h3 class="font-bold text-lg text-slate-900 leading-snug">
-                    {{ $order->product->name }}
-                </h3>
-                <p class="text-sm text-slate-500 mt-0.5">
-                    {{ $order->productTier->name }}
-                    @if ($order->is_express) · Express @endif
-                </p>
+                <div>
+                    <h3 class="font-bold text-lg text-slate-900 leading-snug">
+                        {{ $order->product?->name ?? 'Layanan tidak tersedia' }}
+                    </h3>
+                    <p class="text-sm text-slate-500 mt-0.5">
+                        @if ($order->productTier)
+                            {{ $order->productTier->name }}
+                        @else
+                            Tanpa tier
+                        @endif
+                        @if ($order->is_express) · Express @endif
+                    </p>
+                </div>
                 <span class="inline-block mt-2 px-3 py-1 rounded-lg bg-violet-50 text-[#6D28D9] border font-bold text-sm">
                     Rp {{ number_format($order->total_price, 0, ',', '.') }}
                 </span>
