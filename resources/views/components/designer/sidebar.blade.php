@@ -24,7 +24,10 @@
 
             <ul class="space-y-1">
                 @foreach ($menus as $menu)
-                    @php $active = request()->routeIs($menu['route']); @endphp
+                    @php
+                        $active = request()->routeIs($menu['route'])
+                            || request()->routeIs($menu['route'] . '.*');
+                    @endphp
                     <li>
                         <a href="{{ route($menu['route']) }}"
                            class="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors
