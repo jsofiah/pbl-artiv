@@ -7,6 +7,7 @@ use App\Http\Controllers\Customer\PemesananController;
 use App\Http\Controllers\Customer\PembayaranController;
 use App\Http\Controllers\Customer\PesananController;
 use App\Http\Controllers\Designer\DashboardController;
+use App\Http\Controllers\Designer\JobPoolController;
 use App\Http\Controllers\Designer\PekerjaanController;
 use App\Http\Controllers\Designer\RiwayatPekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -129,8 +130,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])
             ->name('availability.toggle');
             
-        Route::get('/job-pool', [DashboardController::class, 'jobPool'])->name('job-pool');
-
+        // ============ JOB POOL ============
+        Route::get('/job-pool', [JobPoolController::class, 'index'])->name('job-pool');
+        Route::get('/job-pool/{order}', [JobPoolController::class, 'show'])->name('job-pool.show');
+        Route::post('/job-pool/{order}/ambil', [JobPoolController::class, 'ambil'])->name('job-pool.ambil');
+        Route::get('/job-pool/{order}/sukses', [JobPoolController::class, 'sukses'])->name('job-pool.sukses');
+        Route::get('/job-pool/{order}/reference/{reference}/download', [JobPoolController::class, 'downloadReference'])->name('job-pool.reference.download');
+        Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference']) ->name('job-pool.reference.preview');
         // ============ PEKERJAAN ============
         Route::get('/pekerjaan-saya', [PekerjaanController::class, 'index'])->name('pekerjaan.index');
         Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
