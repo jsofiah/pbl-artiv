@@ -2,13 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer utilities {
     .line-clamp-4 {
         display: -webkit-box;
         -webkit-line-clamp: 4;
         -webkit-box-orient: vertical;
         overflow: hidden;
+    }
+
+    /* Hide scrollbar untuk Chrome, Safari, dan Opera */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none !important;
+    }
+    /* Hide scrollbar untuk IE, Edge, dan Firefox */
+    .no-scrollbar {
+        -ms-overflow-style: none !important; /* IE dan Edge */
+        scrollbar-width: none !important; /* Firefox */
     }
 }
 
@@ -25,8 +34,12 @@
 }
 
 @keyframes canopy-x {
-    from { transform: translateX(0); }
-    to   { transform: translateX(calc(-100% - var(--gap, 12px))); }
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(calc(-100% - var(--gap, 12px)));
+    }
 }
 
 .scrollbar-thin::-webkit-scrollbar {
