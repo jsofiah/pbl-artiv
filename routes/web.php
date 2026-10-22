@@ -21,9 +21,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
 use App\Http\Controllers\Customer\ReviewController;
-use App\Http\Controllers\Customer\NotificationController;
 use App\Http\Controllers\Admin\ManajemenFileController;
 use App\Http\Controllers\Admin\HargaExpressController;
+use App\Http\Controllers\NotificationController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -114,10 +114,6 @@ Route::prefix('customer')->name('customer.')->group(function () {
             Route::post('/', [ReviewController::class, 'store'])->name('store');
             Route::get('/sukses', [ReviewController::class, 'sukses'])->name('sukses');
         });
-
-        // Notifikasi
-        Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
-        Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
     });
 });
 
@@ -133,8 +129,11 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:designer')
         ->name('profile.designer-status.update');
 
-    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
-    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+        
+        // Notifikasi (customer, designer, admin)
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifikasi.index');
+    Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
+    Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
 
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
@@ -180,7 +179,7 @@ Route::middleware('auth')->group(function () {
             [PekerjaanController::class, 'kirimDeliverable']
         )
             ->name('pekerjaan.kirimDeliverable');
-        Route::get('/notifikasi', [DashboardController::class, 'notifikasi'])->name('notifikasi');
+        Route::get('/notifikasi', fn () => redirect()->route('notifikasi.index'))->name('notifikasi');
         Route::get('/riwayat', [RiwayatPekerjaanController::class, 'index'])->name('riwayat');
         Route::get('/riwayat/ekspor-csv', [RiwayatPekerjaanController::class, 'exportCsv'])->name('riwayat.csv');
         Route::get('/riwayat/cetak', [RiwayatPekerjaanController::class, 'cetak'])->name('riwayat.cetak');
