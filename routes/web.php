@@ -12,6 +12,9 @@ use App\Http\Controllers\Designer\PekerjaanController;
 use App\Http\Controllers\Designer\RiwayatPekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\MonitoringController;
+use App\Http\Controllers\Admin\KatalogController;
+use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\PengaturanController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
@@ -181,21 +184,21 @@ Route::middleware('auth')->group(function () {
 
 
     // Admin
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/akun/designer', [AdminDashboardController::class, 'akunDesigner'])->name('akun.designer');
-        Route::get('/akun/admin', [AdminDashboardController::class, 'akunAdmin'])->name('akun.admin');
-        Route::get('/akun/customer', [AdminDashboardController::class, 'akunCustomer'])->name('akun.customer');
-        Route::get('/katalog', [AdminDashboardController::class, 'katalog'])->name('katalog');
-        Route::get('/harga-express', [AdminDashboardController::class, 'hargaExpress'])->name('harga-express');
-        Route::get('/file', [AdminDashboardController::class, 'file'])->name('file');
-        Route::get('/monitoring', [AdminDashboardController::class, 'monitoring'])->name('monitoring');
-        Route::get('/laporan', [AdminDashboardController::class, 'laporan'])->name('laporan');
-        Route::get('/pengaturan', [AdminDashboardController::class, 'pengaturan'])->name('pengaturan');
-        Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
-        Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
-        Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
-    });
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Dashboard Utama & Queue Export
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/export', [AdminDashboardController::class, 'exportReport'])->name('dashboard.export');
+
+    // Monitoring (Pekerjaan & Pembayaran)
+    Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+    Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
+    Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
+
+    // Modul Terpisah
+    Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog');
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+    Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
+});
 
     Route::middleware('auth')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

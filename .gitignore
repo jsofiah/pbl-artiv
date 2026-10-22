@@ -35,3 +35,4 @@ node_modules/
 /playwright/.auth/
 e2e/.auth
 e2e/img
+e2e
