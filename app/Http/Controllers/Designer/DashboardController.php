@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\DesignerStat;
 use App\Models\OrderSplit;
+use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+
 
 class DashboardController extends Controller
 {
@@ -79,16 +81,15 @@ class DashboardController extends Controller
         $persenBulanIni  = $target > 0 ? (int) min(100, round($bulanIni / $target * 100)) : 0;
         $persenBulanLalu = $target > 0 ? (int) min(100, round($bulanLalu / $target * 100)) : 0;
 
-        $notifikasi = Order::with(['product'])
-            ->where('designer_id', $designerId)
-            ->orderByDesc('updated_at')
+        $notifikasi = Notification::where('user_id', $designerId)
+            ->latest()
             ->take(4)
             ->get()
-            ->map(fn ($order) => (object) [
-                'judul'    => $this->labelAktivitas($order->status),
-                'isi'      => $order->product?->name ?? 'Pekerjaan',
-                'waktu'    => $order->updated_at->diffForHumans(),
-                'order_id' => $order->id,
+            ->map(fn ($n) => (object) [
+                'judul'    => $n->title,
+                'isi'      => $n->body,
+                'waktu'    => $n->created_at->diffForHumans(),
+                'order_id' => $n->data['order_id'] ?? null,
             ]);
 
         $trenBulanan = [];
@@ -137,7 +138,7 @@ class DashboardController extends Controller
             'notifikasi'            => $notifikasi,
             'jobPoolTersedia'       => $jobPoolTersedia,
             'pekerjaanSayaCount'    => $statistik['order_aktif'],
-            'notifikasiBelumDibaca' => $notifikasi->count(),
+            'notifikasiBelumDibaca' => Notification::where('user_id', $designerId)->unread()->count(),
             'trenBulanan'           => $trenBulanan,
             'statusBreakdown' => $statusBreakdown,
             'kapasitasMax'      => $kapasitasMax,

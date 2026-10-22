@@ -58,7 +58,10 @@
                 </h1>
 
                 <div class="flex items-center gap-4">
-                    <x-shared.notification-icon variant="dark" />
+                    @include('partials.notification-dropdown', [
+            'bellClass' => 'border-slate-300 text-slate-600 hover:bg-slate-100',
+            'ringColor' => '#FFFFFF',
+        ])
                     <x-shared.user-menu variant="dark" />
                 </div>
             </header>
