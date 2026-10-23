@@ -13,6 +13,7 @@ use App\Http\Controllers\Designer\RiwayatPekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\KatalogController;
+use App\Http\Controllers\Admin\ProductTierController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\PengaturanController;
 use Illuminate\Support\Facades\Route;
@@ -194,8 +195,21 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
     Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
 
+    // Katalog
+    Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index');
+    Route::get('/katalog/create', [KatalogController::class, 'create'])->name('katalog.create');
+    Route::post('/katalog', [KatalogController::class, 'store'])->name('katalog.store');
+    Route::get('/katalog/{product}/edit', [KatalogController::class, 'edit'])->name('katalog.edit');
+    Route::put('/katalog/{product}', [KatalogController::class, 'update'])->name('katalog.update');
+    Route::delete('/katalog/{product}', [KatalogController::class, 'destroy'])->name('katalog.destroy');
+
+    // Tier
+    Route::get('/katalog/{product}/tiers', [ProductTierController::class, 'index'])->name('katalog.tiers.index');
+    Route::post('/katalog/{product}/tiers', [ProductTierController::class, 'store'])->name('katalog.tiers.store');
+    Route::put('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'update'])->name('katalog.tiers.update');
+    Route::delete('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'destroy'])->name('katalog.tiers.destroy');
+
     // Modul Terpisah
-    Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog');
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
     Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
 });
