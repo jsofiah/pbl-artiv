@@ -3,43 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Exports\OrdersExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
-use Carbon\CarbonPeriod;
-use App\Models\Payment;
 
 class LaporanController extends Controller
 {
-
-    public function index()
-    {
-        // 1. Tentukan tanggal transaksi pertama & tanggal bulan ini
-        $firstOrder = Order::oldest('created_at')->first();
-        $startDate  = $firstOrder ? $firstOrder->created_at->copy()->startOfMonth() : now()->startOfMonth();
-        $endDate    = now()->startOfMonth();
-
-        // 2. Buat periode bulanan dari tanggal awal sampai bulan ini
-        $period = CarbonPeriod::create($startDate, '1 month', $endDate);
-
-        $monthsByYear = [];
-
-        // 3. Balik urutan periode (array_reverse) agar bulan terbaru (Oktober) tampil paling atas
-        foreach (array_reverse($period->toArray()) as $date) {
-            $year = $date->format('Y');
-
-            $monthsByYear[$year][] = [
-                'name'       => $date->translatedFormat('F'),
-                'start_date' => $date->copy()->startOfMonth()->format('Y-m-d'),
-                'end_date'   => $date->copy()->endOfMonth()->format('Y-m-d'),
-            ];
-        }
-
-        return view('admin.laporan', compact('monthsByYear'));
-    }
-
     public function export(Request $request): response
     {
         $request->validate([
@@ -68,7 +44,7 @@ class LaporanController extends Controller
     }
 
     /**
-     * Ekspor ke format CSV.
+     * Ekspor langsung ke format CSV (Stream Download).
      *
      * @param Collection<int, Order> $orders
      */
@@ -86,24 +62,8 @@ class LaporanController extends Controller
                 return;
             }
 
-            // 1. Kalkulasi Data KPI (Disamakan dengan Dashboard & Excel)
-            $totalTransaksi = $orders->count();
-            $totalOmset     = (float) $orders->sum(function ($order) {
-                return $order->payments->where('status', Payment::STATUS_BERHASIL)->sum('amount');
-            });
-            $orderSelesai   = $orders->where('status', 'completed')->count();
-
-            // 2. Baris Header & Ringkasan KPI di Bagian Atas CSV
-            fputcsv($file, ['LAPORAN TRANSAKSI ARTIV']);
-            fputcsv($file, ['RINGKASAN PERFORMA']);
-            fputcsv($file, ['Total Transaksi', $totalTransaksi . ' Order']);
-            fputcsv($file, ['Total Omset (Di-ACC)', $totalOmset]);
-            fputcsv($file, ['Order Selesai', $orderSelesai . ' Order']);
-            fputcsv($file, []); // Baris kosong pemisah
-
-            // 3. Header Kolom Tabel Utama
+            // Header Kolom CSV
             fputcsv($file, [
-                'No',
                 'Kode Order',
                 'Tanggal Transaksi',
                 'Nama Customer',
@@ -113,18 +73,16 @@ class LaporanController extends Controller
                 'Status Order',
             ]);
 
-            // 4. Baris Data Transaksi
-            $no = 1;
+            // Baris Data Transaksi
             foreach ($orders as $order) {
                 fputcsv($file, [
-                    $no++,
                     '#' . $order->order_code,
                     $order->created_at?->format('Y-m-d H:i') ?? '-',
                     $order->customer?->full_name ?? '-',
                     $order->customer?->email ?? '-',
                     $order->product?->name ?? 'Jasa Kreatif',
                     $order->total_price,
-                    str_replace('_', ' ', strtoupper($order->status)),
+                    str_replace('_', ' ', $order->status),
                 ]);
             }
 

@@ -3,8 +3,24 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    {{-- Inisialisasi Alpine.js State Khusus Export --}}
+    {{-- Inisialisasi Alpine.js State (Range dihapus, exportFormat ditambahkan) --}}
     <div x-data="{ exportModal: false, exportFormat: 'xlsx' }">
+
+        {{-- Flash Message Alert --}}
+        @if (session('success'))
+            <div
+                class="mb-6 p-4 text-sm text-emerald-800 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{{ session('success') }}</span>
+                </div>
+                <button onclick="this.parentElement.remove()"
+                    class="text-emerald-500 hover:text-emerald-700">&times;</button>
+            </div>
+        @endif
 
         {{-- 6 Card Statistik Top Bar (Operasional Detail) --}}
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
@@ -61,13 +77,11 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {{-- Left (2/3): Grafik Pendapatan Harian --}}
             <div
-                class="lg:col-span-2 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h2 class="text-sm font-bold text-gray-900">Statistik Pendapatan Harian</h2>
-                    </div>
+                class="lg:col-span-2 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-full">
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900 mb-2">Statistik Pendapatan Harian</h2>
                 </div>
-                <div id="chart-statistik" class="w-full min-h-[260px]"></div>
+                <div id="chart-statistik" class="w-full flex-1 flex flex-col justify-end"></div>
             </div>
 
             {{-- Right (1/3): Rekapitulasi Performa Bulan Berjalan --}}
@@ -121,17 +135,26 @@
                         </div>
 
                         {{-- Separator Line & Tombol Trigger Ekspor Laporan --}}
-                        <div class="border-t border-gray-100 pt-4">
-                            <button type="button" @click="exportModal = true"
-                                class="w-full py-2.5 px-4 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition shadow-sm flex items-center justify-center gap-2">
-                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="border-t border-gray-100 pt-4 relative" x-data="{ dropdownOpen: false }">
+                            <button type="button" @click="dropdownOpen = !dropdownOpen"
+                                class="w-full py-2.5 px-4 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition shadow-sm flex items-center justify-between">
+                                <span class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Ekspor Laporan
+                                </span>
+                                <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200"
+                                    :class="dropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        d="M19 9l-7 7-7-7" />
                                 </svg>
-                                Ekspor Laporan
                             </button>
 
-                            {{-- Menu Popover Dropdown (Kebawah) --}}
+                            {{-- Menu Popover Dropdown --}}
                             <div x-show="dropdownOpen" x-cloak @click.away="dropdownOpen = false"
                                 x-transition:enter="transition ease-out duration-100"
                                 x-transition:enter-start="transform opacity-0 scale-95"
@@ -139,7 +162,7 @@
                                 x-transition:leave="transition ease-in duration-75"
                                 x-transition:leave-start="transform opacity-100 scale-100"
                                 x-transition:leave-end="transform opacity-0 scale-95"
-                                class="absolute right-0 left-0 top-full mt-2 z-30 bg-white rounded-2xl border border-gray-100 shadow-xl p-1.5 space-y-1">
+                                class="absolute right-0 left-0 bottom-full mb-2 z-30 bg-white rounded-2xl border border-gray-100 shadow-xl p-1.5 space-y-1">
 
                                 {{-- Opsi 1: Excel --}}
                                 <button type="button"
@@ -190,7 +213,8 @@
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-gray-600">
-                    <thead class="bg-gray-50/80 text-gray-700 font-semibold uppercase text-[11px] border-b border-gray-100">
+                    <thead
+                        class="bg-gray-50/80 text-gray-700 font-semibold uppercase text-[11px] border-b border-gray-100">
                         <tr>
                             <th class="px-5 py-3">Kode Order</th>
                             <th class="px-5 py-3">Customer & Layanan</th>
@@ -237,29 +261,33 @@
             </div>
         </div>
 
-        {{-- MODAL TRIGGER EXPORT QUEUE WORKER --}}
+        {{-- MODAL EXPORT LAPORAN --}}
         <div x-show="exportModal" x-cloak
             class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative" @click.away="exportModal = false">
                 <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-                    <h3 class="text-base font-bold text-gray-900">Ekspor Laporan via Queue</h3>
+                    <h3 class="text-base font-bold text-gray-900">Ekspor Laporan Transaksi</h3>
                     <button @click="exportModal = false" class="text-gray-400 hover:text-gray-600">&times;</button>
                 </div>
 
-                <form action="{{ route('admin.dashboard.export') }}" method="POST">
+                <form action="{{ route('admin.laporan.export') }}" method="POST">
                     @csrf
-                    <p class="text-xs text-gray-500 mb-4">Proses ekspor laporan ini dijalankan oleh Queue Worker di
-                        latar belakang. Kamu bisa bebas navigasi tanpa nunggu loading.</p>
+                    <input type="hidden" name="format" :value="exportFormat">
+
+                    <p class="text-xs text-gray-500 mb-4">
+                        Format dipilih: <span class="font-bold text-purple-600 uppercase" x-text="exportFormat"></span>.
+                        Tentukan rentang tanggal laporan yang akan diunduh.
+                    </p>
 
                     <div class="space-y-3 mb-6">
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Dari Tanggal</label>
-                            <input type="date" name="start_date"
+                            <input type="date" name="start_date" required
                                 class="w-full text-xs rounded-xl border border-gray-200 py-2 px-3 focus:ring-purple-500/20 focus:border-purple-600">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Sampai Tanggal</label>
-                            <input type="date" name="end_date"
+                            <input type="date" name="end_date" required
                                 class="w-full text-xs rounded-xl border border-gray-200 py-2 px-3 focus:ring-purple-500/20 focus:border-purple-600">
                         </div>
                     </div>
@@ -268,7 +296,7 @@
                         <button type="button" @click="exportModal = false"
                             class="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition">Batal</button>
                         <button type="submit"
-                            class="px-4 py-2 text-xs font-semibold text-white bg-[#745BB8] hover:bg-[#5C469C] rounded-xl transition shadow-sm">
+                            class="px-4 py-2 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition shadow-sm">
                             Mulai Ekspor
                         </button>
                     </div>
@@ -350,7 +378,7 @@
                 }],
                 chart: {
                     type: 'area',
-                    height: 330,
+                    height: 300,
                     toolbar: {
                         show: false
                     },
@@ -399,7 +427,7 @@
             var chartPendapatan = new ApexCharts(document.querySelector("#chart-statistik"), optionsPendapatan);
             chartPendapatan.render();
 
-            // 2. Chart Distribusi Kategori (Jumlah Terjual)
+            // 2. Chart Distribusi Kategori (Jumlah Terjual & Truncate Nama Panjang)
             var optionsKategori = {
                 series: [{
                     name: 'Total Order',
@@ -439,6 +467,12 @@
                     labels: {
                         style: {
                             fontSize: '11px'
+                        },
+                        formatter: function(val) {
+                            if (typeof val === 'string' && val.length > 15) {
+                                return val.substring(0, 15) + '...';
+                            }
+                            return val;
                         }
                     }
                 },
@@ -450,6 +484,11 @@
                     }
                 },
                 tooltip: {
+                    x: {
+                        formatter: function(val, opts) {
+                            return opts.w.globals.labels[opts.dataPointIndex] || val;
+                        }
+                    },
                     y: {
                         formatter: function(val) {
                             return val + " Order";

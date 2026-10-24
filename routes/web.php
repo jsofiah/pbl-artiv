@@ -189,10 +189,10 @@ Route::middleware('auth')->group(function () {
 
 
     // Admin
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        // Dashboard Utama & Queue Export
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::post('/dashboard/export', [AdminDashboardController::class, 'exportReport'])->name('dashboard.export');
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Dashboard Utama & Queue Export
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::post('/laporan/export', [LaporanController::class, 'export'])->name('laporan.export');
 
         // Monitoring (Pekerjaan & Pembayaran)
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
