@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Cache;
 
 class Order extends Model
 {
@@ -258,6 +259,38 @@ class Order extends Model
         };
     }
 
+    // ==================== Scopes Pembayaran ====================
+
+    /**
+     * Scope untuk mengambil order yang belum lunas (belum ada pembayaran berhasil)
+     */
+    public function scopeBelumDibayar(Builder $query): Builder
+    {
+        return $query->whereNotIn('status', [self::STATUS_CANCELLED, self::STATUS_REFUNDED])
+            ->where(function ($q) {
+                $q->doesntHave('payments')
+                  ->orWhereDoesntHave('payments', function ($pq) {
+                      $pq->where('status', Payment::STATUS_BERHASIL);
+                  });
+            });
+    }
+
+    /**
+     * Order belum dibayar yang UMURNYA LEBIH DARI 24 JAM
+     */
+    public function scopeKedaluwarsaPembayaran(Builder $query): Builder
+    {
+        return $query->belumDibayar()->where('created_at', '<=', now()->subHours(24));
+    }
+
+    /**
+     * Order belum dibayar yang MASIH AKTIF (< 24 Jam)
+     */
+    public function scopeMenungguPembayaran(Builder $query): Builder
+    {
+        return $query->belumDibayar()->where('created_at', '>', now()->subHours(24));
+    }
+
     // ==================== Status Helpers ====================
 
     public function isPending(): bool
@@ -388,6 +421,19 @@ class Order extends Model
     public function canBeReviewed(): bool
     {
         return $this->isCompleted() && !$this->hasReview();
+    }
+
+    protected static function booted(): void
+    {
+        // Berjalan saat data order baru dibuat atau di-update
+        static::saved(function () {
+            Cache::forget('admin_dashboard_stats');
+        });
+
+        // Berjalan saat data order dihapus
+        static::deleted(function () {
+            Cache::forget('admin_dashboard_stats');
+        });
     }
 
 }
