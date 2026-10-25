@@ -21,6 +21,7 @@ use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
 use App\Http\Controllers\Customer\ReviewController;
 use App\Http\Controllers\Customer\NotificationController;
 use App\Http\Controllers\Admin\ManajemenFileController;
+use App\Http\Controllers\Admin\HargaExpressController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -195,7 +196,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/monitoring/detail/{order}', [MonitoringController::class, 'detail'])->name('monitoring.detail');
         Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
         Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
-        
+
+        Route::get('/harga-express', [HargaExpressController::class, 'index'])->name('harga-express.index');
+        Route::post('/harga-express', [HargaExpressController::class, 'store'])->name('harga-express.store');
+        Route::put('/harga-express/{hargaExpress}', [HargaExpressController::class, 'update'])->name('harga-express.update');
+        Route::delete('/harga-express/{hargaExpress}', [HargaExpressController::class, 'destroy'])->name('harga-express.destroy');
+
         // Route Manajemen File
         Route::get('/manajemen-file', [ManajemenFileController::class, 'index'])->name('manajemen-file.index');
         Route::get('/manajemen-file/preview/{type}/{id}', [ManajemenFileController::class, 'preview'])->name('manajemen-file.preview');
