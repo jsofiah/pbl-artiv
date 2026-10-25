@@ -78,7 +78,7 @@
                         <h3 class="text-sm font-bold text-gray-900">
                             {{ now()->translatedFormat('F Y') }}
                         </h3>
-                        <a href="#"
+                        <a href="{{ route('admin.laporan') }}"
                             class="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1 transition">
                             Lihat Semua
                         </a>
