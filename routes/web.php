@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\KatalogController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\AkunController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
@@ -104,7 +105,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
             ->name('pemesanan.sukses');
 
-                // Review & rating
+        // Review & rating
         Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
@@ -129,20 +130,23 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:designer')
         ->name('profile.designer-status.update');
 
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        
+
         Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])
             ->name('availability.toggle');
-            
+
         // ============ JOB POOL ============
         Route::get('/job-pool', [JobPoolController::class, 'index'])->name('job-pool');
         Route::get('/job-pool/{order}', [JobPoolController::class, 'show'])->name('job-pool.show');
         Route::post('/job-pool/{order}/ambil', [JobPoolController::class, 'ambil'])->name('job-pool.ambil');
         Route::get('/job-pool/{order}/sukses', [JobPoolController::class, 'sukses'])->name('job-pool.sukses');
         Route::get('/job-pool/{order}/reference/{reference}/download', [JobPoolController::class, 'downloadReference'])->name('job-pool.reference.download');
-        Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference']) ->name('job-pool.reference.preview');
+        Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference'])->name('job-pool.reference.preview');
         // ============ PEKERJAAN ============
         Route::get('/pekerjaan-saya', [PekerjaanController::class, 'index'])->name('pekerjaan.index');
         Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
@@ -184,29 +188,40 @@ Route::middleware('auth')->group(function () {
 
 
     // Admin
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    // Dashboard Utama & Queue Export
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::post('/dashboard/export', [AdminDashboardController::class, 'exportReport'])->name('dashboard.export');
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        // Dashboard Utama & Queue Export
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/dashboard/export', [AdminDashboardController::class, 'exportReport'])->name('dashboard.export');
 
-    // Monitoring (Pekerjaan & Pembayaran)
-    Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
-    Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
-    Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
+        // Monitoring (Pekerjaan & Pembayaran)
+        Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+        Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
+        Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
 
-    // Modul Terpisah
-    Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog');
-    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
-    Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
-});
+        // Modul Terpisah
+        Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog');
+        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+        Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
 
-    Route::middleware('auth')->group(function () {
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        // ===== Manajemen Akun =====
+        Route::prefix('akun')->name('akun.')->group(function () {
+            foreach (['designer', 'admin', 'customer'] as $role) {
+                Route::get($role, [AkunController::class, 'index'])
+                    ->defaults('role', $role)
+                    ->name($role);
+            }
 
-        Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
-        Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+            // Tambah akun (halaman terpisah)
+            Route::get('/{role}/tambah', [AkunController::class, 'create'])->whereIn('role', ['designer', 'admin', 'customer'])->name('create');
+            Route::post('/{role}', [AkunController::class, 'store'])->whereIn('role', ['designer', 'admin', 'customer'])->name('store');
+
+            // Edit akun (halaman terpisah)
+            Route::get('/{user}/edit', [AkunController::class, 'edit'])->whereUuid('user')->name('edit');
+            Route::put('/{user}', [AkunController::class, 'update'])->whereUuid('user')->name('update');
+
+            Route::patch('/{user}/status', [AkunController::class, 'toggleStatus'])->whereUuid('user')->name('status');
+            Route::delete('/{user}', [AkunController::class, 'destroy'])->whereUuid('user')->name('destroy');
+        });
     });
 });
 
