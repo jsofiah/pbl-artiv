@@ -20,10 +20,20 @@
                         ['route' => 'admin.akun.customer', 'label' => 'Akun Customer'],
                     ]
                 ],
-                ['type' => 'link', 'label' => 'Manajemen Katalog',       'route' => 'admin.katalog.index',       'icon' => 'photo'],
-                ['type' => 'link', 'label' => 'Manajemen Harga Express', 'route' => 'admin.harga-express', 'icon' => 'currency-dollar'],
-                ['type' => 'link', 'label' => 'Manajemen File',          'route' => 'admin.file',          'icon' => 'folder'],
-            ]
+                ['type' => 'link', 'label' => 'Manajemen Katalog', 'route' => 'admin.katalog', 'icon' => 'photo'],
+                [
+                    'type' => 'link',
+                    'label' => 'Manajemen Harga Express',
+                    'route' => 'admin.harga-express.index',
+                    'icon' => 'currency-dollar',
+                ],
+                [
+                    'type' => 'link',
+                    'label' => 'Manajemen File',
+                    'route' => 'admin.manajemen-file.index',
+                    'icon' => 'folder',
+                ],
+            ],
         ],
         [
             'title' => 'OPERASIONAL',

@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
 use App\Http\Controllers\Customer\ReviewController;
 use App\Http\Controllers\Customer\NotificationController;
+use App\Http\Controllers\Admin\ManajemenFileController;
+use App\Http\Controllers\Admin\HargaExpressController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -223,10 +225,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::delete('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'destroyBlacklist'])->name('pengaturan.blacklist.destroy');
     Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
 });
-        // Modul Terpisah
-        Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog');
-        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
-        Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
+        Route::get('/harga-express', [HargaExpressController::class, 'index'])->name('harga-express.index');
+        Route::post('/harga-express', [HargaExpressController::class, 'store'])->name('harga-express.store');
+        Route::put('/harga-express/{hargaExpress}', [HargaExpressController::class, 'update'])->name('harga-express.update');
+        Route::delete('/harga-express/{hargaExpress}', [HargaExpressController::class, 'destroy'])->name('harga-express.destroy');
+
+        // Route Manajemen File
+        Route::get('/manajemen-file', [ManajemenFileController::class, 'index'])->name('manajemen-file.index');
+        Route::get('/manajemen-file/preview/{type}/{id}', [ManajemenFileController::class, 'preview'])->name('manajemen-file.preview');
+        Route::delete('/manajemen-file/{type}/{id}', [ManajemenFileController::class, 'destroy'])->name('manajemen-file.destroy');
+        
 
         // ===== Manajemen Akun =====
         Route::prefix('akun')->name('akun.')->group(function () {
