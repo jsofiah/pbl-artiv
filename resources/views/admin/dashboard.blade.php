@@ -3,24 +3,8 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    {{-- Inisialisasi Alpine.js State (Range dihapus, exportFormat ditambahkan) --}}
+    {{-- Inisialisasi Alpine.js State Khusus Export --}}
     <div x-data="{ exportModal: false, exportFormat: 'xlsx' }">
-
-        {{-- Flash Message Alert --}}
-        @if (session('success'))
-            <div
-                class="mb-6 p-4 text-sm text-emerald-800 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{{ session('success') }}</span>
-                </div>
-                <button onclick="this.parentElement.remove()"
-                    class="text-emerald-500 hover:text-emerald-700">&times;</button>
-            </div>
-        @endif
 
         {{-- 6 Card Statistik Top Bar (Operasional Detail) --}}
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
@@ -126,7 +110,11 @@
                                 <h4 class="text-2xl font-extrabold text-black">
                                     {{ $stats['designer_avg_rating'] ?? '0.0' }}
                                 </h4>
-                                <span class="text-amber-400 text-xs">⭐</span>
+                                <svg class="w-5 h-5 text-amber-400 fill-current shrink-0 mb-0.5" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path
+                                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
                             </div>
                         </div>
 
@@ -150,7 +138,7 @@
                                 </svg>
                             </button>
 
-                            {{-- Menu Popover Dropdown --}}
+                            {{-- Menu Popover Dropdown (Kebawah) --}}
                             <div x-show="dropdownOpen" x-cloak @click.away="dropdownOpen = false"
                                 x-transition:enter="transition ease-out duration-100"
                                 x-transition:enter-start="transform opacity-0 scale-95"
@@ -158,7 +146,7 @@
                                 x-transition:leave="transition ease-in duration-75"
                                 x-transition:leave-start="transform opacity-100 scale-100"
                                 x-transition:leave-end="transform opacity-0 scale-95"
-                                class="absolute right-0 left-0 bottom-full mb-2 z-30 bg-white rounded-2xl border border-gray-100 shadow-xl p-1.5 space-y-1">
+                                class="absolute right-0 left-0 top-full mt-2 z-30 bg-white rounded-2xl border border-gray-100 shadow-xl p-1.5 space-y-1">
 
                                 {{-- Opsi 1: Excel --}}
                                 <button type="button"
@@ -266,37 +254,65 @@
                     <button @click="exportModal = false" class="text-gray-400 hover:text-gray-600">&times;</button>
                 </div>
 
-                <form action="{{ route('admin.laporan.export') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="format" :value="exportFormat">
+                <form action="{{ route('admin.laporan.export') }}" 
+      method="POST"
+      @submit.prevent="
+          exportModal = false;
+          $dispatch('toast', { message: 'Menyiapkan file', type: 'info' });
 
-                    <p class="text-xs text-gray-500 mb-4">
-                        Format dipilih: <span class="font-bold text-purple-600 uppercase" x-text="exportFormat"></span>.
-                        Tentukan rentang tanggal laporan yang akan diunduh.
-                    </p>
+          try {
+              const response = await fetch($el.action, {
+                  method: 'POST',
+                  body: new FormData($el)
+              });
 
-                    <div class="space-y-3 mb-6">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1">Dari Tanggal</label>
-                            <input type="date" name="start_date" required
-                                class="w-full text-xs rounded-xl border border-gray-200 py-2 px-3 focus:ring-purple-500/20 focus:border-purple-600">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-1">Sampai Tanggal</label>
-                            <input type="date" name="end_date" required
-                                class="w-full text-xs rounded-xl border border-gray-200 py-2 px-3 focus:ring-purple-500/20 focus:border-purple-600">
-                        </div>
-                    </div>
+              if (!response.ok) throw new Error();
 
-                    <div class="flex items-center justify-end gap-2">
-                        <button type="button" @click="exportModal = false"
-                            class="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition">Batal</button>
-                        <button type="submit"
-                            class="px-4 py-2 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition shadow-sm">
-                            Mulai Ekspor
-                        </button>
-                    </div>
-                </form>
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `laporan-transaksi.${exportFormat}`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+
+              $dispatch('toast', { message: 'Laporan berhasil diunduh', type: 'success' });
+          } catch (err) {
+              $dispatch('toast', { message: 'Gagal mengunduh laporan.', type: 'error' });
+          }
+      ">
+    @csrf
+    <input type="hidden" name="format" :value="exportFormat">
+
+    <p class="text-xs text-gray-500 mb-4">
+        Format dipilih: <span class="font-bold text-purple-600 uppercase" x-text="exportFormat"></span>.
+        Tentukan rentang tanggal laporan yang akan diunduh.
+    </p>
+
+    <div class="space-y-3 mb-6">
+        <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Dari Tanggal</label>
+            <input type="date" name="start_date" required
+                class="w-full text-xs rounded-xl border border-gray-200 py-2 px-3 focus:ring-purple-500/20 focus:border-purple-600">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Sampai Tanggal</label>
+            <input type="date" name="end_date" required
+                class="w-full text-xs rounded-xl border border-gray-200 py-2 px-3 focus:ring-purple-500/20 focus:border-purple-600">
+        </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-2">
+        <button type="button" @click="exportModal = false"
+            class="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition">Batal</button>
+        <button type="submit"
+            class="px-4 py-2 text-xs font-semibold text-white bg-[#745BB8] hover:bg-[#5C469C] rounded-xl transition shadow-sm">
+            Mulai Ekspor
+        </button>
+    </div>
+</form>
             </div>
         </div>
 
