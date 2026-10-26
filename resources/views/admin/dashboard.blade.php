@@ -3,23 +3,8 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    <div x-data="{ range: 'mingguan', exportModal: false }">
-
-        {{-- Flash Message Alert --}}
-        @if (session('success'))
-            <div
-                class="mb-6 p-4 text-sm text-emerald-800 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{{ session('success') }}</span>
-                </div>
-                <button onclick="this.parentElement.remove()"
-                    class="text-emerald-500 hover:text-emerald-700">&times;</button>
-            </div>
-        @endif
+    {{-- Inisialisasi Alpine.js State Khusus Export --}}
+    <div x-data="{ exportModal: false, exportFormat: 'xlsx' }">
 
         {{-- 6 Card Statistik Top Bar (Operasional Detail) --}}
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
@@ -145,6 +130,41 @@
                                 </svg>
                                 Ekspor Laporan
                             </button>
+<<<<<<< HEAD
+=======
+
+                            {{-- Menu Popover Dropdown (Kebawah) --}}
+                            <div x-show="dropdownOpen" x-cloak @click.away="dropdownOpen = false"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="transform opacity-0 scale-95"
+                                x-transition:enter-end="transform opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="transform opacity-100 scale-100"
+                                x-transition:leave-end="transform opacity-0 scale-95"
+                                class="absolute right-0 left-0 top-full mt-2 z-30 bg-white rounded-2xl border border-gray-100 shadow-xl p-1.5 space-y-1">
+
+                                {{-- Opsi 1: Excel --}}
+                                <button type="button"
+                                    @click="exportFormat = 'xlsx'; exportModal = true; dropdownOpen = false"
+                                    class="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-xl transition flex items-center gap-2.5">
+                                    <div class="font-bold text-gray-900">Excel (.xlsx)</div>
+                                </button>
+
+                                {{-- Opsi 2: PDF --}}
+                                <button type="button"
+                                    @click="exportFormat = 'pdf'; exportModal = true; dropdownOpen = false"
+                                    class="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-xl transition flex items-center gap-2.5">
+                                    <div class="font-bold text-gray-900">PDF (.pdf)</div>
+                                </button>
+
+                                {{-- Opsi 3: CSV --}}
+                                <button type="button"
+                                    @click="exportFormat = 'csv'; exportModal = true; dropdownOpen = false"
+                                    class="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded-xl transition flex items-center gap-2.5">
+                                    <div class="font-bold text-gray-900">CSV (.csv)</div>
+                                </button>
+                            </div>
+>>>>>>> 3a3b107 (fix (admin): ekspor laporan)
                         </div>
                     </div>
 
@@ -229,6 +249,7 @@
                     <button @click="exportModal = false" class="text-gray-400 hover:text-gray-600">&times;</button>
                 </div>
 
+<<<<<<< HEAD
                 <form action="{{ route('admin.dashboard.export') }}" method="POST">
                     @csrf
                     <p class="text-xs text-gray-500 mb-4">Proses ekspor laporan ini dijalankan oleh Queue Worker di
@@ -256,6 +277,67 @@
                         </button>
                     </div>
                 </form>
+=======
+                <form action="{{ route('admin.laporan.export') }}" 
+      method="POST"
+      @submit.prevent="
+          exportModal = false;
+          $dispatch('toast', { message: 'Menyiapkan file', type: 'info' });
+
+          try {
+              const response = await fetch($el.action, {
+                  method: 'POST',
+                  body: new FormData($el)
+              });
+
+              if (!response.ok) throw new Error();
+
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `laporan-transaksi.${exportFormat}`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+
+              $dispatch('toast', { message: 'Laporan berhasil diunduh', type: 'success' });
+          } catch (err) {
+              $dispatch('toast', { message: 'Gagal mengunduh laporan.', type: 'error' });
+          }
+      ">
+    @csrf
+    <input type="hidden" name="format" :value="exportFormat">
+
+    <p class="text-xs text-gray-500 mb-4">
+        Format dipilih: <span class="font-bold text-purple-600 uppercase" x-text="exportFormat"></span>.
+        Tentukan rentang tanggal laporan yang akan diunduh.
+    </p>
+
+    <div class="space-y-3 mb-6">
+        <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Dari Tanggal</label>
+            <input type="date" name="start_date" required
+                class="w-full text-xs rounded-xl border border-gray-200 py-2 px-3 focus:ring-purple-500/20 focus:border-purple-600">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Sampai Tanggal</label>
+            <input type="date" name="end_date" required
+                class="w-full text-xs rounded-xl border border-gray-200 py-2 px-3 focus:ring-purple-500/20 focus:border-purple-600">
+        </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-2">
+        <button type="button" @click="exportModal = false"
+            class="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition">Batal</button>
+        <button type="submit"
+            class="px-4 py-2 text-xs font-semibold text-white bg-[#745BB8] hover:bg-[#5C469C] rounded-xl transition shadow-sm">
+            Mulai Ekspor
+        </button>
+    </div>
+</form>
+>>>>>>> 3a3b107 (fix (admin): ekspor laporan)
             </div>
         </div>
 
