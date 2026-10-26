@@ -194,11 +194,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
         Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
         Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
-        
+
         // Route Manajemen File
         Route::get('/manajemen-file', [ManajemenFileController::class, 'index'])->name('manajemen-file.index');
         Route::get('/manajemen-file/preview/{type}/{id}', [ManajemenFileController::class, 'preview'])->name('manajemen-file.preview');
+        Route::get('/manajemen-file/download/{type}/{id}', [ManajemenFileController::class, 'download'])->name('manajemen-file.download');
         Route::delete('/manajemen-file/{type}/{id}', [ManajemenFileController::class, 'destroy'])->name('manajemen-file.destroy');
+
         // Modul Terpisah
         Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog');
         Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');

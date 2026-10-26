@@ -8,6 +8,7 @@ use App\Models\MessageAttachment;
 use App\Models\OrderReference;
 use App\Services\R2StorageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ManajemenFileController extends Controller
 {
@@ -39,7 +40,6 @@ class ManajemenFileController extends Controller
                 ->paginate(10)
                 ->withQueryString();
         } else {
-            // Mengambil lampiran dari pesan bertipe 'deliverable'
             $query = MessageAttachment::whereHas('message', function ($m) {
                 $m->where('type', Message::TYPE_DELIVERABLE);
             })->with([
@@ -61,7 +61,12 @@ class ManajemenFileController extends Controller
                 ->withQueryString();
         }
 
-        return view('admin.manajemenfile', compact('files', 'tab', 'search', 'sort'));
+        // Jika dipanggil via AJAX / Fetch (Berpindah Tab / Pagination)
+        if ($request->ajax()) {
+    return view('admin.manajemenFileTable', compact('files', 'tab'))->render();
+}
+
+return view('admin.manajemenfile', compact('files', 'tab', 'search', 'sort'));
     }
 
     public function preview(Request $request, string $type, string $id)
@@ -84,7 +89,6 @@ class ManajemenFileController extends Controller
 
         $url = $this->r2Service->temporaryUrlPrivate($cleanPath, 15);
 
-        // Jika dipanggil via Fetch/AJAX (Alpine.js)
         if ($request->expectsJson()) {
             return response()->json([
                 'url'       => $url,
@@ -94,6 +98,34 @@ class ManajemenFileController extends Controller
         }
 
         return redirect()->away($url);
+    }
+
+    public function download(string $type, string $id)
+    {
+        $file = $type === 'references'
+            ? OrderReference::findOrFail($id)
+            : MessageAttachment::findOrFail($id);
+
+        $cleanPath = ltrim($file->file_url ?? $file->file_path ?? '', '/');
+        if (preg_match('#^https?://[^/]+/(.+)$#', $cleanPath, $m)) {
+            $cleanPath = $m[1];
+        }
+
+        if (!$cleanPath || !$this->r2Service->existsPrivate($cleanPath)) {
+            return back()->with('error', 'File tidak ditemukan di Cloudflare R2 storage.');
+        }
+
+        $fileName = $file->file_name ?? 'download-file';
+
+        return response()->streamDownload(function () use ($cleanPath) {
+            $stream = Storage::disk('r2')->readStream($cleanPath);
+            if ($stream) {
+                fpassthru($stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
+        }, $fileName);
     }
 
     public function destroy(string $type, string $id)
