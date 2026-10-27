@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
+set -e
 
 echo "Running composer..."
 composer install --no-dev --working-dir=/var/www/html
 
-echo "Building frontend assets..."
-npm ci && npm run build
+echo "Fixing permissions..."
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/vendor
 
 echo "Caching config..."
 php artisan config:cache
