@@ -9,15 +9,17 @@ RUN npm run build
 # Stage 2: Final PHP Image (Nginx + PHP-FPM)
 FROM serversideup/php:8.4-fpm-nginx
 
-COPY . .
+# Copy app files
+COPY --chown=www-data:www-data . .
 
-COPY --from=frontend /app/public/build /var/www/html/public/build
+# Copy built assets
+COPY --from=frontend --chown=www-data:www-data /app/public/build /var/www/html/public/build
 
-# Install composer dependencies saat build, tanpa script (karena APP_KEY belum ada)
+# Install composer sebagai www-data (user default image)
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
 
-# Script deploy hanya untuk cache & migrate (cepat)
-COPY --chmod=755 ./scripts/00-laravel-deploy.sh /etc/entrypoint.d/99-deploy.sh
+# Script deploy
+COPY --chmod=755 --chown=www-data:www-data ./scripts/00-laravel-deploy.sh /etc/entrypoint.d/99-deploy.sh
 
 ENV APP_ENV=production
 ENV APP_DEBUG=false

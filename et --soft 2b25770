@@ -1,0 +1,117 @@
+[33m014ad89[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32msetup-deploy[m[33m, [m[1;31morigin/setup-deploy[m[33m)[m fix: correct Dockerfile and deploy script for Render
+[33mc0f4517[m fix: correct Dockerfile and deploy script for Render
+[33mb699dc4[m update composer.lock
+[33m9d0595c[m fix: correct Dockerfile
+[33m498a5f2[m fix: correct Dockerfile and deploy script for Render
+[33m4fbcbf1[m setup deploy with docker
+[33m2b25770[m setup deploy with docker
+[33mcbbed7b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Merge pull request #28 from jsofiah/pengaturan
+[33mb5cd45e[m[33m ([m[1;31morigin/pengaturan[m[33m, [m[1;32mpengaturan[m[33m)[m Merge branch 'main' of https://github.com/jsofiah/pbl-artiv into pengaturan
+[33m6db6902[m Merge pull request #27 from jsofiah/manajemen-katalog
+[33mac368cf[m pengaturan admin: blacklist, revision fee
+[33m9a45e23[m[33m ([m[1;31morigin/manajemen-katalog[m[33m, [m[1;32mmanajemen-katalog[m[33m)[m manajemen katalog (product & tiers): tambah, edit, hapus
+[33m31eb4a9[m Merge pull request #26 from jsofiah/admin-routing
+[33me0eae41[m[33m ([m[1;31morigin/admin-routing[m[33m)[m perbaiki rute di halaman admin
+[33mefc1e80[m Merge pull request #25 from jsofiah/auth-and-role-based
+[33mf78ce04[m[33m ([m[1;31morigin/auth-and-role-based[m[33m, [m[1;32mauth-and-role-based[m[33m)[m register role
+[33m94c08ca[m Merge origin/main into main
+[33mc7ba6ec[m merge edit-profile
+[33m79c70da[m merge job-pool
+[33m39e7fdb[m merge monitoring-pekerjaan
+[33mdfbc5ae[m Merge pull request #24 from jsofiah/edit-profile
+[33mbaf7e9c[m[33m ([m[1;31morigin/backup-main-2[m[33m, [m[1;32mbackup-main-2[m[33m)[m merge branch main
+[33mf2b03ca[m Merge pull request #23 from jsofiah/job-pool
+[33m9757e8e[m merge branch main
+[33m3d2badc[m Merge pull request #22 from jsofiah/monitoring-pekerjaan
+[33m823d1d6[m merge branch main
+[33mdb3b70c[m Merge pull request #21 from jsofiah/designer/riwayat-pekerjaan
+[33m965f2d3[m Merge remote-tracking branch 'origin/main' into designer/riwayat-pekerjaan
+[33m70962a1[m[33m ([m[1;31morigin/dashboard-designer[m[33m, [m[1;32mdashboard-designer[m[33m)[m Merge pull request #20 from jsofiah/beranda-katalog
+[33m889c658[m[33m ([m[1;31morigin/beranda-katalog[m[33m)[m Merge remote-tracking branch 'origin/main' into beranda-katalog
+[33m9798434[m Merge pull request #19 from jsofiah/pekerjaan-saya
+[33m58ebb8e[m[33m ([m[1;31morigin/pekerjaan-saya[m[33m, [m[1;32mpekerjaan-saya[m[33m)[m perbaikan sidebar
+[33m0234e73[m perbaikan controller download
+[33m6990851[m[33m ([m[1;32mberanda-katalog[m[33m)[m beranda: Perbaikan review beranda
+[33m484df90[m[33m ([m[1;31morigin/edit-profile[m[33m, [m[1;32medit-profile[m[33m)[m feat designer: menambahkan edit status ketersediaan designer
+[33mfd826de[m Merge pull request #18 from jsofiah/dashboard-designer
+[33mb25d4c8[m[33m ([m[1;32mdesigner/riwayat-pekerjaan[m[33m)[m riwayat pekerjaan dan lihat review
+[33maec80b6[m[33m ([m[1;32mjob-pool[m[33m)[m feat (designer): job pool
+[33m6c8ce90[m dashboard dengan chart, warning, kapasitas, toggle availability
+[33mfbeda44[m Merge branch 'job-detail-ambil' of https://github.com/jsofiah/pbl-artiv into job-pool
+[33m4fe082f[m[33m ([m[1;32mmonitoring-pekerjaan[m[33m)[m feat(admin): verifikasi pembayaran
+[33m8b0b15e[m[33m ([m[1;31morigin/test-pembayaran[m[33m)[m test-pembayaran
+[33ma78c74d[m[33m ([m[1;31morigin/test-ringkasan[m[33m)[m test ringkasan
+[33m4be7976[m[33m ([m[1;31morigin/test-pemesanan[m[33m)[m testing alur pemesanan
+[33m4b4a33b[m[33m ([m[1;31morigin/job-detail-ambil[m[33m, [m[1;32mjob-detail-ambil[m[33m)[m job-pool: buat controller dan view  mengambil order dari job pool
+[33mb1a1f96[m Merge pull request #17 from jsofiah/beranda-katalog
+[33mf1f9b83[m katalog: memperbaiki filter urutan
+[33mf749c16[m Merge pull request #16 from jsofiah/pemesanan
+[33m196cd7b[m[33m ([m[1;31morigin/pemesanan[m[33m)[m order: mengganti OrderLog dan pindah file referensi
+[33m856872e[m order: mengganti OrderLog dan pindah file referensi
+[33m606eff9[m merge main into pemesanan
+[33ma967253[m designer: add job pool, detail job, dan sukses page
+[33ma201d73[m designer: add job pool, detail job, dan sukses page
+[33mb62ae2f[m setup playwright e2e testing
+[33m5f84b20[m fix: perbaikan alur pemesanan & pembayaran (temuan 1,3)
+[33meb25d4f[m merge: gabungkan branch notif ke main
+[33m9d83766[m Merge branch edit-profile
+[33m0dacbd7[m Merge branch pembayaran
+[33ma87506e[m mecegah input selain angka di form nomor telp
+[33mccece0f[m[33m ([m[1;31morigin/notif[m[33m)[m fix notif
+[33me375a98[m solve conflict
+[33m057c32a[m Merge pull request #15 from jsofiah/pekerjaan-saya
+[33m3723c3e[m real-time status & multi-file deliverable detail pekerjaan
+[33m1500320[m Merge branch 'main' of https://github.com/jsofiah/pbl-artiv into beranda-katalog
+[33mbe827a0[m Update Beranda
+[33m424e795[m Merge pull request #14 from jsofiah/beranda-katalog
+[33m769c4fc[m Merge main into beranda-katalog
+[33m4dbb6a4[m Update  beranda + katalog
+[33m5870fe5[m[33m ([m[1;32mnotif[m[33m)[m feat: tambah popup notifikasi customer
+[33m337261f[m Merge pull request #13 from jsofiah/customer-review
+[33mb0d6f6c[m[33m ([m[1;31morigin/customer-review[m[33m)[m Merge remote-tracking branch 'origin/main' into customer-review
+[33m629ca69[m Merge pull request #12 from jsofiah/pesanan
+[33m34bce2e[m[33m ([m[1;31morigin/pesanan[m[33m)[m gada error
+[33m49b3af0[m Merge pull request #11 from jsofiah/pesanan
+[33m2b9bea7[m[33m ([m[1;32mpesanan[m[33m)[m Merge remote-tracking branch 'origin/main' into pesanan
+[33m1b18bee[m chat grace period, approve/revisi, preview file, refactor komponen
+[33mf5f1886[m nambah customer review
+[33m3b8f7d6[m (customer, designer, dan admin) halaman edit data profile
+[33m3e76d69[m Merge branch 'main' of https://github.com/jsofiah/pbl-artiv into edit-profile
+[33m1a02d2c[m Merge pull request #10 from jsofiah/auth-and-role-based
+[33mb57d794[m login & register dengan SSO Google
+[33m12cd00b[m[33m ([m[1;32mpembayaran[m[33m)[m (customer) menambahkan halaman  pembayaran dan halaman sukses bayar
+[33mbd9db31[m Merge pull request #9 from jsofiah/pesanan
+[33mc83290e[m merge: resolve conflicts
+[33mde3b413[m[33m ([m[1;32mbackup-pesanan-sebelum-merge[m[33m)[m menambah rules blacklist keyword chat
+[33m8eeb667[m perbaikan fitur pesanan
+[33mf304c7b[m Merge branch 'main' of https://github.com/jsofiah/pbl-artiv into pembayaran
+[33m2dad922[m Merge branch 'pemesanan'
+[33me6e1b50[m Merge branch 'pemesanan' of https://github.com/jsofiah/pbl-artiv into pembayaran
+[33m1d664df[m menambah halaman detail pesanan + chat menggunakan reverb
+[33mf73d3cc[m form pemesanan, ringkasan, upload referensi private R2
+[33m8ae3881[m nyicil halaman pesanan saya blm ada data
+[33m155e37f[m Merge branch 'pemesanan'
+[33m70c433a[m Update Form Pemesanan
+[33ma2df67e[m Merge branch 'pemesanan'  the commit.
+[33m862b786[m Upadate Form  Pemesanan
+[33m8a90d35[m Merge pull request #8 from jsofiah/pemesanan
+[33m10f70c5[m Merge pull request #7 from jsofiah/beranda-katalog
+[33m420cb02[m Perbaikan Beranda
+[33m313097e[m Update beranda
+[33m7ffefda[m Update Customer Pemesanan
+[33m2bd5952[m update customer beranda dan katalog
+[33m763d67f[m update customer beranda dan katalog
+[33mf21b5b8[m Merge pull request #6 from jsofiah/seeders
+[33m0ff243f[m[33m ([m[1;31morigin/seeders[m[33m, [m[1;32mseeders[m[33m)[m menambah seeder
+[33m90008a6[m alpine
+[33m160149f[m Merge pull request #5 from jsofiah/conn-r2
+[33mdab5adf[m[33m ([m[1;31morigin/conn-r2[m[33m, [m[1;32mconn-r2[m[33m)[m menambah service dan helper r2
+[33m8d40b90[m Merge pull request #4 from jsofiah/auth-and-role-based
+[33mf64342e[m menambahkan authentifikasi serta role based
+[33mb91fa5d[m Merge pull request #3 from jsofiah/model
+[33m2cc748b[m[33m ([m[1;31morigin/model[m[33m)[m tambah model
+[33m5493b7c[m Merge pull request #2 from jsofiah/migration
+[33m8a374d4[m[33m ([m[1;31morigin/migration[m[33m)[m migrations
+[33m6cb21e8[m Merge pull request #1 from jsofiah/conn-r2
+[33m368ada5[m connection ke storage cloudflare r2
+[33ma7bc2b6[m inisialisasi project artiv
