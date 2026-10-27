@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderLog;
 use App\Models\OrderReference;
+use App\Models\Payment;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,9 +23,13 @@ class JobPoolController extends Controller
         $kategori = $request->query('kategori');
         $urutkan  = $request->query('urutkan', 'terbaru');
 
+        // Hanya tampilkan order tanpa desainer yang berstatus 'waiting_designer' & pembayarannya sudah diterima admin aka berhasil
         $query = Order::query()
             ->whereNull('designer_id')
-            ->whereIn('status', ['pending', 'waiting_designer'])
+            ->where('status', Order::STATUS_WAITING_DESIGNER)
+            ->whereHas('payments', function ($p) {
+                $p->where('status', Payment::STATUS_BERHASIL);
+            })
             ->with(['product', 'productTier', 'customer', 'references']);
 
         if ($q !== '') {
@@ -50,7 +55,10 @@ class JobPoolController extends Controller
         $jobPool = $query->paginate(6)->withQueryString();
 
         $totalTersedia = Order::whereNull('designer_id')
-            ->whereIn('status', ['pending', 'waiting_designer'])
+            ->where('status', Order::STATUS_WAITING_DESIGNER)
+            ->whereHas('payments', function ($p) {
+                $p->where('status', Payment::STATUS_BERHASIL);
+            })
             ->count();
 
         $kategoris = Product::where('is_active', true)
@@ -78,7 +86,8 @@ class JobPoolController extends Controller
             'references',
         ])
             ->whereNull('designer_id')
-            ->whereIn('status', ['pending', 'waiting_designer'])
+            ->where('status', Order::STATUS_WAITING_DESIGNER)
+            ->whereHas('payments', fn($p) => $p->where('status', Payment::STATUS_BERHASIL))
             ->findOrFail($order);
 
         return view('designer.detail-job', compact('order'));
@@ -87,7 +96,8 @@ class JobPoolController extends Controller
     public function ambil(Request $request, string $order)
     {
         $orderModel = Order::whereNull('designer_id')
-            ->whereIn('status', ['pending', 'waiting_designer'])
+            ->where('status', Order::STATUS_WAITING_DESIGNER)
+            ->whereHas('payments', fn($p) => $p->where('status', Payment::STATUS_BERHASIL))
             ->findOrFail($order);
 
         if ($orderModel->deadline && $orderModel->deadline->isPast()) {
@@ -108,14 +118,14 @@ class JobPoolController extends Controller
             $orderModel->update([
                 'designer_id' => Auth::id(),
                 'assigned_at' => now(),
-                'status'      => 'in_progress',
+                'status'      => Order::STATUS_IN_PROGRESS,
             ]);
 
             OrderLog::create([
                 'order_id' => $orderModel->id,
                 'actor_id' => Auth::id(),
                 'action'   => 'order_taken',
-                'status'   => 'in_progress',
+                'status'   => Order::STATUS_IN_PROGRESS,
                 'note'     => 'Designer mengambil order dari job pool.',
             ]);
 
@@ -142,7 +152,8 @@ class JobPoolController extends Controller
     public function downloadReference(string $order, string $reference)
     {
         $orderModel = Order::whereNull('designer_id')
-            ->whereIn('status', ['pending', 'waiting_designer'])
+            ->where('status', Order::STATUS_WAITING_DESIGNER)
+            ->whereHas('payments', fn($p) => $p->where('status', Payment::STATUS_BERHASIL))
             ->findOrFail($order);
 
         $ref = OrderReference::where('order_id', $orderModel->id)
@@ -159,7 +170,8 @@ class JobPoolController extends Controller
     public function previewReference(string $order, string $reference)
     {
         $orderModel = Order::whereNull('designer_id')
-            ->whereIn('status', ['pending', 'waiting_designer'])
+            ->where('status', Order::STATUS_WAITING_DESIGNER)
+            ->whereHas('payments', fn($p) => $p->where('status', Payment::STATUS_BERHASIL))
             ->findOrFail($order);
 
         $ref = OrderReference::where('order_id', $orderModel->id)

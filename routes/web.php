@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
 use App\Http\Controllers\Customer\ReviewController;
 use App\Http\Controllers\Customer\NotificationController;
+use App\Http\Controllers\Admin\ManajemenFileController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -105,7 +106,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
             ->name('pemesanan.sukses');
 
-                // Review & rating
+        // Review & rating
         Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
@@ -133,17 +134,17 @@ Route::middleware('auth')->group(function () {
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        
+
         Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])
             ->name('availability.toggle');
-            
+
         // ============ JOB POOL ============
         Route::get('/job-pool', [JobPoolController::class, 'index'])->name('job-pool');
         Route::get('/job-pool/{order}', [JobPoolController::class, 'show'])->name('job-pool.show');
         Route::post('/job-pool/{order}/ambil', [JobPoolController::class, 'ambil'])->name('job-pool.ambil');
         Route::get('/job-pool/{order}/sukses', [JobPoolController::class, 'sukses'])->name('job-pool.sukses');
         Route::get('/job-pool/{order}/reference/{reference}/download', [JobPoolController::class, 'downloadReference'])->name('job-pool.reference.download');
-        Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference']) ->name('job-pool.reference.preview');
+        Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference'])->name('job-pool.reference.preview');
         // ============ PEKERJAAN ============
         Route::get('/pekerjaan-saya', [PekerjaanController::class, 'index'])->name('pekerjaan.index');
         Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
@@ -185,15 +186,16 @@ Route::middleware('auth')->group(function () {
 
 
     // Admin
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    // Dashboard Utama & Queue Export
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::post('/dashboard/export', [AdminDashboardController::class, 'exportReport'])->name('dashboard.export');
+    Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        // Dashboard Utama & Queue Export
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/laporan/export', [LaporanController::class, 'export'])->name('laporan.export');
 
-    // Monitoring (Pekerjaan & Pembayaran)
-    Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
-    Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
-    Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
+        // Monitoring (Pekerjaan & Pembayaran)
+        Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+        Route::get('/monitoring/detail/{order}', [MonitoringController::class, 'detail'])->name('monitoring.detail');
+        Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
+        Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
 
     // Katalog
     Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index');
@@ -208,17 +210,21 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/katalog/{product}/tiers', [ProductTierController::class, 'store'])->name('katalog.tiers.store');
     Route::put('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'update'])->name('katalog.tiers.update');
     Route::delete('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'destroy'])->name('katalog.tiers.destroy');
-
-    // Modul Terpisah
-    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+        
+        // Route Manajemen File
+        Route::get('/manajemen-file', [ManajemenFileController::class, 'index'])->name('manajemen-file.index');
+        Route::get('/manajemen-file/preview/{type}/{id}', [ManajemenFileController::class, 'preview'])->name('manajemen-file.preview');
+        Route::delete('/manajemen-file/{type}/{id}', [ManajemenFileController::class, 'destroy'])->name('manajemen-file.destroy');
+        // Modul Terpisah
+            Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
 
     // Pengaturan
-    Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
+        Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
     Route::post('/pengaturan/blacklist', [PengaturanController::class, 'storeBlacklist'])->name('pengaturan.blacklist.store');
     Route::put('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'updateBlacklist'])->name('pengaturan.blacklist.update');
     Route::delete('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'destroyBlacklist'])->name('pengaturan.blacklist.destroy');
     Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
-});
+    });
 
     Route::middleware('auth')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
