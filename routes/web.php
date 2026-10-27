@@ -211,12 +211,8 @@ Route::middleware('auth')->group(function () {
                     ->name($role);
             }
 
-            // Tambah akun (halaman terpisah)
-            Route::get('/{role}/tambah', [AkunController::class, 'create'])->whereIn('role', ['designer', 'admin', 'customer'])->name('create');
+            // Tambah & edit akun (dikirim dari popup di halaman daftar)
             Route::post('/{role}', [AkunController::class, 'store'])->whereIn('role', ['designer', 'admin', 'customer'])->name('store');
-
-            // Edit akun (halaman terpisah)
-            Route::get('/{user}/edit', [AkunController::class, 'edit'])->whereUuid('user')->name('edit');
             Route::put('/{user}', [AkunController::class, 'update'])->whereUuid('user')->name('update');
 
             Route::patch('/{user}/status', [AkunController::class, 'toggleStatus'])->whereUuid('user')->name('status');
