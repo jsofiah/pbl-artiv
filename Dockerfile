@@ -15,7 +15,7 @@ COPY --from=frontend /app/public/build /var/www/html/public/build
 
 # Jalankan deploy script via entrypoint S6
 COPY ./scripts/00-laravel-deploy.sh /etc/entrypoint.d/99-deploy.sh
-RUN chmod +x /etc/entrypoint.d/99-deploy.sh
+COPY --chmod=755 ./scripts/00-laravel-deploy.sh /etc/entrypoint.d/99-deploy.sh
 
 ENV APP_ENV=production
 ENV APP_DEBUG=false
