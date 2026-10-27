@@ -18,7 +18,7 @@
                         ['route' => 'admin.akun.customer', 'label' => 'Akun Customer'],
                     ],
                 ],
-                ['type' => 'link', 'label' => 'Manajemen Katalog', 'route' => 'admin.katalog', 'icon' => 'photo'],
+                ['type' => 'link', 'label' => 'Manajemen Katalog', 'route' => 'admin.katalog.index', 'icon' => 'photo'],
                 [
                     'type' => 'link',
                     'label' => 'Manajemen Harga Express',
