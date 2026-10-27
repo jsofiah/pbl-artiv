@@ -203,8 +203,8 @@
                             <th class="px-5 py-3">Kode Order</th>
                             <th class="px-5 py-3">Customer & Layanan</th>
                             <th class="px-5 py-3">Nominal</th>
-                            <th class="px-5 py-3">Status</th>
-                            <th class="px-5 py-3 text-right">Aksi</th>
+                            <th class="px-5 py-3 text-center">Status</th>
+                            <th class="px-5 py-3 text-left">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -220,16 +220,16 @@
                                 </td>
                                 <td class="px-5 py-3.5 font-bold text-gray-900">Rp
                                     {{ number_format($order->total_price, 0, ',', '.') }}</td>
-                                <td class="px-5 py-3.5">
+                                <td class="px-5 py-3.5 text-center">
                                     <span
                                         class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-600 border border-purple-100 capitalize">
                                         {{ str_replace('_', ' ', $order->status) }}
                                     </span>
                                 </td>
-                                <td class="px-5 py-3.5 text-right">
-                                    <a href="{{ route('admin.monitoring') }}"
-                                        class="text-xs font-semibold text-purple-600 hover:underline">Detail</a>
-                                </td>
+                                <td class="px-5 py-3.5 text-left">
+    <a href="{{ route('admin.monitoring') }}"
+        class="text-xs font-semibold text-purple-600 hover:underline">Detail</a>
+</td>
                             </tr>
                         @empty
                             <tr>
