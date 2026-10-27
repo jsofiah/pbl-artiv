@@ -13,8 +13,13 @@ COPY . .
 
 COPY --from=frontend /app/public/build /var/www/html/public/build
 
-# Jalankan deploy script via entrypoint S6
-COPY ./scripts/00-laravel-deploy.sh /etc/entrypoint.d/99-deploy.sh
+# Install composer dependencies saat build, bukan saat runtime
+USER root
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader \
+    && chown -R www-data:www-data /var/www/html/vendor /var/www/html/storage /var/www/html/bootstrap/cache
+USER www-data
+
+# Hanya jalankan cache & migrate saat runtime (cepat, tidak butuh health check)
 COPY --chmod=755 ./scripts/00-laravel-deploy.sh /etc/entrypoint.d/99-deploy.sh
 
 ENV APP_ENV=production
