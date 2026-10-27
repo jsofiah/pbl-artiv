@@ -3,9 +3,12 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use App\Jobs\CalculateDashboardStatsJob;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
 Schedule::command('r2:clean-temp-references')->daily();
+Schedule::job(new CalculateDashboardStatsJob)->hourly();
+Schedule::command('orders:cancel-expired')->everyThirtyMinutes();

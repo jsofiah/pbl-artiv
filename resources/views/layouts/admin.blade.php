@@ -19,10 +19,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-/* Sembunyikan scrollbar vertikal halaman di Brave/Chromium */
         html, body, main, div {
-            -ms-overflow-style: none !important; /* IE/Edge */
-            scrollbar-width: none !important;    /* Firefox */
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
         }
         
         html::-webkit-scrollbar,
@@ -40,7 +39,46 @@
     </style>
 </head>
 
-<body class="bg-[#F3F1FA] antialiased">
+<body class="bg-[#F3F1FA] antialiased relative"
+      x-data="{ showToast: false, message: '', type: 'success', toastTimer: null }"
+      @toast.window="
+          showToast = true;
+          message = $event.detail.message;
+          type = $event.detail.type || 'success';
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => showToast = false, $event.detail.timeout || 4000);
+      "
+      @if(session('success'))
+          x-init="$dispatch('toast', { message: {{ json_encode(session('success')) }}, type: 'success' })"
+      @elseif(session('info'))
+          x-init="$dispatch('toast', { message: {{ json_encode(session('info')) }}, type: 'info' })"
+      @elseif(session('error') || $errors->any())
+          x-init="$dispatch('toast', { message: {{ json_encode(session('error') ?? $errors->first()) }}, type: 'error' })"
+      @endif
+>
+
+    {{-- Toast Notification 3 Warna (Emerald, Neutral, Rose) --}}
+    <div x-show="showToast" 
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="translate-y-2 opacity-0"
+         x-transition:enter-end="translate-y-0 opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="translate-y-0 opacity-100"
+         x-transition:leave-end="translate-y-2 opacity-0"
+         class="fixed bottom-6 right-6 z-[99999] px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 text-sm text-white font-medium pointer-events-auto"
+         :class="{
+             'bg-emerald-600': type === 'success',
+             'bg-neutral-900': type === 'info',
+             'bg-rose-600': type === 'error'
+         }">
+        <span class="w-2.5 h-2.5 rounded-full shrink-0" 
+              :class="{
+                  'bg-white': type === 'success' || type === 'error',
+                  'bg-[#D5FC55]': type === 'info'
+              }"></span>
+        <span x-text="message"></span>
+    </div>
 
     <div class="flex min-h-screen">
 
@@ -70,7 +108,7 @@
 
         </div>
     </div>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     @stack('scripts')
 
 </body>
