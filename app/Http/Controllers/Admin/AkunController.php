@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\R2StorageService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class AkunController extends Controller
@@ -84,28 +86,29 @@ class AkunController extends Controller
         ]);
     }
 
-    // ==================== Tambah ====================
+    // ==================== Tambah (popup di halaman daftar) ====================
 
-    public function create(string $role)
-    {
-        abort_unless(isset(self::ROLES[$role]), 404);
-
-        return view('admin.akun.form', [
-            'role'      => $role,
-            'roleLabel' => self::ROLES[$role],
-            'user'      => null,
-        ]);
-    }
-
-    public function store(Request $request, string $role)
+    public function store(Request $request, string $role, R2StorageService $r2)
     {
         abort_unless(isset(self::ROLES[$role]), 404);
 
         $data = $this->validated($request);
+        unset($data['avatar']);
+
+        $avatarUrl = null;
+        if ($request->hasFile('avatar')) {
+            try {
+                $avatarUrl = $r2->upload($request->file('avatar'), 'avatars', R2StorageService::DISK_PUBLIC);
+            } catch (\Throwable $e) {
+                Log::error('Gagal upload avatar (tambah akun): ' . $e->getMessage());
+                return back()->withInput()->with('error', 'Foto gagal diunggah. Coba lagi beberapa saat.');
+            }
+        }
 
         User::create($data + [
-            'role'      => $role,
-            'is_active' => $request->boolean('is_active', true),
+            'role'       => $role,
+            'is_active'  => $request->boolean('is_active', true),
+            'avatar_url' => $avatarUrl,
         ]);
 
         return redirect()
@@ -113,22 +116,14 @@ class AkunController extends Controller
             ->with('success', 'Akun ' . strtolower(self::ROLES[$role]) . ' berhasil ditambahkan.');
     }
 
-    // ==================== Edit ====================
+    // ==================== Edit (popup di halaman daftar) ====================
 
-    public function edit(User $user)
+    public function update(Request $request, User $user, R2StorageService $r2)
     {
         abort_unless(isset(self::ROLES[$user->role]), 404);
 
-        return view('admin.akun.form', [
-            'role'      => $user->role,
-            'roleLabel' => self::ROLES[$user->role],
-            'user'      => $user,
-        ]);
-    }
-
-    public function update(Request $request, User $user)
-    {
         $data = $this->validated($request, $user);
+        unset($data['avatar']);
 
         // Password kosong = tidak diubah
         if (empty($data['password'])) {
@@ -137,6 +132,21 @@ class AkunController extends Controller
 
         // Admin tidak bisa menonaktifkan akunnya sendiri
         $data['is_active'] = $user->id === auth()->id() ? true : $request->boolean('is_active');
+
+        try {
+            if ($request->hasFile('avatar')) {
+                // Upload yang baru dulu, baru hapus yang lama
+                $newUrl = $r2->upload($request->file('avatar'), 'avatars', R2StorageService::DISK_PUBLIC);
+                $this->hapusFoto($r2, $user->avatar_url);
+                $data['avatar_url'] = $newUrl;
+            } elseif ($request->boolean('hapus_foto')) {
+                $this->hapusFoto($r2, $user->avatar_url);
+                $data['avatar_url'] = null;
+            }
+        } catch (\Throwable $e) {
+            Log::error('Gagal memproses avatar (edit akun): ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Foto gagal diunggah. Coba lagi beberapa saat.');
+        }
 
         $user->update($data);
 
@@ -156,9 +166,11 @@ class AkunController extends Controller
         return back()->with('success', $user->is_active ? 'Akun diaktifkan.' : 'Akun dinonaktifkan.');
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user, R2StorageService $r2)
     {
         abort_if($user->id === auth()->id(), 403, 'Tidak bisa menghapus akun sendiri.');
+
+        $avatar = $user->avatar_url;
 
         try {
             $user->delete();
@@ -167,7 +179,22 @@ class AkunController extends Controller
             return back()->with('error', 'Akun tidak bisa dihapus karena masih punya data terkait (misalnya riwayat order). Nonaktifkan akun ini sebagai gantinya.');
         }
 
+        $this->hapusFoto($r2, $avatar);
+
         return back()->with('success', 'Akun berhasil dihapus.');
+    }
+
+    private function hapusFoto(R2StorageService $r2, ?string $url): void
+    {
+        if (! $url) {
+            return;
+        }
+
+        try {
+            $r2->delete($url, R2StorageService::DISK_PUBLIC);
+        } catch (\Throwable $e) {
+            Log::error('Gagal menghapus avatar di R2: ' . $e->getMessage());
+        }
     }
 
     // ==================== Validasi ====================
@@ -180,6 +207,7 @@ class AkunController extends Controller
             'email'     => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
             'phone'     => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
             'password'  => [$user ? 'nullable' : 'required', 'string', 'min:8', 'confirmed'],
+            'avatar'    => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
         ], [
             'required'        => ':attribute wajib diisi.',
             'max'             => ':attribute maksimal :max karakter.',
@@ -189,12 +217,17 @@ class AkunController extends Controller
             'regex'           => 'Nomor telepon hanya boleh berisi angka, spasi, + dan -.',
             'password.min'    => 'Password minimal :min karakter.',
             'confirmed'       => 'Konfirmasi password tidak sama.',
+            'avatar.image'    => 'File harus berupa gambar.',
+            'avatar.mimes'    => 'Foto harus berformat JPG, PNG, atau WEBP.',
+            'avatar.max'      => 'Ukuran foto maksimal 2 MB.',
+            'avatar.uploaded' => 'Foto gagal diunggah. Ukuran maksimal 2 MB.',
         ], [
             'full_name' => 'Nama lengkap',
             'username'  => 'Username',
             'email'     => 'Email',
             'phone'     => 'Nomor telepon',
             'password'  => 'Password',
+            'avatar'    => 'Foto',
         ]);
     }
 }

@@ -5,7 +5,7 @@
 @section('content')
 @php
     $tabs = ['semua' => 'Semua', 'aktif' => 'Aktif', 'nonaktif' => 'Dinonaktifkan'];
-    $sorts = ['terbaru' => 'Terbaru', 'terlama' => 'Terlama', 'nama' => 'Nama A - Z'];
+    $sorts = ['terbaru' => 'Terbaru', 'terlama' => 'Terlama', 'nama' => 'Nama A-Z'];
     $url = fn (array $extra = []) => route('admin.akun.' . $role) . '?' . http_build_query(array_filter(
         array_merge(['q' => $q, 'status' => $status, 'sort' => $sort], $extra), fn ($v) => $v !== '' && $v !== null));
 @endphp
@@ -17,10 +17,10 @@
             <h1 class="text-3xl font-bold text-slate-900">Akun {{ $roleLabel }}</h1>
             <p class="mt-1 text-sm text-slate-500">Kelola data dan status akun {{ strtolower($roleLabel) }} yang terdaftar di Artiv.</p>
         </div>
-        <a href="{{ route('admin.akun.create', $role) }}"
-           class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-lg bg-[#6D28D9] hover:bg-[#5B21B6]">
+        <button type="button" onclick="bukaFormAkun('create')"
+                class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-lg bg-[#6D28D9] hover:bg-[#5B21B6]">
             + Tambah {{ $roleLabel }}
-        </a>
+        </button>
     </div>
 
     @if (session('success'))
@@ -62,6 +62,7 @@
             @foreach ($akun as $u)
                 @php
                     $aktif = (bool) $u->is_active;
+                    $avatarUrl = \App\Helpers\R2Helper::url($u->avatar_url);
                     $detail = [
                         'id'        => $u->id,
                         'nama'      => $u->full_name,
@@ -71,12 +72,23 @@
                         'login'     => optional($u->last_login_at ?? null)->diffForHumans() ?? '-',
                         'aktif'     => $aktif,
                         'role'      => $roleLabel,
-                        'avatar'    => $u->avatar_url,
+                        'avatar'    => $avatarUrl,
                         'rating'    => $u->avg_rating ?? null,
                         'ulasan'    => $u->review_count ?? 0,
                         'selesai'   => $u->completed_order ?? 0,
                         'total'     => $u->total_order ?? 0,
                         'status_url'=> route('admin.akun.status', $u),
+                    ];
+                    $edit = [
+                        'id'       => $u->id,
+                        'nama'     => $u->full_name,
+                        'username' => $u->username,
+                        'email'    => $u->email,
+                        'phone'    => $u->phone,
+                        'aktif'    => $aktif,
+                        'avatar'   => $avatarUrl,
+                        'self'     => $u->id === auth()->id(),
+                        'url'      => route('admin.akun.update', $u),
                     ];
                 @endphp
                 <div class="p-5 bg-white border border-slate-200 rounded-2xl {{ $aktif ? '' : 'opacity-70' }}">
@@ -87,8 +99,8 @@
                     </span>
 
                     <div class="flex flex-col items-center mt-3 text-center">
-                        @if ($u->avatar_url)
-                            <img src="{{ $u->avatar_url }}" alt="" class="object-cover w-16 h-16 rounded-full border-2 border-[#6D28D9]/20">
+                        @if ($avatarUrl)
+                            <img src="{{ $avatarUrl }}" alt="" class="object-cover w-16 h-16 rounded-full border-2 border-[#6D28D9]/20">
                         @else
                             <div class="flex items-center justify-center w-16 h-16 text-lg font-bold rounded-full bg-[#6D28D9]/10 text-[#6D28D9]">
                                 {{ strtoupper(mb_substr($u->full_name, 0, 1)) }}
@@ -123,7 +135,11 @@
                         Lihat Selengkapnya &rsaquo;
                     </button>
                     <div class="grid grid-cols-2 gap-2 mt-2">
-                        <a href="{{ route('admin.akun.edit', $u) }}" class="block py-2 text-xs font-medium text-center border rounded-lg border-slate-200 text-slate-600 hover:bg-slate-50">Edit</a>
+                        <button type="button"
+                                data-edit-id="{{ $u->id }}"
+                                data-edit="{{ json_encode($edit) }}"
+                                onclick="bukaFormAkun('edit', this)"
+                                class="w-full py-2 text-xs font-medium border rounded-lg border-slate-200 text-slate-600 hover:bg-slate-50">Edit</button>
                         <button type="button"
                                 data-nama="{{ $u->full_name }}"
                                 data-url="{{ route('admin.akun.destroy', $u) }}"
@@ -199,6 +215,92 @@
     </div>
 </div>
 
+{{-- Popup Tambah / Edit Akun --}}
+<div id="modalFormAkun" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50">
+    <div class="w-full max-w-xl max-h-[90vh] overflow-y-auto p-7 bg-white shadow-2xl rounded-3xl">
+        <div class="flex items-center justify-between">
+            <h2 id="fJudul" class="text-2xl font-bold text-slate-900"></h2>
+            <button type="button" onclick="tutupFormAkun()" class="flex items-center justify-center w-9 h-9 rounded-full bg-[#6D28D9]/10 text-[#6D28D9] hover:bg-[#6D28D9]/20">&times;</button>
+        </div>
+
+        <form id="fForm" method="POST" action="" enctype="multipart/form-data" class="mt-5 space-y-4">
+            @csrf
+            <input type="hidden" name="_method" id="fMethod" value="PUT" disabled>
+            <input type="hidden" name="_mode" id="fMode">
+            <input type="hidden" name="_user" id="fUser">
+            <input type="hidden" name="hapus_foto" id="fHapusFoto" value="0">
+
+            {{-- Foto profil --}}
+            <div class="flex items-center gap-4 p-4 rounded-2xl bg-[#6D28D9]/5">
+                <div id="fPreview" class="flex items-center justify-center w-20 h-20 overflow-hidden text-2xl font-bold rounded-full shrink-0 bg-[#6D28D9]/15 text-[#6D28D9]"></div>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-slate-800">Foto Profil</p>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <label for="f_avatar" class="px-3.5 py-1.5 text-xs font-semibold text-white rounded-full cursor-pointer bg-[#6D28D9] hover:bg-[#5B21B6]">Pilih Foto</label>
+                        <button type="button" id="fHapusBtn" onclick="hapusFotoForm()"
+                                class="hidden px-3.5 py-1.5 text-xs font-semibold rounded-full text-red-600 bg-red-50 hover:bg-red-100">Hapus Foto</button>
+                    </div>
+                    <input id="f_avatar" name="avatar" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="pilihFotoForm(this)">
+                    <p class="mt-1.5 text-[11px] text-slate-500">JPG, PNG, atau WEBP. Maksimal 2 MB.</p>
+                    <p id="fFotoErr" class="mt-1 text-xs text-red-600">{{ $errors->first('avatar') }}</p>
+                </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label for="f_full_name" class="block mb-1.5 text-sm font-semibold text-slate-700">Nama Lengkap</label>
+                    <input id="f_full_name" name="full_name" type="text" required placeholder="Masukkan nama lengkap"
+                           class="w-full px-3.5 py-2.5 text-sm border rounded-lg border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30 focus:border-[#6D28D9]">
+                    @error('full_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="f_username" class="block mb-1.5 text-sm font-semibold text-slate-700">Username</label>
+                    <input id="f_username" name="username" type="text" required placeholder="contoh: budi_santoso"
+                           class="w-full px-3.5 py-2.5 text-sm border rounded-lg border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30 focus:border-[#6D28D9]">
+                    @error('username') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="f_phone" class="block mb-1.5 text-sm font-semibold text-slate-700">Nomor Telepon</label>
+                    <input id="f_phone" name="phone" type="text" placeholder="08xxxxxxxxxx"
+                           class="w-full px-3.5 py-2.5 text-sm border rounded-lg border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30 focus:border-[#6D28D9]">
+                    @error('phone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div class="sm:col-span-2">
+                    <label for="f_email" class="block mb-1.5 text-sm font-semibold text-slate-700">Email</label>
+                    <input id="f_email" name="email" type="email" required placeholder="nama@artiv.com"
+                           class="w-full px-3.5 py-2.5 text-sm border rounded-lg border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30 focus:border-[#6D28D9]">
+                    @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="f_password" id="fPassLabel" class="block mb-1.5 text-sm font-semibold text-slate-700">Password</label>
+                    <input id="f_password" name="password" type="password" autocomplete="new-password" placeholder="Minimal 8 karakter"
+                           class="w-full px-3.5 py-2.5 text-sm border rounded-lg border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30 focus:border-[#6D28D9]">
+                    @error('password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="f_password_confirmation" class="block mb-1.5 text-sm font-semibold text-slate-700">Konfirmasi Password</label>
+                    <input id="f_password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" placeholder="Ulangi password"
+                           class="w-full px-3.5 py-2.5 text-sm border rounded-lg border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30 focus:border-[#6D28D9]">
+                </div>
+            </div>
+
+            <label id="fAktifWrap" class="flex items-center gap-3 p-4 cursor-pointer rounded-xl bg-[#6D28D9]/5">
+                <input type="hidden" name="is_active" value="0">
+                <input id="f_is_active" type="checkbox" name="is_active" value="1" class="w-4 h-4 accent-[#6D28D9]">
+                <span>
+                    <span class="block text-sm font-semibold text-slate-800">Akun aktif</span>
+                    <span class="block text-xs text-slate-500">Matikan untuk menonaktifkan akun ini.</span>
+                </span>
+            </label>
+
+            <div class="flex items-center justify-end gap-3 pt-1">
+                <button type="button" onclick="tutupFormAkun()" class="px-5 py-2.5 text-sm font-semibold rounded-full text-[#6D28D9] bg-[#6D28D9]/10 hover:bg-[#6D28D9]/20">Batal</button>
+                <button type="submit" id="fSubmit" class="px-5 py-2.5 text-sm font-semibold text-white rounded-full bg-[#6D28D9] hover:bg-[#5B21B6]"></button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- Popup Konfirmasi Hapus --}}
 <div id="modalHapusAkun" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50" onclick="if(event.target===this) tutupHapusAkun()">
     <div class="w-full max-w-sm p-6 text-center bg-white shadow-2xl rounded-3xl">
@@ -231,9 +333,7 @@
         $('dBergabung').textContent = d.bergabung;
         $('dLogin').textContent = d.login;
 
-        $('dAvatar').innerHTML = d.avatar
-            ? `<img src="${d.avatar}" class="object-cover w-full h-full" alt="">`
-            : d.nama.charAt(0).toUpperCase();
+        setAvatar($('dAvatar'), d.avatar, d.nama);
 
         const st = $('dStatus');
         st.textContent = d.aktif ? 'Status: Aktif' : 'Status: Dinonaktifkan';
@@ -259,6 +359,107 @@
         modalAkun.classList.remove('flex');
     }
 
+    // Tampilkan foto (kalau ada) atau huruf inisial
+    function setAvatar(box, url, nama) {
+        box.replaceChildren();
+        if (url) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = '';
+            img.className = 'object-cover w-full h-full';
+            box.appendChild(img);
+        } else {
+            box.textContent = (nama || '?').charAt(0).toUpperCase();
+        }
+    }
+
+    // ===== Popup Tambah / Edit =====
+    const modalForm = document.getElementById('modalFormAkun');
+    const urlStore  = @json(route('admin.akun.store', $role));
+    const judulRole = @json($roleLabel);
+
+    function bukaFormAkun(mode, btn = null, old = null) {
+        const edit = mode === 'edit';
+        const d = btn ? JSON.parse(btn.dataset.edit) : {};
+        const v = old || {
+            full_name: d.nama, username: d.username, email: d.email,
+            phone: d.phone, aktif: edit ? d.aktif : true,
+        };
+
+        $('fForm').reset();
+        $('fForm').action = edit ? d.url : urlStore;
+        $('fMethod').disabled = !edit;
+        $('fMode').value = mode;
+        $('fUser').value = d.id || '';
+        $('fHapusFoto').value = '0';
+        $('fFotoErr').textContent = '';
+
+        $('fJudul').textContent = (edit ? 'Edit Akun ' : 'Tambah Akun ') + judulRole;
+        $('fSubmit').textContent = edit ? 'Simpan Perubahan' : 'Simpan Akun';
+        $('fPassLabel').textContent = edit ? 'Password Baru (opsional)' : 'Password';
+        $('f_password').required = !edit;
+
+        $('f_full_name').value = v.full_name ?? '';
+        $('f_username').value  = v.username ?? '';
+        $('f_email').value     = v.email ?? '';
+        $('f_phone').value     = v.phone ?? '';
+        $('f_is_active').checked = !!v.aktif;
+        $('fAktifWrap').classList.toggle('hidden', !!d.self);
+
+        setPreview(edit ? d.avatar : null);
+
+        modalForm.classList.remove('hidden');
+        modalForm.classList.add('flex');
+    }
+
+    function tutupFormAkun() {
+        modalForm.classList.add('hidden');
+        modalForm.classList.remove('flex');
+    }
+
+    function setPreview(url) {
+        setAvatar($('fPreview'), url, $('f_full_name').value);
+        $('fHapusBtn').classList.toggle('hidden', !url);
+    }
+
+    function pilihFotoForm(input) {
+        const file = input.files[0];
+        $('fFotoErr').textContent = '';
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            $('fFotoErr').textContent = 'Ukuran foto maksimal 2 MB.';
+            input.value = '';
+            return;
+        }
+        $('fHapusFoto').value = '0';
+        setPreview(URL.createObjectURL(file));
+    }
+
+    function hapusFotoForm() {
+        $('f_avatar').value = '';
+        $('fHapusFoto').value = '1';
+        setPreview(null);
+    }
+
+    @if (old('_mode'))
+        // Validasi gagal: buka lagi popup dengan isian sebelumnya
+        document.addEventListener('DOMContentLoaded', () => {
+            const old = {
+                full_name: @json(old('full_name')),
+                username:  @json(old('username')),
+                email:     @json(old('email')),
+                phone:     @json(old('phone')),
+                aktif:     @json(old('is_active') === '1'),
+            };
+            if (@json(old('_mode')) === 'edit') {
+                const btn = document.querySelector('[data-edit-id="' + @json(old('_user')) + '"]');
+                if (btn) { bukaFormAkun('edit', btn, old); return; }
+            }
+            bukaFormAkun('create', null, old);
+        });
+    @endif
+
     const modalHapus = document.getElementById('modalHapusAkun');
 
     function bukaHapusAkun(btn) {
@@ -274,7 +475,7 @@
     }
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { tutupDetailAkun(); tutupHapusAkun(); }
+        if (e.key === 'Escape') { tutupDetailAkun(); tutupHapusAkun(); tutupFormAkun(); }
     });
 </script>
 @endsection
