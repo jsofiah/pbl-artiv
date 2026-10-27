@@ -1,21 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Discovering packages..."
-php artisan package:discover --ansi
-
+echo "=== DEBUG ENV ==="
 echo "DB_CONNECTION=[$DB_CONNECTION]"
 echo "DB_URL length=${#DB_URL}"
 echo "DB_HOST=[$DB_HOST]"
+echo "APP_KEY length=${#APP_KEY}"
+env | grep -E '^(DB_|DATABASE_)' | sed -E 's#(://[^:]+:)[^@]+@#\1***@#; s#(PASSWORD=).*#\1***#'
+echo "=== END DEBUG ==="
 
-echo "Caching config..."
+php artisan config:clear
+php artisan package:discover --ansi
 php artisan config:cache
-
-echo "Caching routes..."
 php artisan route:cache
-
-echo "Caching views..."
 php artisan view:cache
-
-echo "Running migrations..."
 php artisan migrate --force
