@@ -22,7 +22,7 @@
                 [
                     'type' => 'link',
                     'label' => 'Manajemen Harga Express',
-                    'route' => 'admin.harga-express',
+                    'route' => 'admin.harga-express.index',
                     'icon' => 'currency-dollar',
                 ],
                 [

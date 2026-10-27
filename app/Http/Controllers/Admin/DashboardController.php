@@ -114,6 +114,6 @@ class DashboardController extends Controller
             $request->input('end_date')
         );
 
-        return back()->with('success', 'Ekspor laporan lagi diproses di background sama Queue Worker!');
+        return back()->with('success', 'Ekspor laporan sedang diproses');
     }
 }
