@@ -1,18 +1,26 @@
-FROM richarvey/nginx-php-fpm:latest
-
+# Stage 1: Build Frontend Assets
+FROM node:20-alpine AS frontend
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
 COPY . .
+RUN npm run build
 
-ENV WEBROOT /var/www/html/public
-ENV PHP_ERRORS_STDERR 1
-ENV RUN_SCRIPTS 1
-ENV REAL_IP_HEADER 1
-ENV APP_ENV production
-ENV APP_DEBUG false
-ENV LOG_CHANNEL stderr
-ENV COMPOSER_ALLOW_SUPERUSER 1
+# Stage 2: Final PHP Image (Nginx + PHP-FPM)
+FROM serversideup/php:8.4-fpm-nginx
 
-COPY ./docker/supervisor/reverb.conf /etc/supervisor/conf.d/reverb.conf
+# Copy app files
+COPY --chown=www-data:www-data . .
 
-COPY ./docker/nginx/reverb.conf /etc/nginx/conf.d/reverb.conf
+# Copy built assets
+COPY --from=frontend --chown=www-data:www-data /app/public/build /var/www/html/public/build
 
-CMD ["/start.sh"]
+# Install composer sebagai www-data (user default image)
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+
+# Script deploy
+COPY --chmod=755 --chown=www-data:www-data ./scripts/00-laravel-deploy.sh /etc/entrypoint.d/99-deploy.sh
+
+ENV APP_ENV=production
+ENV APP_DEBUG=false
+ENV LOG_CHANNEL=stderr

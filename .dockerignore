@@ -1,7 +1,12 @@
 /node_modules
 /public/hot
 /public/storage
+/public/build
 /storage/*.key
-/vendor
+/storage/*.log
+/bootstrap/cache/*.php
 .env
+.env.*
 .git
+.gitignore
+README.md
