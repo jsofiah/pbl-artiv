@@ -4,6 +4,10 @@ set -e
 echo "Discovering packages..."
 php artisan package:discover --ansi
 
+echo "DB_CONNECTION=[$DB_CONNECTION]"
+echo "DB_URL length=${#DB_URL}"
+echo "DB_HOST=[$DB_HOST]"
+
 echo "Caching config..."
 php artisan config:cache
 
