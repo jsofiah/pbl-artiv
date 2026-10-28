@@ -63,10 +63,10 @@ class ManajemenFileController extends Controller
 
         // Jika dipanggil via AJAX / Fetch (Berpindah Tab / Pagination)
         if ($request->ajax()) {
-    return view('admin.manajemenFileTable', compact('files', 'tab'))->render();
+    return view('admin.manajemen-file-table', compact('files', 'tab'))->render();
 }
 
-return view('admin.manajemenfile', compact('files', 'tab', 'search', 'sort'));
+return view('admin.manajemen-file', compact('files', 'tab', 'search', 'sort'));
     }
 
     public function preview(Request $request, string $type, string $id)

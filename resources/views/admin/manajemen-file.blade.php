@@ -154,7 +154,7 @@
                 </div>
 
                 <div id="table-container">
-                    @include('admin.manajemenFileTable')
+                    @include('admin.manajemen-file-table')
                 </div>
             </div>
         </div>
