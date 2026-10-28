@@ -15,9 +15,18 @@ COPY --chown=www-data:www-data . .
 # Copy built assets dengan ownership www-data
 COPY --from=frontend --chown=www-data:www-data /app/public/build /var/www/html/public/build
 
-# Install PHP extensions sebagai root
+# Install PHP extensions dan Supervisor sebagai root
 USER root
-RUN install-php-extensions gd zip xml
+RUN install-php-extensions gd zip xml \
+    && apt-get update \
+    && apt-get install -y supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Salin konfigurasi Supervisor untuk Reverb
+COPY ./docker/supervisor/reverb.conf /etc/supervisor/conf.d/reverb.conf
+
+# Salin konfigurasi Nginx untuk proxy WebSocket ke Reverb
+COPY ./docker/nginx/reverb.conf /etc/nginx/server-opts.d/reverb.conf
 
 # Kembali ke www-data untuk composer install
 USER www-data
