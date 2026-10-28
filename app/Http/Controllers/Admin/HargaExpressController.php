@@ -43,7 +43,7 @@ class HargaExpressController extends Controller
 
         $expressFees = $query->paginate(6)->withQueryString();
 
-        return view('admin.hargaexpress', compact('expressFees', 'stats', 'tab', 'search', 'sort'));
+        return view('admin.harga-express', compact('expressFees', 'stats', 'tab', 'search', 'sort'));
     }
 
     public function store(Request $request)
