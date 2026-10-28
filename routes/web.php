@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\KatalogController;
 use App\Http\Controllers\Admin\ProductTierController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\AkunController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
@@ -132,6 +133,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:designer')
         ->name('profile.designer-status.update');
 
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -234,13 +238,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
     });
 
-    Route::middleware('auth')->group(function () {
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        // ===== Manajemen Akun =====
+        Route::prefix('akun')->name('akun.')->group(function () {
+            foreach (['designer', 'admin', 'customer'] as $role) {
+                Route::get($role, [AkunController::class, 'index'])
+                    ->defaults('role', $role)
+                    ->name($role);
+            }
 
-        Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
-        Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+            // Tambah & edit akun (dikirim dari popup di halaman daftar)
+            Route::post('/{role}', [AkunController::class, 'store'])->whereIn('role', ['designer', 'admin', 'customer'])->name('store');
+            Route::put('/{user}', [AkunController::class, 'update'])->whereUuid('user')->name('update');
+
+            Route::patch('/{user}/status', [AkunController::class, 'toggleStatus'])->whereUuid('user')->name('status');
+            Route::delete('/{user}', [AkunController::class, 'destroy'])->whereUuid('user')->name('destroy');
+        });
     });
 });
 

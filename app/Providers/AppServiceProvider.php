@@ -13,6 +13,8 @@ use App\Observers\ReviewObserver;
 use App\Observers\OrderSplitObserver;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Event;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,11 @@ class AppServiceProvider extends ServiceProvider
         Order::observe(OrderObserver::class);
         OrderSplit::observe(OrderSplitObserver::class);
         Review::observe(ReviewObserver::class);
+
+        // Catat waktu login terakhir (dipakai di popup Detail Akun admin)
+        Event::listen(Login::class, function (Login $event) {
+            $event->user->forceFill(['last_login_at' => now()])->saveQuietly();
+        });
 
         View::composer('partials.notification-dropdown', function ($view) {
             $user = auth()->user();
