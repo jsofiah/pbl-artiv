@@ -139,6 +139,7 @@ Alpine.data('pemesananForm', () => ({
 
 gsap.registerPlugin(ScrollTrigger);
 
+if (import.meta.env.VITE_REVERB_APP_KEY) {
 try {
     window.Echo = new Echo({
         broadcaster: 'reverb',

@@ -1,4 +1,7 @@
 @php
+    $bellClass = $bellClass ?? 'border-white/30 text-white hover:bg-white/10';
+    $ringColor = $ringColor ?? '#745BB8';
+
     $sections = [
         'today'     => 'Hari Ini / Today',
         'yesterday' => 'Kemarin / Yesterday',
@@ -11,20 +14,20 @@
 <div class="relative" id="notif-root">
     {{-- Tombol lonceng --}}
     <button type="button" id="notif-toggle" aria-expanded="false" aria-label="Notifikasi"
-        class="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/30 text-white transition hover:bg-white/10">
-    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
-    </svg>
-    @if ($notifUnread > 0)
-        <span style="position:absolute; top:2px; right:2px; width:10px; height:10px; border-radius:9999px; background:#D5FC55; box-shadow:0 0 0 2px #745BB8;"></span>
-    @endif
-</button>
+            class="relative flex h-10 w-10 items-center justify-center rounded-full border transition {{ $bellClass }}">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
+        </svg>
+        @if ($notifUnread > 0)
+            <span style="position:absolute; top:2px; right:2px; width:10px; height:10px; border-radius:9999px; background:#D5FC55; box-shadow:0 0 0 2px {{ $ringColor }};"></span>
+        @endif
+    </button>
 
     {{-- Panel popup --}}
     <div id="notif-panel"
-     style="width:400px; max-width:92vw;"
-     class="absolute right-0 top-full z-50 mt-3 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl">
+         style="width:400px; max-width:92vw;"
+         class="absolute right-0 top-full z-50 mt-3 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl">
 
         {{-- Header --}}
         <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
@@ -38,15 +41,15 @@
             </div>
             <div class="flex items-center gap-3">
                 @if ($notifUnread > 0)
-                    <form method="POST" action="{{ route('customer.notifikasi.read-all') }}">
+                    <form method="POST" action="{{ route('notifikasi.read-all') }}">
                         @csrf
-                        <button type="submit" class="text-sm font-semibold text-[#6D28D9] hover:underline">
+                        <button type="submit" class="whitespace-nowrap text-sm font-semibold text-[#6D28D9] hover:underline">
                             Tandai dibaca
                         </button>
                     </form>
                 @endif
                 <button type="button" id="notif-close" aria-label="Tutup"
-                        class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100">
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100">
                     ✕
                 </button>
             </div>
@@ -61,7 +64,7 @@
                     </p>
 
                     @foreach ($notifItems[$key] as $n)
-                        <a href="{{ route('customer.notifikasi.read', $n) }}"
+                        <a href="{{ route('notifikasi.read', $n) }}"
                            class="flex items-start gap-3 border-b border-slate-100 px-5 py-4 transition hover:bg-slate-50 {{ $n->isRead() ? '' : 'bg-violet-50/60' }}">
 
                             {{-- Dot belum dibaca --}}
@@ -78,9 +81,10 @@
                                     </span>
                                 @endif
                             @else
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D5FC55]/60 text-slate-900">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                                @php [$iconClass, $iconPath] = $n->uiIcon(); @endphp
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $iconClass }}">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="{{ $iconPath }}"/>
                                     </svg>
                                 </span>
                             @endif
@@ -103,6 +107,11 @@
                 </div>
             @endif
         </div>
+
+        <a href="{{ route('notifikasi.index') }}"
+           class="block border-t border-slate-200 px-5 py-3 text-center text-sm font-semibold text-[#6D28D9] hover:bg-slate-50">
+            Lihat semua notifikasi
+        </a>
     </div>
 </div>
 
