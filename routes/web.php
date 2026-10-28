@@ -12,11 +12,18 @@ use App\Http\Controllers\Designer\PekerjaanController;
 use App\Http\Controllers\Designer\RiwayatPekerjaanController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\MonitoringController;
+use App\Http\Controllers\Admin\KatalogController;
+use App\Http\Controllers\Admin\ProductTierController;
+use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\AkunController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
 use App\Http\Controllers\Customer\ReviewController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Admin\ManajemenFileController;
+use App\Http\Controllers\Admin\HargaExpressController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -101,7 +108,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/pemesanan/{order}/pembayaran/sukses', [PembayaranController::class, 'success'])
             ->name('pemesanan.sukses');
 
-                // Review & rating
+        // Review & rating
         Route::prefix('/pesanan/{order}/review')->name('review.')->group(function () {
             Route::get('/', [ReviewController::class, 'create'])->name('create');
             Route::post('/', [ReviewController::class, 'store'])->name('store');
@@ -131,17 +138,17 @@ Route::middleware('auth')->group(function () {
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        
+
         Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])
             ->name('availability.toggle');
-            
+
         // ============ JOB POOL ============
         Route::get('/job-pool', [JobPoolController::class, 'index'])->name('job-pool');
         Route::get('/job-pool/{order}', [JobPoolController::class, 'show'])->name('job-pool.show');
         Route::post('/job-pool/{order}/ambil', [JobPoolController::class, 'ambil'])->name('job-pool.ambil');
         Route::get('/job-pool/{order}/sukses', [JobPoolController::class, 'sukses'])->name('job-pool.sukses');
         Route::get('/job-pool/{order}/reference/{reference}/download', [JobPoolController::class, 'downloadReference'])->name('job-pool.reference.download');
-        Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference']) ->name('job-pool.reference.preview');
+        Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference'])->name('job-pool.reference.preview');
         // ============ PEKERJAAN ============
         Route::get('/pekerjaan-saya', [PekerjaanController::class, 'index'])->name('pekerjaan.index');
         Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
@@ -183,30 +190,67 @@ Route::middleware('auth')->group(function () {
 
 
     // Admin
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        // Dashboard Utama & Queue Export
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/akun/designer', [AdminDashboardController::class, 'akunDesigner'])->name('akun.designer');
-        Route::get('/akun/admin', [AdminDashboardController::class, 'akunAdmin'])->name('akun.admin');
-        Route::get('/akun/customer', [AdminDashboardController::class, 'akunCustomer'])->name('akun.customer');
-        Route::get('/katalog', [AdminDashboardController::class, 'katalog'])->name('katalog');
-        Route::get('/harga-express', [AdminDashboardController::class, 'hargaExpress'])->name('harga-express');
-        Route::get('/file', [AdminDashboardController::class, 'file'])->name('file');
-        Route::get('/monitoring', [AdminDashboardController::class, 'monitoring'])->name('monitoring');
-        Route::get('/laporan', [AdminDashboardController::class, 'laporan'])->name('laporan');
-        Route::get('/pengaturan', [AdminDashboardController::class, 'pengaturan'])->name('pengaturan');
+        Route::post('/laporan/export', [LaporanController::class, 'export'])->name('laporan.export');
+
+        // Monitoring (Pekerjaan & Pembayaran)
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+        Route::get('/monitoring/detail/{order}', [MonitoringController::class, 'detail'])->name('monitoring.detail');
         Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
         Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
+
+        Route::get('/harga-express', [HargaExpressController::class, 'index'])->name('harga-express.index');
+        Route::post('/harga-express', [HargaExpressController::class, 'store'])->name('harga-express.store');
+        Route::put('/harga-express/{hargaExpress}', [HargaExpressController::class, 'update'])->name('harga-express.update');
+        Route::delete('/harga-express/{hargaExpress}', [HargaExpressController::class, 'destroy'])->name('harga-express.destroy');
+
+    // Katalog
+    Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index');
+    Route::get('/katalog/create', [KatalogController::class, 'create'])->name('katalog.create');
+    Route::post('/katalog', [KatalogController::class, 'store'])->name('katalog.store');
+    Route::get('/katalog/{product}/edit', [KatalogController::class, 'edit'])->name('katalog.edit');
+    Route::put('/katalog/{product}', [KatalogController::class, 'update'])->name('katalog.update');
+    Route::delete('/katalog/{product}', [KatalogController::class, 'destroy'])->name('katalog.destroy');
+
+    // Tier
+    Route::get('/katalog/{product}/tiers', [ProductTierController::class, 'index'])->name('katalog.tiers.index');
+    Route::post('/katalog/{product}/tiers', [ProductTierController::class, 'store'])->name('katalog.tiers.store');
+    Route::put('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'update'])->name('katalog.tiers.update');
+    Route::delete('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'destroy'])->name('katalog.tiers.destroy');
+
+        // Route Manajemen File
+        Route::get('/manajemen-file', [ManajemenFileController::class, 'index'])->name('manajemen-file.index');
+        Route::get('/manajemen-file/preview/{type}/{id}', [ManajemenFileController::class, 'preview'])->name('manajemen-file.preview');
+        Route::get('/manajemen-file/download/{type}/{id}', [ManajemenFileController::class, 'download'])->name('manajemen-file.download');
+        Route::delete('/manajemen-file/{type}/{id}', [ManajemenFileController::class, 'destroy'])->name('manajemen-file.destroy');
+
+        // Modul Terpisah
+            Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+
+    // Pengaturan
+        Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
+    Route::post('/pengaturan/blacklist', [PengaturanController::class, 'storeBlacklist'])->name('pengaturan.blacklist.store');
+    Route::put('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'updateBlacklist'])->name('pengaturan.blacklist.update');
+    Route::delete('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'destroyBlacklist'])->name('pengaturan.blacklist.destroy');
+    Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
     });
 
-    Route::middleware('auth')->group(function () {
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        // ===== Manajemen Akun =====
+        Route::prefix('akun')->name('akun.')->group(function () {
+            foreach (['designer', 'admin', 'customer'] as $role) {
+                Route::get($role, [AkunController::class, 'index'])
+                    ->defaults('role', $role)
+                    ->name($role);
+            }
 
-        Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
-        Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+            // Tambah & edit akun (dikirim dari popup di halaman daftar)
+            Route::post('/{role}', [AkunController::class, 'store'])->whereIn('role', ['designer', 'admin', 'customer'])->name('store');
+            Route::put('/{user}', [AkunController::class, 'update'])->whereUuid('user')->name('update');
+
+            Route::patch('/{user}/status', [AkunController::class, 'toggleStatus'])->whereUuid('user')->name('status');
+            Route::delete('/{user}', [AkunController::class, 'destroy'])->whereUuid('user')->name('destroy');
+        });
     });
-});
-
 require __DIR__ . '/auth.php';
