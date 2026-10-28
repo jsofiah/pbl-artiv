@@ -13,7 +13,7 @@
     $adaFilter = ($q ?? '') !== '' || ($kategori && $kategori !== 'semua');
 @endphp
 
-<div class="mx-auto max-w-6xl px-4 py-6">
+<div class="mx-auto max-w-6xl px-4 pb-6 pt-1">
 
     {{-- ============ ALERT ============ --}}
     @if (session('error'))
@@ -30,7 +30,25 @@
         </div>
     @endif
 
-    {{-- ============ FILTER BAR ============ --}}
+    {{-- ============ INFO & URUTAN (DITARUH DI ATAS SEARCH) ============ --}}
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <strong class="text-[#6D28D9]">{{ $totalTersedia }}</strong> Job Tersedia
+        </span>
+        <div class="flex items-center gap-2">
+            <label for="urutkan" class="text-sm text-slate-500">Urutkan:</label>
+            <select id="urutkan" name="urutkan" form="form-job" onchange="this.form.submit()"
+                    class="cursor-pointer rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
+                <option value="terbaru"      @selected($urutkan === 'terbaru')>Terbaru</option>
+                <option value="deadline_asc" @selected($urutkan === 'deadline_asc')>Deadline terdekat</option>
+                <option value="harga_desc"   @selected($urutkan === 'harga_desc')>Harga tertinggi</option>
+                <option value="harga_asc"    @selected($urutkan === 'harga_asc')>Harga terendah</option>
+            </select>
+        </div>
+    </div>
+
+    {{-- ============ FILTER BAR (SEARCH & KATEGORI) ============ --}}
     <form method="GET" action="{{ route('designer.job-pool') }}" id="form-job"
         class="mb-6 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
 
@@ -60,24 +78,6 @@
         </div>
     </form>
 
-    {{-- ============ INFO & URUTAN ============ --}}
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-            <strong class="text-[#6D28D9]">{{ $totalTersedia }}</strong> Job Tersedia
-        </span>
-        <div class="flex items-center gap-2">
-            <label for="urutkan" class="text-sm text-slate-500">Urutkan:</label>
-            <select id="urutkan" name="urutkan" form="form-job" onchange="this.form.submit()"
-                    class="cursor-pointer rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
-                <option value="terbaru"      @selected($urutkan === 'terbaru')>Terbaru</option>
-                <option value="deadline_asc" @selected($urutkan === 'deadline_asc')>Deadline terdekat</option>
-                <option value="harga_desc"   @selected($urutkan === 'harga_desc')>Harga tertinggi</option>
-                <option value="harga_asc"    @selected($urutkan === 'harga_asc')>Harga terendah</option>
-            </select>
-        </div>
-    </div>
-
     {{-- ============ DAFTAR JOB ============ --}}
     <div class="space-y-3">
         @forelse ($jobPool as $job)
@@ -90,7 +90,6 @@
             @endphp
 
             <article class="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:border-[#6D28D9]/40 hover:shadow-md">
-                {{-- Aksen kiri ungu saat hover --}}
                 <span class="absolute inset-y-0 left-0 w-1 bg-[#6D28D9] opacity-0 transition group-hover:opacity-100"></span>
 
                 <div class="flex flex-col gap-4 p-5 pl-6 md:flex-row md:items-center">
@@ -160,7 +159,6 @@
                         @endphp
 
                         @if ($isExpired)
-                            {{-- Tombol disabled untuk order lewat deadline --}}
                             <button type="button" disabled
                                     class="inline-flex shrink-0 items-center gap-2 rounded-full bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-400 cursor-not-allowed"
                                     title="Order sudah lewat deadline">
@@ -170,7 +168,6 @@
                                 Lewat Deadline
                             </button>
                         @else
-                            {{-- Tombol normal --}}
                             <a href="{{ route('designer.job-pool.show', $job->id) }}"
                             class="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#6D28D9] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#5B21B6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6D28D9] focus-visible:ring-offset-2">
                                 Lihat Detail
@@ -183,7 +180,6 @@
                 </div>
             </article>
         @empty
-            {{-- Empty state --}}
             <div class="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-sm">
                 <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-violet-200">
                     <svg class="h-10 w-10 text-[#6D28D9]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">

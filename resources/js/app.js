@@ -6,12 +6,12 @@ import Pusher from 'pusher-js';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 import Chart from 'chart.js/auto';
-window.Chart = Chart;
 
 window.Alpine = Alpine;
 window.Pusher = Pusher;
 window.gsap = gsap;
 window.ScrollTrigger = ScrollTrigger;
+window.Chart = Chart;
 
 Alpine.data('pemesananForm', () => ({
     tiers: [],
@@ -139,14 +139,18 @@ Alpine.data('pemesananForm', () => ({
 
 gsap.registerPlugin(ScrollTrigger);
 
-window.Echo = new Echo({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
-    enabledTransports: ['ws', 'wss'],
-});
+try {
+    window.Echo = new Echo({
+        broadcaster: 'reverb',
+        key: import.meta.env.VITE_REVERB_APP_KEY,
+        wsHost: import.meta.env.VITE_REVERB_HOST,
+        wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
+        wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+        enabledTransports: ['ws', 'wss'],
+    });
+} catch (e) {
+    console.warn('Echo init failed:', e);
+}
 
 Alpine.start();

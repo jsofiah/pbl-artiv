@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 class Payment extends Model
 {
@@ -84,5 +85,18 @@ class Payment extends Model
             'status' => self::STATUS_BERHASIL,
             'paid_at' => now(),
         ]);
+    }
+
+    protected static function booted(): void
+    {
+        // Berjalan saat pembayaran baru dibuat atau statusnya di-ACC/ditolak
+        static::saved(function () {
+            Cache::forget('admin_dashboard_stats');
+        });
+
+        // Berjalan saat data pembayaran dihapus
+        static::deleted(function () {
+            Cache::forget('admin_dashboard_stats');
+        });
     }
 }
