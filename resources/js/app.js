@@ -148,7 +148,6 @@ try {
         wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
         forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
         enabledTransports: ['ws', 'wss'],
-        wsPath: '/ws',
     });
 } catch (e) {
     console.warn('Echo init failed:', e);
