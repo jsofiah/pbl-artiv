@@ -130,8 +130,6 @@
                                 </svg>
                                 Ekspor Laporan
                             </button>
-<<<<<<< HEAD
-=======
 
                             {{-- Menu Popover Dropdown (Kebawah) --}}
                             <div x-show="dropdownOpen" x-cloak @click.away="dropdownOpen = false"
@@ -164,7 +162,6 @@
                                     <div class="font-bold text-gray-900">CSV (.csv)</div>
                                 </button>
                             </div>
->>>>>>> 3a3b107 (fix (admin): ekspor laporan)
                         </div>
                     </div>
 
@@ -249,7 +246,6 @@
                     <button @click="exportModal = false" class="text-gray-400 hover:text-gray-600">&times;</button>
                 </div>
 
-<<<<<<< HEAD
                 <form action="{{ route('admin.dashboard.export') }}" method="POST">
                     @csrf
                     <p class="text-xs text-gray-500 mb-4">Proses ekspor laporan ini dijalankan oleh Queue Worker di
@@ -277,7 +273,6 @@
                         </button>
                     </div>
                 </form>
-=======
                 <form action="{{ route('admin.laporan.export') }}" 
       method="POST"
       @submit.prevent="
@@ -337,7 +332,6 @@
         </button>
     </div>
 </form>
->>>>>>> 3a3b107 (fix (admin): ekspor laporan)
             </div>
         </div>
 
