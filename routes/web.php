@@ -21,9 +21,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
 use App\Http\Controllers\Customer\ReviewController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\ManajemenFileController;
 use App\Http\Controllers\Admin\HargaExpressController;
-use App\Http\Controllers\NotificationController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -197,8 +197,14 @@ Route::middleware('auth')->group(function () {
 
         // Monitoring (Pekerjaan & Pembayaran)
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+        Route::get('/monitoring/detail/{order}', [MonitoringController::class, 'detail'])->name('monitoring.detail');
         Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
         Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
+
+        Route::get('/harga-express', [HargaExpressController::class, 'index'])->name('harga-express.index');
+        Route::post('/harga-express', [HargaExpressController::class, 'store'])->name('harga-express.store');
+        Route::put('/harga-express/{hargaExpress}', [HargaExpressController::class, 'update'])->name('harga-express.update');
+        Route::delete('/harga-express/{hargaExpress}', [HargaExpressController::class, 'destroy'])->name('harga-express.destroy');
 
     // Katalog
     Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index');
@@ -214,21 +220,6 @@ Route::middleware('auth')->group(function () {
     Route::put('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'update'])->name('katalog.tiers.update');
     Route::delete('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'destroy'])->name('katalog.tiers.destroy');
 
-    // Modul Terpisah
-    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
-
-    // Pengaturan
-    Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
-    Route::post('/pengaturan/blacklist', [PengaturanController::class, 'storeBlacklist'])->name('pengaturan.blacklist.store');
-    Route::put('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'updateBlacklist'])->name('pengaturan.blacklist.update');
-    Route::delete('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'destroyBlacklist'])->name('pengaturan.blacklist.destroy');
-    Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
-});
-        Route::get('/harga-express', [HargaExpressController::class, 'index'])->name('harga-express.index');
-        Route::post('/harga-express', [HargaExpressController::class, 'store'])->name('harga-express.store');
-        Route::put('/harga-express/{hargaExpress}', [HargaExpressController::class, 'update'])->name('harga-express.update');
-        Route::delete('/harga-express/{hargaExpress}', [HargaExpressController::class, 'destroy'])->name('harga-express.destroy');
-
         // Route Manajemen File
         Route::get('/manajemen-file', [ManajemenFileController::class, 'index'])->name('manajemen-file.index');
         Route::get('/manajemen-file/preview/{type}/{id}', [ManajemenFileController::class, 'preview'])->name('manajemen-file.preview');
@@ -236,9 +227,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/manajemen-file/{type}/{id}', [ManajemenFileController::class, 'destroy'])->name('manajemen-file.destroy');
 
         // Modul Terpisah
-        Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog');
-        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+            Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+
+    // Pengaturan
         Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
+    Route::post('/pengaturan/blacklist', [PengaturanController::class, 'storeBlacklist'])->name('pengaturan.blacklist.store');
+    Route::put('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'updateBlacklist'])->name('pengaturan.blacklist.update');
+    Route::delete('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'destroyBlacklist'])->name('pengaturan.blacklist.destroy');
+    Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
     });
 
         // ===== Manajemen Akun =====
@@ -257,6 +253,4 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{user}', [AkunController::class, 'destroy'])->whereUuid('user')->name('destroy');
         });
     });
-});
-
 require __DIR__ . '/auth.php';

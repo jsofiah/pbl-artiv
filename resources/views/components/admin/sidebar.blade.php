@@ -18,7 +18,7 @@
                         ['route' => 'admin.akun.customer', 'label' => 'Akun Customer'],
                     ],
                 ],
-                ['type' => 'link', 'label' => 'Manajemen Katalog', 'route' => 'admin.katalog', 'icon' => 'photo'],
+                ['type' => 'link', 'label' => 'Manajemen Katalog', 'route' => 'admin.katalog.index', 'icon' => 'photo'],
                 [
                     'type' => 'link',
                     'label' => 'Manajemen Harga Express',
@@ -90,9 +90,9 @@
                                 @endphp
                                 <li>
                                     <a href="{{ $targetUrl }}"
-                                        class="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs transition-all duration-150
+                                        class="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150
                                               {{ $active
-                                                  ? 'bg-white/20 text-white font-bold shadow-sm'
+                                                  ? 'bg-white/20 text-white font-semibold shadow-sm'
                                                   : 'text-white/70 hover:bg-white/10 hover:text-white font-medium' }}">
 
                                         @if ($active)
@@ -145,7 +145,7 @@
                                             @endphp
                                             <li>
                                                 <a href="{{ $childUrl }}"
-                                                    class="block px-3 py-2 text-xs rounded-lg transition-colors
+                                                    class="block px-3 py-2 text-sm rounded-lg transition-colors
                                                           {{ $childActive
                                                               ? 'bg-white/20 text-[#D5FC55] font-bold'
                                                               : 'text-white/70 hover:bg-white/10 hover:text-white font-medium' }}">
@@ -167,7 +167,7 @@
 
         <div class="mb-3 flex items-center gap-3 px-2">
             <div
-                class="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white shrink-0">
+                class="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white shrink-0">
                 {{ strtoupper(substr(auth()->user()->full_name ?? 'AD', 0, 1)) }}
             </div>
             <div class="min-w-0 leading-tight">
@@ -179,7 +179,7 @@
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button type="submit"
-                class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D5FC55] py-2.5 text-xs font-bold text-[#4A3A7A] shadow-sm transition hover:bg-[#C0E83F]">
+                class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D5FC55] py-2.5 text-sm font-bold text-[#4A3A7A] shadow-sm transition hover:bg-[#C0E83F]">
                 <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
                 Keluar
             </button>
