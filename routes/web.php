@@ -135,6 +135,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
     Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
 
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -206,19 +209,19 @@ Route::middleware('auth')->group(function () {
         Route::put('/harga-express/{hargaExpress}', [HargaExpressController::class, 'update'])->name('harga-express.update');
         Route::delete('/harga-express/{hargaExpress}', [HargaExpressController::class, 'destroy'])->name('harga-express.destroy');
 
-    // Katalog
-    Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index');
-    Route::get('/katalog/create', [KatalogController::class, 'create'])->name('katalog.create');
-    Route::post('/katalog', [KatalogController::class, 'store'])->name('katalog.store');
-    Route::get('/katalog/{product}/edit', [KatalogController::class, 'edit'])->name('katalog.edit');
-    Route::put('/katalog/{product}', [KatalogController::class, 'update'])->name('katalog.update');
-    Route::delete('/katalog/{product}', [KatalogController::class, 'destroy'])->name('katalog.destroy');
+        // Katalog
+        Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index');
+        Route::get('/katalog/create', [KatalogController::class, 'create'])->name('katalog.create');
+        Route::post('/katalog', [KatalogController::class, 'store'])->name('katalog.store');
+        Route::get('/katalog/{product}/edit', [KatalogController::class, 'edit'])->name('katalog.edit');
+        Route::put('/katalog/{product}', [KatalogController::class, 'update'])->name('katalog.update');
+        Route::delete('/katalog/{product}', [KatalogController::class, 'destroy'])->name('katalog.destroy');
 
-    // Tier
-    Route::get('/katalog/{product}/tiers', [ProductTierController::class, 'index'])->name('katalog.tiers.index');
-    Route::post('/katalog/{product}/tiers', [ProductTierController::class, 'store'])->name('katalog.tiers.store');
-    Route::put('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'update'])->name('katalog.tiers.update');
-    Route::delete('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'destroy'])->name('katalog.tiers.destroy');
+        // Tier
+        Route::get('/katalog/{product}/tiers', [ProductTierController::class, 'index'])->name('katalog.tiers.index');
+        Route::post('/katalog/{product}/tiers', [ProductTierController::class, 'store'])->name('katalog.tiers.store');
+        Route::put('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'update'])->name('katalog.tiers.update');
+        Route::delete('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'destroy'])->name('katalog.tiers.destroy');
 
         // Route Manajemen File
         Route::get('/manajemen-file', [ManajemenFileController::class, 'index'])->name('manajemen-file.index');
@@ -227,15 +230,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/manajemen-file/{type}/{id}', [ManajemenFileController::class, 'destroy'])->name('manajemen-file.destroy');
 
         // Modul Terpisah
-            Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
 
-    // Pengaturan
+        // Pengaturan
         Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
-    Route::post('/pengaturan/blacklist', [PengaturanController::class, 'storeBlacklist'])->name('pengaturan.blacklist.store');
-    Route::put('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'updateBlacklist'])->name('pengaturan.blacklist.update');
-    Route::delete('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'destroyBlacklist'])->name('pengaturan.blacklist.destroy');
-    Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
-    });
+        Route::post('/pengaturan/blacklist', [PengaturanController::class, 'storeBlacklist'])->name('pengaturan.blacklist.store');
+        Route::put('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'updateBlacklist'])->name('pengaturan.blacklist.update');
+        Route::delete('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'destroyBlacklist'])->name('pengaturan.blacklist.destroy');
+        Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
 
         // ===== Manajemen Akun =====
         Route::prefix('akun')->name('akun.')->group(function () {
@@ -245,12 +247,19 @@ Route::middleware('auth')->group(function () {
                     ->name($role);
             }
 
+            Route::patch('/{user}/availability', [AkunController::class, 'updateAvailability'])
+                ->whereUuid('user')
+                ->name('availability');
+
+
             // Tambah & edit akun (dikirim dari popup di halaman daftar)
             Route::post('/{role}', [AkunController::class, 'store'])->whereIn('role', ['designer', 'admin', 'customer'])->name('store');
             Route::put('/{user}', [AkunController::class, 'update'])->whereUuid('user')->name('update');
 
             Route::patch('/{user}/status', [AkunController::class, 'toggleStatus'])->whereUuid('user')->name('status');
             Route::delete('/{user}', [AkunController::class, 'destroy'])->whereUuid('user')->name('destroy');
+
         });
     });
+});
 require __DIR__ . '/auth.php';
