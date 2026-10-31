@@ -57,7 +57,7 @@ class PekerjaanController extends Controller
         }
 
         $pekerjaan = $query->orderByDesc('created_at')
-            ->paginate(6)
+            ->paginate(15)
             ->withQueryString();
 
         $stats = (clone $baseQuery)

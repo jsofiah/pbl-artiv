@@ -120,28 +120,25 @@
                         $heroImg2 = $heroProduct2 ? \App\Helpers\R2Helper::url($heroProduct2->thumbnail_url) : null;
                     @endphp
 
-                    {{-- Kartu melayang 1: Foto produk terbaru --}}
                     <div class="artiv-hero-card absolute left-[40%] top-0 w-[27%] -rotate-6 hover:rotate-0 hover:scale-105 transition-transform duration-500 z-30" style="--d:.45s">
                         <div class="rounded-2xl bg-white p-1.5 shadow-xl shadow-violet-900/20">
-                            <div class="aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-violet-200 to-violet-300">
+                            {{-- Ukuran aspect-[4/3] TETAP DIPERTAHANKAN --}}
+                            <div class="aspect-[4/3] rounded-xl bg-gradient-to-br from-[#8B5CF6] via-[#7C3AED] to-[#D5FC55] flex items-end p-2 relative overflow-hidden">
                                 @if($heroImg1)
                                     <img src="{{ $heroImg1 }}"
                                         alt="{{ $heroProduct1->name }}"
-                                        class="w-full h-full object-cover">
-                                @else
-                                    <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-200 to-violet-300">
-                                        <span class="text-3xl font-extrabold text-[#6D28D9]/40">
-                                            {{ $heroProduct1 ? strtoupper(substr($heroProduct1->name, 0, 1)) : 'A' }}
-                                        </span>
-                                    </div>
+                                        class="absolute inset-0 w-full h-full object-cover">
+                                    {{-- Overlay gradasi gelap dari bawah --}}
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
                                 @endif
+                                {{-- Teks nama produk di pojok kiri bawah --}}
+                                <span class="relative z-10 text-[8px] sm:text-[10px] font-black text-white leading-tight">
+                                    {{ $heroProduct1 ? \Illuminate\Support\Str::limit($heroProduct1->name, 20) : 'Idea in motion' }}
+                                </span>
                             </div>
-                            <div class="mt-1.5 h-1.5 w-2/3 rounded-full bg-violet-100"></div>
-                            <div class="mt-1 mb-0.5 h-1.5 w-1/3 rounded-full bg-violet-100"></div>
                         </div>
                     </div>
 
-                    {{-- Kartu melayang 2: Foto produk terbaru ke-2 --}}
                     <div class="artiv-hero-card absolute right-[14%] top-[4%] w-[19%] rotate-6 hover:rotate-0 hover:scale-105 transition-transform duration-500 z-30" style="--d:.55s">
                         <div class="rounded-2xl bg-white p-1.5 shadow-xl shadow-violet-900/20">
                             <div class="aspect-[3/4] rounded-xl bg-gradient-to-br from-[#8B5CF6] via-[#7C3AED] to-[#D5FC55] flex items-end p-2 relative overflow-hidden">

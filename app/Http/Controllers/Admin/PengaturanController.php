@@ -22,7 +22,7 @@ class PengaturanController extends Controller
             $query->where('type', $request->type);
         }
 
-        $keywords = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+        $keywords = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
 
         $revisionFee = RevisionFee::first();
         if (!$revisionFee) {

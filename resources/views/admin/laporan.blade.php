@@ -3,7 +3,14 @@
 @section('title', 'Laporan Transaksi')
 
 @section('content')
-<div class="max-w-4xl mx-auto space-y-6" x-data="{ openCustomModal: false }">
+<div class="space-y-6" x-data="{ openCustomModal: false }">
+
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-2">
+        <div>
+            <h1 class="text-3xl font-extrabold text-slate-900">Laporan Transaksi</h1>
+            <p class="text-slate-500 mt-1.5">Unduh laporan pendapatan dan transaksi ARTIV dalam berbagai format.</p>
+        </div>
+    </div>
 
     {{-- Daftar Kartu Laporan Per Tahun --}}
     @foreach ($monthsByYear as $year => $months)
@@ -11,14 +18,14 @@
             
             {{-- Header Tahun & Tombol Atur Periode (Sejajar) --}}
             <div class="flex items-center justify-between px-1">
-                <h2 class="text-sm font-bold text-black tracking-wide">
+                <h2 class="text-lg font-bold text-slate-900 tracking-tight">
                     {{ $year }}
                 </h2>
 
                 @if ($loop->first)
                     <button @click="openCustomModal = true" 
                             type="button" 
-                            class="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-full shadow-sm transition">
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[#6D28D9] hover:text-[#6D28D9] text-slate-700 text-sm font-medium rounded-full shadow-sm transition">
                         <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
                         Atur Periode
                     </button>
@@ -36,7 +43,6 @@
                             </h3>
                         </div>
 
-                        {{-- Tombol Unduh Format Teks Biru Simpel --}}
                         <form action="{{ route('admin.laporan.export') }}" method="POST" class="flex items-center gap-3">
                             @csrf
                             <input type="hidden" name="start_date" value="{{ $m['start_date'] }}">
@@ -71,7 +77,6 @@
         </div>
     @endforeach
 
-    {{-- MODAL ATUR PERIODE KUSTOM --}}
     <div x-show="openCustomModal" 
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0"
@@ -103,15 +108,15 @@
                 </div>
 
                 <div class="pt-3 flex items-center justify-end gap-3 border-t border-gray-100">
-                    <button type="submit" name="format" value="xlsx" @click="openCustomModal = false" class="text-blue-600 hover:text-blue-800 text-sm font-semibold hover:underline">
+                    <button type="submit" name="format" value="xlsx" @click="openCustomModal = false" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-sm font-semibold rounded-full transition shadow-sm">
                         Excel
                     </button>
                     <span class="text-gray-300">|</span>
-                    <button type="submit" name="format" value="pdf" @click="openCustomModal = false" class="text-blue-600 hover:text-blue-800 text-sm font-semibold hover:underline">
+                    <button type="submit" name="format" value="pdf" @click="openCustomModal = false" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-sm font-semibold rounded-full transition shadow-sm">
                         PDF
                     </button>
                     <span class="text-gray-300">|</span>
-                    <button type="submit" name="format" value="csv" @click="openCustomModal = false" class="text-blue-600 hover:text-blue-800 text-sm font-semibold hover:underline">
+                    <button type="submit" name="format" value="csv" @click="openCustomModal = false" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-sm font-semibold rounded-full transition shadow-sm">
                         CSV
                     </button>
                 </div>
