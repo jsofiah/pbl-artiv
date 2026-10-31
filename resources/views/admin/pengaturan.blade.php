@@ -324,37 +324,36 @@
             </table>
         </div>
 
-        <div class="mt-8 pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="text-sm text-gray-500 font-medium">
-                Menampilkan
-                <span class="font-bold text-gray-800">{{ $keywords->firstItem() ?? 0 }} - {{ $keywords->lastItem() ?? 0 }}</span>
-                dari
-                <span class="font-bold text-gray-800">{{ $keywords->total() }}</span>
-                Keyword
-            </div>
+        <div class="mt-6 pt-5 border-t border-slate-200 flex items-center justify-between gap-3 flex-wrap p-4">
+            <p class="text-sm text-slate-500">
+                Menampilkan {{ $keywords->firstItem() ?? 0 }} - {{ $keywords->lastItem() ?? 0 }} dari {{ $keywords->total() }} Keyword
+            </p>
 
             @if($keywords->hasPages())
-                <nav class="flex items-center gap-1.5 select-none">
-                    @if($keywords->onFirstPage())
-                        <span class="px-3.5 py-1.5 text-sm text-gray-300 border border-gray-100 rounded-xl cursor-not-allowed">&lsaquo; Sebelumnya</span>
-                    @else
-                        <a href="{{ $keywords->previousPageUrl() }}" class="px-3.5 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:border-[#6D28D9] hover:text-[#6D28D9] transition">&lsaquo; Sebelumnya</a>
-                    @endif
+                <div class="flex items-center gap-2">
+                    {{-- Tombol Sebelumnya --}}
+                    <a href="{{ $keywords->previousPageUrl() ?? '#' }}"
+                        class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $keywords->onFirstPage() ? 'text-slate-300 pointer-events-none' : 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' }} transition">
+                        &lt; Sebelumnya
+                    </a>
 
-                    @foreach($keywords->getUrlRange(1, $keywords->lastPage()) as $page => $url)
-                        @if($page == $keywords->currentPage())
-                            <span class="px-3 py-1.5 text-sm font-bold text-white bg-[#6D28D9] rounded-xl shadow-sm">{{ $page }}</span>
-                        @else
-                            <a href="{{ $url }}" class="px-3 py-1.5 text-sm font-semibold text-gray-600 hover:text-[#6D28D9] hover:bg-violet-50 rounded-xl transition">{{ $page }}</a>
-                        @endif
-                    @endforeach
+                    {{-- Angka Halaman --}}
+                    @for ($i = 1; $i <= $keywords->lastPage(); $i++)
+                        <a href="{{ $keywords->url($i) }}"
+                            class="w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition
+                                    {{ $i === $keywords->currentPage()
+                                        ? 'bg-[#6D28D9] text-white shadow-sm'
+                                        : 'border border-slate-200 bg-white text-slate-600 hover:border-[#6D28D9] hover:text-[#6D28D9]' }}">
+                            {{ $i }}
+                        </a>
+                    @endfor
 
-                    @if($keywords->hasMorePages())
-                        <a href="{{ $keywords->nextPageUrl() }}" class="px-3.5 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:border-[#6D28D9] hover:text-[#6D28D9] transition">Selanjutnya &rsaquo;</a>
-                    @else
-                        <span class="px-3.5 py-1.5 text-sm text-gray-300 border border-gray-100 rounded-xl cursor-not-allowed">Selanjutnya &rsaquo;</span>
-                    @endif
-                </nav>
+                    {{-- Tombol Selanjutnya --}}
+                    <a href="{{ $keywords->nextPageUrl() ?? '#' }}"
+                        class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $keywords->hasMorePages() ? 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' : 'text-slate-300 pointer-events-none' }} transition">
+                        Selanjutnya &gt;
+                    </a>
+                </div>
             @endif
         </div>
     </div>

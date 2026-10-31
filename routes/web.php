@@ -125,7 +125,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
     Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
 
-    // ============ DESIGNER ============
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
+
+    // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])->name('availability.toggle');
@@ -213,7 +216,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/manajemen-file/download/{type}/{id}', [ManajemenFileController::class, 'download'])->name('manajemen-file.download');
         Route::delete('/manajemen-file/{type}/{id}', [ManajemenFileController::class, 'destroy'])->name('manajemen-file.destroy');
 
-        // Laporan
+        // Modul Terpisah
         Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
 
         // Pengaturan
@@ -231,12 +234,18 @@ Route::middleware('auth')->group(function () {
                     ->name($role);
             }
 
+            Route::patch('/{user}/availability', [AkunController::class, 'updateAvailability'])
+                ->whereUuid('user')
+                ->name('availability');
+
+
+            // Tambah & edit akun (dikirim dari popup di halaman daftar)
             Route::post('/{role}', [AkunController::class, 'store'])->whereIn('role', ['designer', 'admin', 'customer'])->name('store');
             Route::put('/{user}', [AkunController::class, 'update'])->whereUuid('user')->name('update');
             Route::patch('/{user}/status', [AkunController::class, 'toggleStatus'])->whereUuid('user')->name('status');
             Route::delete('/{user}', [AkunController::class, 'destroy'])->whereUuid('user')->name('destroy');
+
         });
     });
 });
-
 require __DIR__ . '/auth.php';

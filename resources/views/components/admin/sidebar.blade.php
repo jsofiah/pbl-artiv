@@ -119,7 +119,7 @@
                                     <button type="button" @click="open = !open"
                                         class="group w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150
                                                {{ $parentActive
-                                                   ? 'bg-white/20 text-white font-bold'
+                                                   ? 'bg-white/20 text-white font-semibold'
                                                    : 'text-white/70 hover:bg-white/10 hover:text-white font-medium' }}">
 
                                         <span
@@ -147,7 +147,7 @@
                                                 <a href="{{ $childUrl }}"
                                                     class="block px-3 py-2 text-sm rounded-lg transition-colors
                                                           {{ $childActive
-                                                              ? 'bg-white/20 text-[#D5FC55] font-bold'
+                                                              ? 'bg-white/20 text-[#D5FC55] font-semibold'
                                                               : 'text-white/70 hover:bg-white/10 hover:text-white font-medium' }}">
                                                     {{ $child['label'] }}
                                                 </a>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Review;
 use App\Models\User;
+use App\Models\DesignerStat;
 use App\Services\R2StorageService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -42,12 +43,13 @@ class AkunController extends Controller
 
         // Statistik per akun (subquery, tanpa N+1)
         if ($role === 'designer') {
-            $query->addSelect('users.*')->addSelect([
-                'total_order'     => Order::selectRaw('count(*)')->whereColumn('designer_id', 'users.id'),
-                'completed_order' => Order::selectRaw('count(*)')->whereColumn('designer_id', 'users.id')->where('status', 'completed'),
-                'avg_rating'      => Review::selectRaw('round(avg(rating), 1)')->whereColumn('designer_id', 'users.id'),
-                'review_count'    => Review::selectRaw('count(*)')->whereColumn('designer_id', 'users.id'),
-            ]);
+            $query->with('designerStat')          // ← eager load status availability
+                  ->addSelect('users.*')->addSelect([
+                      'total_order'     => Order::selectRaw('count(*)')->whereColumn('designer_id', 'users.id'),
+                      'completed_order' => Order::selectRaw('count(*)')->whereColumn('designer_id', 'users.id')->where('status', 'completed'),
+                      'avg_rating'      => Review::selectRaw('round(avg(rating), 1)')->whereColumn('designer_id', 'users.id'),
+                      'review_count'    => Review::selectRaw('count(*)')->whereColumn('designer_id', 'users.id'),
+                  ]);
         } elseif ($role === 'customer') {
             $query->addSelect('users.*')->addSelect([
                 'total_order' => Order::selectRaw('count(*)')->whereColumn('customer_id', 'users.id'),
@@ -73,7 +75,7 @@ class AkunController extends Controller
             default   => $query->orderByDesc('created_at'),
         };
 
-        $akun = $query->paginate(6)->withQueryString();
+        $akun = $query->paginate(15)->withQueryString();
 
         return view('admin.akun.index', [
             'role'      => $role,
@@ -135,7 +137,6 @@ class AkunController extends Controller
 
         try {
             if ($request->hasFile('avatar')) {
-                // Upload yang baru dulu, baru hapus yang lama
                 $newUrl = $r2->upload($request->file('avatar'), 'avatars', R2StorageService::DISK_PUBLIC);
                 $this->hapusFoto($r2, $user->avatar_url);
                 $data['avatar_url'] = $newUrl;
@@ -175,13 +176,54 @@ class AkunController extends Controller
         try {
             $user->delete();
         } catch (QueryException $e) {
-            // Mis. customer yang masih punya order (FK restrict)
             return back()->with('error', 'Akun tidak bisa dihapus karena masih punya data terkait (misalnya riwayat order). Nonaktifkan akun ini sebagai gantinya.');
         }
 
         $this->hapusFoto($r2, $avatar);
 
         return back()->with('success', 'Akun berhasil dihapus.');
+    }
+
+    // ==================== Ubah Status Availability Designer ====================
+
+    public function updateAvailability(Request $request, User $user)
+    {
+        abort_unless($user->role === 'designer', 404, 'Hanya designer yang punya status availability.');
+
+        $data = $request->validate([
+            'availability_status' => ['required', 'in:available,unavailable,suspended'],
+        ]);
+
+        $stat = $user->designerStat;
+
+        if (! $stat) {
+            $stat = $user->designerStat()->create([
+                'availability_status' => DesignerStat::STATUS_UNAVAILABLE,
+            ]);
+        }
+
+        $payload = ['availability_status' => $data['availability_status']];
+
+        if ($data['availability_status'] === DesignerStat::STATUS_SUSPENDED) {
+            $payload['suspended_until']   = now()->addDays(DesignerStat::SUSPEND_DURATION_DAYS);
+            $payload['last_suspended_at'] = now();
+            $payload['suspend_count']     = $stat->suspend_count + 1;
+        } elseif (in_array($data['availability_status'], [
+            DesignerStat::STATUS_AVAILABLE,
+            DesignerStat::STATUS_UNAVAILABLE,
+        ])) {
+            $payload['suspended_until'] = null;
+        }
+
+        $stat->update($payload);
+
+        $label = match ($data['availability_status']) {
+            'available'   => 'Available',
+            'unavailable' => 'Unavailable',
+            'suspended'   => 'Suspended',
+        };
+
+        return back()->with('success', "Status designer diubah menjadi {$label}.");
     }
 
     private function hapusFoto(R2StorageService $r2, ?string $url): void

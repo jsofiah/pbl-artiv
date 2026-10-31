@@ -75,7 +75,7 @@ class MonitoringController extends Controller
         }
 
         // Paginate 10 Data per Halaman + Pertahankan Query String URL
-        $orders = $query->paginate(10)->withQueryString();
+        $orders = $query->paginate(15)->withQueryString();
 
         // Best Practice Data Verifikasi Pembayaran:
         // Hanya tarik status PENDING atau riwayat 30 hari terakhir dengan hard limit 100 data

@@ -19,7 +19,7 @@ class RiwayatPekerjaanController extends Controller
      */
     public function index(Request $request)
     {
-        $orders = $this->query($request)->paginate(10)->withQueryString();
+        $orders = $this->query($request)->paginate(15)->withQueryString();
 
         // Dropdown kategori: semua layanan (Poster, Banner, dll), bukan hanya yang pernah selesai
         $kategori = Product::orderBy('name')->get(['id', 'name']);
