@@ -160,4 +160,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(DesignerStat::class, 'designer_id');
     }
+
+    public function pushSubscriptions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+    return $this->hasMany(PushSubscription::class);
+    }
 }

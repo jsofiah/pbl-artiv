@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Jobs\SendWebPushNotification;
 
 class NotificationService
 {
@@ -69,9 +70,10 @@ class NotificationService
             ->first();
 
         if ($existing) {
-            $existing->forceFill($payload + ['created_at' => now()])->save();
-            return $existing;
-        }
+                $existing->forceFill($payload + ['created_at' => now()])->save();
+                $this->sendWebPush($existing);
+                return $existing;
+            }
 
         return $this->push($payload + [
             'user_id' => $recipientId,
@@ -250,12 +252,13 @@ class NotificationService
         });
     }
 
-    /** Simpan notifikasi, lalu kirim email (customer dan designer saja) */
+       /** Simpan notifikasi, lalu kirim email (customer dan designer saja) dan web push */
     private function push(array $attributes): Notification
     {
         $notification = Notification::create($attributes);
 
         $this->sendEmail($notification);
+        $this->sendWebPush($notification);
 
         return $notification;
     }
@@ -272,6 +275,15 @@ class NotificationService
             Mail::to($user->email)->send(new NotificationMail($notification));
         } catch (\Throwable $e) {
             report($e); // gagal kirim email tidak boleh menggagalkan proses utama
+        }
+    }
+
+    private function sendWebPush(Notification $notification): void
+    {
+        try {
+            SendWebPushNotification::dispatch($notification);
+        } catch (\Throwable $e) {
+            report($e); // gagal push tidak boleh menggagalkan proses utama
         }
     }
 }

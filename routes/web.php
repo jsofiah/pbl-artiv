@@ -24,6 +24,7 @@ use App\Http\Controllers\Customer\ReviewController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\ManajemenFileController;
 use App\Http\Controllers\Admin\HargaExpressController;
+use App\Http\Controllers\PushSubscriptionController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -134,6 +135,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifikasi.index');
     Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
     Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
+
+    // Web Push (customer, designer, admin)
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
     Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
