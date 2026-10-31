@@ -4,12 +4,13 @@
 
 @section('content')
 
-<div class="flex items-start justify-between gap-4 flex-wrap mb-6">
+<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
     <div>
-        <h1 class="text-4xl font-extrabold text-slate-900">Manajemen Katalog</h1>
-        <p class="text-slate-500 mt-2">Kelola layanan jasa desain, varian tipe paket, dan harganya.</p>
+        <h1 class="text-3xl font-extrabold text-slate-900">Manajemen Katalog</h1>
+        <p class="text-slate-500 mt-1.5">Kelola layanan jasa desain, varian tipe paket, dan harganya.</p>
     </div>
-    <a href="{{ route('admin.katalog.create') }}" class="inline-flex items-center gap-2 bg-[#6D28D9] hover:bg-[#5B21B6] text-white text-sm font-semibold px-5 py-3 rounded-xl transition shadow-sm">        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+        <a href="{{ route('admin.katalog.create') }}" class="inline-flex items-center justify-center gap-2 bg-[#6D28D9] hover:bg-[#5B21B6] text-white text-sm font-semibold px-5 py-2.5 rounded-full transition shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
         Tambah Katalog
     </a>
 </div>
@@ -150,7 +151,7 @@
                     ? $k->tiers->min('price')
                     : $k->price;
             @endphp
-            <article class="bg-white rounded-3xl border border-slate-200 p-5 flex flex-col hover:border-[#6D28D9]/40 hover:shadow-md transition">
+            <article class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col hover:border-[#6D28D9]/40 hover:shadow-md transition">
 
                 <div class="relative h-44 rounded-2xl border border-slate-200 bg-slate-100 flex flex-col items-center justify-center gap-1.5 text-slate-400 overflow-hidden">
                     @if ($thumbUrl)
@@ -175,11 +176,11 @@
 
                 <div class="border-t border-slate-200 pt-4">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-xs font-bold tracking-wider text-slate-500">
+                        <p class="text-xs font-bold tracking-wider text-slate-500 uppercase">
                             @if ($k->tiers->isNotEmpty())
-                                {{ $k->tiers->count() }} VARIAN TIPE PAKET
+                                {{ $k->tiers->count() }} Varian Tipe Paket
                             @else
-                                HARGA
+                                Harga
                             @endif
                         </p>
                         <span class="text-[11px] font-semibold px-2 py-0.5 rounded
@@ -200,7 +201,7 @@
                             </span>
                         </div>
                     @else
-                        <ul class="bg-slate-50 rounded-xl px-4 py-2 divide-y divide-slate-100">
+                        <ul class="bg-lime-50 border border-lime-200 rounded-xl px-4 py-2 divide-y divide-lime-200/50">
                             @foreach ($k->tiers as $i => $v)
                                 <li class="flex items-center justify-between py-2 text-sm">
                                     <span class="flex items-center gap-2.5 {{ $k->is_active ? 'text-slate-600' : 'text-slate-400' }}">
@@ -217,7 +218,8 @@
                 </div>
 
                 <div class="border-t border-slate-200 mt-5 pt-4 flex items-center gap-2">
-                    <a href="{{ route('admin.katalog.edit', $k->id) }}" class="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9] transition">                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4z"/></svg>
+                    <a href="{{ route('admin.katalog.edit', $k->id) }}" class="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full border border-slate-200 bg-white text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9] transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4z"/></svg>
                         Edit
                     </a>
 
@@ -225,13 +227,14 @@
                             onsubmit="return confirm('Hapus katalog {{ e($k->name) }}?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:border-rose-300 hover:text-rose-600 transition">
+                        <button type="submit" class="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full border border-slate-200 bg-white text-slate-700 hover:border-rose-300 hover:text-rose-600 transition">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
                             Hapus
                         </button>
                     </form>
 
-                    <a href="{{ route('admin.katalog.tiers.index', $k->id) }}" class="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-[#D5FC55] text-[#1A1A1A] hover:bg-[#c5ec45] transition">                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+                    <a href="{{ route('admin.katalog.tiers.index', $k->id) }}" class="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full bg-[#D5FC55] text-[#1A1A1A] hover:bg-[#c5ec45] transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
                         Tipe
                     </a>
                 </div>

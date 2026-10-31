@@ -25,10 +25,6 @@ class JobPoolController extends Controller
         $query = Order::query()
             ->whereNull('designer_id')
             ->whereIn('status', ['pending', 'waiting_designer'])
-            ->where(function ($q) {
-                $q->whereNull('deadline')
-                ->orWhere('deadline', '>=', now()->startOfDay());
-            })
             ->with(['product', 'productTier', 'customer', 'references']);
 
         if ($q !== '') {
@@ -51,7 +47,12 @@ class JobPoolController extends Controller
             default         => $query->orderByDesc('created_at'),
         };
 
-        $totalTersedia = (clone $query)->count();
+        $totalTersedia = (clone $query)
+            ->where(function ($q) {
+                $q->whereNull('deadline')
+                    ->orWhere('deadline', '>=', now()->startOfDay());
+            })
+            ->count();
 
         $jobPool = $query->paginate(15)->withQueryString();
 

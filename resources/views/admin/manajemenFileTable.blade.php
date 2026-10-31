@@ -91,7 +91,32 @@
     </table>
 </div>
 
-{{-- Pagination --}}
-<div class="pt-2">
-    {{ $files->links() }}
+<div class="mt-2 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap px-4 pb-4">
+    <p class="text-sm text-slate-500">
+        Menampilkan {{ $files->firstItem() ?? 0 }} - {{ $files->lastItem() ?? 0 }} dari {{ $files->total() }} file
+    </p>
+
+    @if($files->hasPages())
+        <div class="flex items-center gap-2">
+            <a href="{{ $files->previousPageUrl() ?? '#' }}"
+                class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $files->onFirstPage() ? 'text-slate-300 pointer-events-none' : 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' }} transition">
+                &lt; Sebelumnya
+            </a>
+
+            @for ($i = 1; $i <= $files->lastPage(); $i++)
+                <a href="{{ $files->url($i) }}"
+                    class="w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition
+                            {{ $i === $files->currentPage()
+                                ? 'bg-[#6D28D9] text-white shadow-sm'
+                                : 'border border-slate-200 bg-white text-slate-600 hover:border-[#6D28D9] hover:text-[#6D28D9]' }}">
+                    {{ $i }}
+                </a>
+            @endfor
+
+            <a href="{{ $files->nextPageUrl() ?? '#' }}"
+                class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $files->hasMorePages() ? 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' : 'text-slate-300 pointer-events-none' }} transition">
+                Selanjutnya &gt;
+            </a>
+        </div>
+    @endif
 </div>
