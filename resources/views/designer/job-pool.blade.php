@@ -4,12 +4,10 @@
 
 @section('content')
 @php
-    // Jendela pagination
     $cur   = $jobPool->currentPage();
     $last  = $jobPool->lastPage();
     $pages = collect([1, $last])->merge(range(max(1, $cur - 1), min($last, $cur + 1)))->unique()->sort()->values();
 
-    // Cek apakah ada filter aktif
     $adaFilter = ($q ?? '') !== '' || ($kategori && $kategori !== 'semua');
 @endphp
 
@@ -149,7 +147,6 @@
             @endphp
 
             <article class="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:border-[#6D28D9]/40 hover:shadow-md">
-                {{-- Aksen kiri ungu saat hover --}}
                 <span class="absolute inset-y-0 left-0 w-1 bg-[#6D28D9] opacity-0 transition group-hover:opacity-100"></span>
 
                 <div class="flex flex-col gap-4 p-5 pl-6 md:flex-row md:items-center">
@@ -219,7 +216,6 @@
                         @endphp
 
                         @if ($isExpired)
-                            {{-- Tombol disabled untuk order lewat deadline --}}
                             <button type="button" disabled
                                     class="inline-flex shrink-0 items-center gap-2 rounded-full bg-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-400 cursor-not-allowed"
                                     title="Order sudah lewat deadline">
@@ -229,7 +225,6 @@
                                 Lewat Deadline
                             </button>
                         @else
-                            {{-- Tombol normal --}}
                             <a href="{{ route('designer.job-pool.show', $job->id) }}"
                             class="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#6D28D9] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#5B21B6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6D28D9] focus-visible:ring-offset-2">
                                 Lihat Detail
@@ -242,7 +237,6 @@
                 </div>
             </article>
         @empty
-            {{-- Empty state --}}
             <div class="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-sm">
                 <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-violet-200">
                     <svg class="h-10 w-10 text-[#6D28D9]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">

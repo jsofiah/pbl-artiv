@@ -305,6 +305,36 @@
                     </li>
                 @endforeach
             </ol>
+            @if ($order->refund && $order->refund->isCompleted())
+                <div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-emerald-800 text-sm">Refund telah ditransfer</p>
+                            <p class="text-xs text-emerald-700 mt-0.5">
+                                Rp {{ number_format($order->refund->amount, 0, ',', '.') }} ke
+                                {{ $order->refund->bank_name }} · {{ $order->refund->bank_account_number }}
+                            </p>
+
+                            @if ($order->refund->proof_url)
+                                <button type="button"
+                                        onclick="previewRefundProof('{{ route('customer.pesanan.refund.proof', $order->id) }}')"
+                                        class="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    Lihat Bukti Transfer
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
         </x-shared.ui.card>
     @endif
 </div>

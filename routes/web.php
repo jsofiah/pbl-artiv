@@ -25,9 +25,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\ManajemenFileController;
 use App\Http\Controllers\Admin\HargaExpressController;
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
 Route::get('/', function () {
     if (!Auth::check()) {
         return redirect()->route('customer.beranda');
@@ -44,7 +41,6 @@ Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.
 Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
 
 
-
 // ============ CUSTOMER (bisa diakses guest) ============
 Route::prefix('customer')->name('customer.')->group(function () {
     // Halaman publik
@@ -58,40 +54,35 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::get('/pesanan/{order}', [PesananController::class, 'show'])->name('pesanan.show');
         Route::post('/pesanan/{order}/pesan', [PesananController::class, 'kirimPesan'])->name('pesanan.kirimPesan');
 
-        Route::get(
-            '/pesanan/{order}/reference/{reference}/download',
-            [PesananController::class, 'downloadReference']
-        )
+        Route::get('/pesanan/{order}/reference/{reference}/download', [PesananController::class, 'downloadReference'])
             ->name('pesanan.reference.download');
 
-        Route::get(
-            '/pesanan/{order}/attachment/{attachment}/download',
-            [PesananController::class, 'downloadAttachment']
-        )
+        Route::get('/pesanan/{order}/attachment/{attachment}/download', [PesananController::class, 'downloadAttachment'])
             ->name('pesanan.attachment.download');
-        Route::get(
-            '/pesanan/{order}/reference/{reference}/preview',
-            [PesananController::class, 'previewReference']
-        )
+
+        Route::get('/pesanan/{order}/reference/{reference}/preview', [PesananController::class, 'previewReference'])
             ->name('pesanan.reference.preview');
-        Route::get(
-            '/pesanan/{order}/attachment/{attachment}/preview',
-            [PesananController::class, 'previewAttachment']
-        )
+
+        Route::get('/pesanan/{order}/attachment/{attachment}/preview', [PesananController::class, 'previewAttachment'])
             ->name('pesanan.attachment.preview');
 
-        Route::post(
-            '/pesanan/{order}/deliverable/{deliverable}/approve',
-            [PesananController::class, 'approveDeliverable']
-        )
+        Route::post('/pesanan/{order}/deliverable/{deliverable}/approve', [PesananController::class, 'approveDeliverable'])
             ->name('pesanan.deliverable.approve');
-        Route::post(
-            '/pesanan/{order}/deliverable/{deliverable}/revisi',
-            [PesananController::class, 'requestRevision']
-        )
+
+        Route::post('/pesanan/{order}/deliverable/{deliverable}/revisi', [PesananController::class, 'requestRevision'])
             ->name('pesanan.deliverable.revisi');
 
+        // Refund (customer)
+        Route::post('/pesanan/{order}/refund', [PesananController::class, 'ajukanRefund'])
+            ->name('pesanan.refund');
+        Route::get('/pesanan/{order}/refund/proof/preview', [PesananController::class, 'previewRefundProof'])
+            ->name('pesanan.refund.proof');
 
+        // Decision reassign (customer)
+        Route::post('/pesanan/{order}/decision', [PesananController::class, 'decideReassignment'])
+            ->name('pesanan.decision');
+
+        // Pemesanan
         Route::get('/pemesanan/{product}', [PemesananController::class, 'create'])->name('pemesanan.create');
         Route::post('/pemesanan/{product}/ringkasan', [PemesananController::class, 'ringkasan'])->name('pemesanan.ringkasan');
         Route::get('/pemesanan/{product}/ringkasan', [PemesananController::class, 'showRingkasan'])->name('pemesanan.ringkasan.show');
@@ -121,7 +112,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
 // ============ ROUTE WAJIB LOGIN ============
 Route::middleware('auth')->group(function () {
 
-    // Profile (bawaan Breeze)
+    // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -129,8 +120,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:designer')
         ->name('profile.designer-status.update');
 
-        
-        // Notifikasi (customer, designer, admin)
+    // Notifikasi
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifikasi.index');
     Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifikasi.read-all');
     Route::get('/notifikasi/{notification}', [NotificationController::class, 'read'])->name('notifikasi.read');
@@ -141,47 +131,40 @@ Route::middleware('auth')->group(function () {
     // Designer
     Route::middleware('role:designer')->prefix('designer')->name('designer.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])->name('availability.toggle');
 
-        Route::post('/availability/toggle', [DashboardController::class, 'toggleAvailability'])
-            ->name('availability.toggle');
-
-        // ============ JOB POOL ============
+        // Job Pool
         Route::get('/job-pool', [JobPoolController::class, 'index'])->name('job-pool');
         Route::get('/job-pool/{order}', [JobPoolController::class, 'show'])->name('job-pool.show');
         Route::post('/job-pool/{order}/ambil', [JobPoolController::class, 'ambil'])->name('job-pool.ambil');
         Route::get('/job-pool/{order}/sukses', [JobPoolController::class, 'sukses'])->name('job-pool.sukses');
         Route::get('/job-pool/{order}/reference/{reference}/download', [JobPoolController::class, 'downloadReference'])->name('job-pool.reference.download');
         Route::get('/job-pool/{order}/reference/{reference}/preview', [JobPoolController::class, 'previewReference'])->name('job-pool.reference.preview');
-        // ============ PEKERJAAN ============
+
+        // Pekerjaan
         Route::get('/pekerjaan-saya', [PekerjaanController::class, 'index'])->name('pekerjaan.index');
         Route::get('/pekerjaan-saya/{order}', [PekerjaanController::class, 'show'])->name('pekerjaan.show');
         Route::post('/pekerjaan-saya/{order}/pesan', [PekerjaanController::class, 'kirimPesan'])->name('pekerjaan.kirimPesan');
 
-        Route::get(
-            '/pekerjaan-saya/{order}/attachment/{attachment}/download',
-            [PekerjaanController::class, 'downloadAttachment']
-        )->name('pekerjaan.attachment.download');
+        Route::get('/pekerjaan-saya/{order}/attachment/{attachment}/download', [PekerjaanController::class, 'downloadAttachment'])
+            ->name('pekerjaan.attachment.download');
 
-        Route::get(
-            '/pekerjaan-saya/{order}/reference/{reference}/download',
-            [PekerjaanController::class, 'downloadReference']
-        )->name('pekerjaan.reference.download');
+        Route::get('/pekerjaan-saya/{order}/reference/{reference}/download', [PekerjaanController::class, 'downloadReference'])
+            ->name('pekerjaan.reference.download');
 
-        Route::get(
-            '/pekerjaan-saya/{order}/attachment/{attachment}/preview',
-            [PekerjaanController::class, 'previewAttachment']
-        )->name('pekerjaan.attachment.preview');
+        Route::get('/pekerjaan-saya/{order}/attachment/{attachment}/preview', [PekerjaanController::class, 'previewAttachment'])
+            ->name('pekerjaan.attachment.preview');
 
-        Route::get(
-            '/pekerjaan-saya/{order}/reference/{reference}/preview',
-            [PekerjaanController::class, 'previewReference']
-        )->name('pekerjaan.reference.preview');
+        Route::get('/pekerjaan-saya/{order}/reference/{reference}/preview', [PekerjaanController::class, 'previewReference'])
+            ->name('pekerjaan.reference.preview');
 
-        Route::post(
-            '/pekerjaan-saya/{order}/deliverable',
-            [PekerjaanController::class, 'kirimDeliverable']
-        )
+        Route::post('/pekerjaan-saya/{order}/deliverable', [PekerjaanController::class, 'kirimDeliverable'])
             ->name('pekerjaan.kirimDeliverable');
+
+        //Batalkan order — path & name sesuai grup
+        Route::post('/pekerjaan-saya/{order}/batalkan', [PekerjaanController::class, 'batalkan'])
+            ->name('pekerjaan.batalkan');
+
         Route::get('/notifikasi', fn () => redirect()->route('notifikasi.index'))->name('notifikasi');
         Route::get('/riwayat', [RiwayatPekerjaanController::class, 'index'])->name('riwayat');
         Route::get('/riwayat/ekspor-csv', [RiwayatPekerjaanController::class, 'exportCsv'])->name('riwayat.csv');
@@ -192,18 +175,22 @@ Route::middleware('auth')->group(function () {
     });
 
 
-    // Admin
+    // ============ ADMIN ============
     Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-        // Dashboard Utama & Queue Export
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::post('/laporan/export', [LaporanController::class, 'export'])->name('laporan.export');
 
-        // Monitoring (Pekerjaan & Pembayaran)
+        // Monitoring
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring');
         Route::get('/monitoring/detail/{order}', [MonitoringController::class, 'detail'])->name('monitoring.detail');
         Route::patch('/monitoring/pembayaran/{payment}/approve', [MonitoringController::class, 'approvePayment'])->name('monitoring.pembayaran.approve');
         Route::patch('/monitoring/pembayaran/{payment}/reject', [MonitoringController::class, 'rejectPayment'])->name('monitoring.pembayaran.reject');
 
+        //Refund admin — path & name sesuai grup
+        Route::patch('/monitoring/refund/{refund}/selesai', [MonitoringController::class, 'selesaikanRefund'])
+            ->name('monitoring.refund.selesai');
+
+        // Harga Express
         Route::get('/harga-express', [HargaExpressController::class, 'index'])->name('harga-express.index');
         Route::post('/harga-express', [HargaExpressController::class, 'store'])->name('harga-express.store');
         Route::put('/harga-express/{hargaExpress}', [HargaExpressController::class, 'update'])->name('harga-express.update');
@@ -223,7 +210,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'update'])->name('katalog.tiers.update');
         Route::delete('/katalog/{product}/tiers/{tier}', [ProductTierController::class, 'destroy'])->name('katalog.tiers.destroy');
 
-        // Route Manajemen File
+        // Manajemen File
         Route::get('/manajemen-file', [ManajemenFileController::class, 'index'])->name('manajemen-file.index');
         Route::get('/manajemen-file/preview/{type}/{id}', [ManajemenFileController::class, 'preview'])->name('manajemen-file.preview');
         Route::get('/manajemen-file/download/{type}/{id}', [ManajemenFileController::class, 'download'])->name('manajemen-file.download');
@@ -239,7 +226,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/pengaturan/blacklist/{keyword}', [PengaturanController::class, 'destroyBlacklist'])->name('pengaturan.blacklist.destroy');
         Route::post('/pengaturan/harga-revisi', [PengaturanController::class, 'updateRevisionFee'])->name('pengaturan.revision-fee.update');
 
-        // ===== Manajemen Akun =====
+        // Manajemen Akun
         Route::prefix('akun')->name('akun.')->group(function () {
             foreach (['designer', 'admin', 'customer'] as $role) {
                 Route::get($role, [AkunController::class, 'index'])
@@ -255,7 +242,6 @@ Route::middleware('auth')->group(function () {
             // Tambah & edit akun (dikirim dari popup di halaman daftar)
             Route::post('/{role}', [AkunController::class, 'store'])->whereIn('role', ['designer', 'admin', 'customer'])->name('store');
             Route::put('/{user}', [AkunController::class, 'update'])->whereUuid('user')->name('update');
-
             Route::patch('/{user}/status', [AkunController::class, 'toggleStatus'])->whereUuid('user')->name('status');
             Route::delete('/{user}', [AkunController::class, 'destroy'])->whereUuid('user')->name('destroy');
 

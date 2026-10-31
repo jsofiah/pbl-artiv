@@ -121,6 +121,24 @@
                 </span>
             @endif
         </button>
+        @php
+            $refunds = \App\Models\OrderRefund::with(['order.customer', 'order.designer'])
+                ->where('status', \App\Models\OrderRefund::STATUS_PENDING)
+                ->latest()
+                ->get();
+        @endphp
+
+        <button type="button"
+                @click="tab = 'refund'"
+                :class="tab === 'refund' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                class="pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 relative">
+            Refund
+            @if($refunds->count() > 0)
+                <span class="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {{ $refunds->count() }}
+                </span>
+            @endif
+        </button>
     </div>
 
     {{-- ==================== TAB 1: PROGRESS PEKERJAAN ==================== --}}
@@ -452,7 +470,77 @@
         </div>
     </div>
 
-    {{-- MODAL PREVIEW BUKTI TRANSFER --}}
+    <div x-show="tab === 'refund'" x-cloak>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto no-scrollbar">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Kode Order</th>
+                            <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Bank Tujuan</th>
+                            <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nominal</th>
+                            <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Aksi Verifikasi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @forelse($refunds as $refund)
+                            <tr class="hover:bg-gray-50/50 transition">
+                                <td class="px-6 py-4 font-bold text-slate-900">
+                                    {{ $refund->order->order_code ?? '-' }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="font-medium text-slate-900">{{ $refund->order->customer->full_name ?? '-' }}</div>
+                                    <div class="text-slate-400 text-xs">{{ $refund->order->customer->email ?? '' }}</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="font-medium text-slate-800">{{ $refund->bank_name }}</div>
+                                    <div class="text-slate-500 text-xs">{{ $refund->bank_account_number }}</div>
+                                    <div class="text-slate-400 text-xs">a.n. {{ $refund->bank_account_name }}</div>
+                                </td>
+                                <td class="px-6 py-4 font-bold text-slate-900">
+                                    Rp {{ number_format($refund->amount, 0, ',', '.') }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                        {{ ucfirst($refund->status) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    @if(!$refund->isCompleted())
+                                        <button type="button"
+                                                onclick="document.getElementById('modal-refund-{{ $refund->id }}').classList.remove('hidden')"
+                                                class="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-sm">
+                                            Selesaikan Refund
+                                        </button>
+                                    @else
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="text-slate-400 text-xs">Selesai</span>
+                                            @if($refund->proof_url)
+                                                <button type="button"
+                                                        onclick="previewRefundProof('{{ \App\Helpers\R2Helper::url($refund->proof_url) }}')"
+                                                        class="text-xs font-semibold text-purple-600 hover:underline">
+                                                    Lihat Bukti
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-10 text-slate-400">
+                                    Tidak ada pengajuan refund.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <template x-teleport="body">
         <div x-show="openModal" 
              x-cloak
@@ -511,7 +599,6 @@
         </div>
     </template>
 
-    {{-- MODAL KONFIRMASI ACC / TOLAK --}}
     <template x-teleport="body">
         <div x-show="confirmModalOpen" 
              x-cloak
@@ -553,4 +640,93 @@
     </template>
 
 </div>
+
+@foreach($refunds as $refund)
+    @if(!$refund->isCompleted())
+        <div id="modal-refund-{{ $refund->id }}" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Selesaikan Refund</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Order: <strong>{{ $refund->order->order_code }}</strong> ·
+                            Rp {{ number_format($refund->amount, 0, ',', '.') }}
+                        </p>
+                    </div>
+                    <button type="button"
+                            onclick="document.getElementById('modal-refund-{{ $refund->id }}').classList.add('hidden')"
+                            class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-3 mb-4 text-xs">
+                    <p class="text-slate-500 mb-1">Transfer ke:</p>
+                    <p class="font-bold text-slate-900">{{ $refund->bank_name }} · {{ $refund->bank_account_number }}</p>
+                    <p class="text-slate-600">a.n. {{ $refund->bank_account_name }}</p>
+                </div>
+
+                <form action="{{ route('admin.monitoring.refund.selesai', $refund->id) }}"
+                      method="POST"
+                      enctype="multipart/form-data"
+                      id="form-refund-{{ $refund->id }}">
+                    @csrf
+                    @method('PATCH')
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            Bukti Transfer Refund <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="file"
+                               name="proof"
+                               accept="image/png,image/jpeg,image/webp,application/pdf"
+                               required
+                               class="w-full text-sm border border-slate-200 rounded-xl file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-[#6D28D9] hover:file:bg-violet-100">
+                        <p class="text-xs text-slate-400 mt-1.5">
+                            Format: PNG, JPG, WEBP, PDF · Maks. 5 MB
+                        </p>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="button"
+                                onclick="document.getElementById('modal-refund-{{ $refund->id }}').classList.add('hidden')"
+                                class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50">
+                            Batal
+                        </button>
+                        <button type="submit"
+                                class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm">
+                            Selesaikan & Kirim
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+@endforeach
+
+<div id="modal-preview-refund" class="hidden fixed inset-0 z-[110] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target === this) this.classList.add('hidden')">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <p class="font-bold text-slate-900 text-sm">Bukti Transfer Refund</p>
+            <button type="button" onclick="document.getElementById('modal-preview-refund').classList.add('hidden')"
+                    class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-50">
+            <img id="preview-refund-img" src="" alt="Bukti" class="max-w-full max-h-[70vh] rounded-lg shadow">
+        </div>
+    </div>
+</div>
+
+<script>
+function previewRefundProof(url) {
+    document.getElementById('preview-refund-img').src = url;
+    document.getElementById('modal-preview-refund').classList.remove('hidden');
+}
+</script>
 @endsection

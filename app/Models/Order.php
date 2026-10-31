@@ -418,6 +418,23 @@ class Order extends Model
         return $this->review()->exists();
     }
 
+    public function canDesignerCancel(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_REVISION_NEEDED,
+            self::STATUS_DELIVERABLE_SENT,
+        ]);
+    }
+
+    public function canCustomerRefund(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_WAITING_DESIGNER,
+            self::STATUS_WAITING_CUSTOMER_DECISION,
+        ]) && $this->reassign_count > 0;
+    }
+
     public function canBeReviewed(): bool
     {
         return $this->isCompleted() && !$this->hasReview();
