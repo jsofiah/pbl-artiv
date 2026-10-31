@@ -47,11 +47,14 @@ class JobPoolController extends Controller
             default         => $query->orderByDesc('created_at'),
         };
 
-        $jobPool = $query->paginate(6)->withQueryString();
-
-        $totalTersedia = Order::whereNull('designer_id')
-            ->whereIn('status', ['pending', 'waiting_designer'])
+        $totalTersedia = (clone $query)
+            ->where(function ($q) {
+                $q->whereNull('deadline')
+                    ->orWhere('deadline', '>=', now()->startOfDay());
+            })
             ->count();
+
+        $jobPool = $query->paginate(15)->withQueryString();
 
         $kategoris = Product::where('is_active', true)
             ->distinct()

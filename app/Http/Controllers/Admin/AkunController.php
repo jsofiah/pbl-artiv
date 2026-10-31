@@ -75,7 +75,7 @@ class AkunController extends Controller
             default   => $query->orderByDesc('created_at'),
         };
 
-        $akun = $query->paginate(6)->withQueryString();
+        $akun = $query->paginate(15)->withQueryString();
 
         return view('admin.akun.index', [
             'role'      => $role,

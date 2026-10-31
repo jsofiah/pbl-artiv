@@ -13,7 +13,7 @@ use Illuminate\View\View;
 
 class KatalogController extends Controller
 {
-    private const PER_HALAMAN = 6;
+    private const PER_HALAMAN = 15;
 
     public function index(Request $request): View
     {

@@ -37,7 +37,7 @@ class ManajemenFileController extends Controller
             }
 
             $files = $query->{$sort === 'terlama' ? 'oldest' : 'latest'}()
-                ->paginate(10)
+                ->paginate(15)
                 ->withQueryString();
         } else {
             $query = MessageAttachment::whereHas('message', function ($m) {
@@ -57,7 +57,7 @@ class ManajemenFileController extends Controller
             }
 
             $files = $query->{$sort === 'terlama' ? 'oldest' : 'latest'}()
-                ->paginate(10)
+                ->paginate(15)
                 ->withQueryString();
         }
 

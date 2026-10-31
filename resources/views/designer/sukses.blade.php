@@ -32,7 +32,7 @@
     }
 </style>
 
-<div class="mx-auto max-w-3xl px-4 py-8">
+<div class="mx-auto py-8">
     <div class="mb-10 text-center">
         <div class="relative mx-auto mb-6 flex h-28 w-28 items-center justify-center">
             <span class="sukses-pulse absolute inset-0 rounded-full bg-[#D5FC55]/60"></span>

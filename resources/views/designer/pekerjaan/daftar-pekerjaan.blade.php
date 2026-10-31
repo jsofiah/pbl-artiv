@@ -3,7 +3,7 @@
 @section('title', 'Pekerjaan Saya')
 
 @section('content')
-<div class="px-8 py-8">
+<div>
     <div class="flex items-start justify-between gap-4 flex-wrap mb-6">
         <div>
             <h1 class="text-3xl font-extrabold text-slate-900">Pekerjaan Saya</h1>
@@ -35,20 +35,21 @@
         <input type="hidden" name="status" value="{{ $status }}">
         <div class="flex flex-wrap items-center gap-3">
 
-        <div class="flex-1 min-w-[280px] bg-white rounded-full shadow-sm border border-slate-100 p-2 flex items-center gap-2">
-                <div class="pl-4 text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                    </svg>
-                </div>
-                <input type="text" name="q" value="{{ $kataKunci }}"
-                    placeholder="Cari order code, layanan, atau customer..."
-                    class="flex-1 bg-transparent border-none focus:outline-none text-slate-700 placeholder:text-slate-400 px-2 py-2 text-sm">
-                <button type="submit"
-                        class="bg-[#D5FC55] hover:bg-[#c5ec45] text-neutral-900 font-bold px-5 py-2 rounded-full transition text-sm whitespace-nowrap">
-                    Cari
-                </button>
+        {{-- Search Bar --}}
+        <div class="flex-1 min-w-[280px] bg-white rounded-full shadow-sm border border-slate-100 p-2 flex items-center gap-2 focus-within:border-[#6D28D9] transition-colors duration-200">
+            <div class="pl-4 text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
             </div>
+            <input type="text" name="q" value="{{ $kataKunci }}"
+                placeholder="Cari order code, layanan, atau customer..."
+                class="flex-1 bg-transparent border-0 ring-0 focus:ring-0 focus:outline-none focus:border-transparent focus:bg-transparent shadow-none focus:shadow-none text-slate-700 placeholder:text-slate-400 px-2 py-2 text-sm">
+            <button type="submit"
+                    class="bg-[#D5FC55] hover:bg-[#c5ec45] text-neutral-900 font-bold px-5 py-2 rounded-full transition text-sm whitespace-nowrap">
+                Cari
+            </button>
+        </div>
 
             <div x-data="{ open: false }" class="relative">
                 <button type="button" @click="open = !open"
@@ -152,10 +153,54 @@
             @endforeach
         </div>
 
-        @if ($pekerjaan->hasPages())
-            <div class="mt-8">
-                {{ $pekerjaan->links() }}
-            </div>
+        @if ($pekerjaan->total() > 0)
+            <nav class="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between" aria-label="Pagination">
+                
+                <div class="text-sm text-slate-500">
+                    Menampilkan {{ $pekerjaan->firstItem() }} &ndash; {{ $pekerjaan->lastItem() }} dari <span class="font-semibold text-slate-700">{{ $pekerjaan->total() }}</span> Pekerjaan
+                </div>
+
+                <div class="flex items-center gap-2">
+                    @if ($pekerjaan->onFirstPage())
+                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                            Sebelumnya
+                        </span>
+                    @else
+                        <a href="{{ $pekerjaan->previousPageUrl() }}" class="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                            Sebelumnya
+                        </a>
+                    @endif
+
+                    <div class="flex items-center gap-1.5">
+                        @foreach ($pekerjaan->getUrlRange(max(1, $pekerjaan->currentPage() - 1), min($pekerjaan->lastPage(), $pekerjaan->currentPage() + 1)) as $page => $url)
+                            @if ($page == $pekerjaan->currentPage())
+                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#6D28D9] text-sm font-bold text-white">{{ $page }}</span>
+                            @else
+                                <a href="{{ $url }}" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">{{ $page }}</a>
+                            @endif
+                        @endforeach
+
+                        @if ($pekerjaan->currentPage() + 1 < $pekerjaan->lastPage())
+                            <span class="px-1 text-slate-400">...</span>
+                            <a href="{{ $pekerjaan->url($pekerjaan->lastPage()) }}" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">{{ $pekerjaan->lastPage() }}</a>
+                        @endif
+                    </div>
+
+                    @if ($pekerjaan->hasMorePages())
+                        <a href="{{ $pekerjaan->nextPageUrl() }}" class="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">
+                            Selanjutnya
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                    @else
+                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+                            Selanjutnya
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </span>
+                    @endif
+                </div>
+            </nav>
         @endif
     @endif
 

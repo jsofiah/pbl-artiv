@@ -38,7 +38,23 @@
 @endphp
 
 @section('content')
-<div class="space-y-5 px-6 py-8 lg:px-10">
+<div class="space-y-5">
+
+    {{-- Tombol Kembali & Judul --}}
+    <div>
+        <a href="{{ route('designer.riwayat') }}"
+           class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-[#6D28D9] mb-4 transition rounded-full px-3 py-2 bg-white border border-slate-200 hover:bg-[#D5FC55] hover:text-[#1A1A1A] hover:border-[#D5FC55]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12l7.5-7.5M3 12h18"/>
+            </svg>
+            Kembali ke Riwayat
+        </a>
+        
+        <h1 class="text-3xl font-extrabold text-slate-900">Detail Riwayat Pekerjaan</h1>
+        <p class="text-slate-500 mt-1.5">
+            Informasi lengkap mengenai hasil pekerjaan yang telah diselesaikan.
+        </p>
+    </div>
 
     {{-- Header pekerjaan --}}
     <div class="flex flex-col gap-4 rounded-2xl border border-line bg-white p-5 sm:flex-row sm:items-center sm:justify-between">

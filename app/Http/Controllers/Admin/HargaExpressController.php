@@ -41,7 +41,7 @@ class HargaExpressController extends Controller
             default       => $query->orderByRaw("CAST(REGEXP_REPLACE(name, '[^0-9]', '', 'g') AS INTEGER) ASC"),
         };
 
-        $expressFees = $query->paginate(6)->withQueryString();
+        $expressFees = $query->paginate(15)->withQueryString();
 
         return view('admin.hargaexpress', compact('expressFees', 'stats', 'tab', 'search', 'sort'));
     }
