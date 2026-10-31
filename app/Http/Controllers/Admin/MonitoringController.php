@@ -15,6 +15,7 @@ use App\Models\OrderLog;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 
+
 class MonitoringController extends Controller
 {
     protected R2StorageService $r2Storage;
@@ -127,7 +128,27 @@ class MonitoringController extends Controller
                     'status'      => $nextStatus,
                     'assigned_at' => $order->assigned_at ?? now(),
                 ]);
+            } elseif ($order && $payment->isRevisionFee()) {
+                $order->increment('paid_revision_quota');
+
+                OrderLog::create([
+                    'order_id' => $order->id,
+                    'actor_id' => Auth::id(),
+                    'action'   => 'revision_payment_approved',
+                    'status'   => $order->status,
+                    'note'     => 'Admin menyetujui pembayaran revisi. Customer kini punya 1 kuota revisi tambahan.',
+                ]);
+
+                Notification::create([
+                    'user_id' => $order->customer_id,
+                    'type'    => Notification::TYPE_PAYMENT,
+                    'title'   => 'Pembayaran Revisi Disetujui',
+                    'body'    => "Pembayaran revisi untuk order {$order->order_code} disetujui. Sekarang Anda bisa mengajukan 1x revisi tambahan.",
+                    'data'    => ['url' => route('customer.pesanan.show', $order->id)],
+                ]);
             }
+
+
 
             DB::commit();
 

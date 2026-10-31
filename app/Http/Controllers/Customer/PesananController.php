@@ -13,6 +13,8 @@ use App\Models\OrderLog;
 use App\Models\OrderReference;
 use App\Models\Notification;
 use App\Models\Deliverable;
+use App\Models\RevisionFee;
+use App\Models\Payment;
 use App\Services\BlacklistFilter;
 use App\Services\R2StorageService;
 use Illuminate\Http\Request;
@@ -332,29 +334,43 @@ class PesananController extends Controller
             return back()->withErrors(['deliverable' => 'Pesanan sudah selesai, tidak bisa revisi.']);
         }
 
-        if (!$orderModel->canRequestFreeRevision()) {
+        if (!$orderModel->canRequestRevision()) {
+            if ($orderModel->needsPaidRevisionPayment()) {
+                return back()->withErrors([
+                    'deliverable' => 'Kuota revisi habis. Silakan beli kuota revisi tambahan terlebih dahulu.',
+                ]);
+            }
+
             return back()->withErrors([
-                'deliverable' => 'Batas revisi gratis (' . \App\Models\Order::FREE_REVISION_LIMIT . 'x) sudah habis.',
+                'deliverable' => 'Tidak bisa request revisi saat ini.',
             ]);
         }
 
-        DB::transaction(function () use ($orderModel, $deliverableModel, $validated) {
+        $usingPaidQuota = !$orderModel->canRequestFreeRevision();
+
+        DB::transaction(function () use ($orderModel, $deliverableModel, $validated, $usingPaidQuota) {
             $deliverableModel->update([
                 'status'        => 'revision_requested',
                 'revision_note' => $validated['revision_note'],
             ]);
 
-            $orderModel->update([
-                'status'         => 'revision_needed',
-                'revision_count' => $orderModel->revision_count + 1,
-            ]);
+            if ($usingPaidQuota) {
+                $orderModel->decrement('paid_revision_quota');
+                $orderModel->increment('revision_count');
+                $note = 'Customer meminta revisi (kuota berbayar).';
+            } else {
+                $orderModel->increment('revision_count');
+                $note = 'Customer meminta revisi (kuota gratis ke-' . ($orderModel->revision_count + 1) . ').';
+            }
+
+            $orderModel->update(['status' => 'revision_needed']);
 
             OrderLog::create([
                 'order_id' => $orderModel->id,
                 'actor_id' => Auth::id(),
                 'action'   => 'revision_requested',
                 'status'   => 'revision_needed',
-                'note'     => 'Customer meminta revisi hasil desain.',
+                'note'     => $note,
             ]);
         });
 
@@ -541,5 +557,108 @@ class PesananController extends Controller
             'is_pdf'=> $isPdf,
             'name'  => 'Bukti-Refund-' . $orderModel->order_code . '.' . $ext,
         ]);
+    }
+
+    public function revisionPaymentInfo(string $order)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        if (!$orderModel->needsPaidRevisionPayment()) {
+            $msg = $orderModel->canRequestFreeRevision()
+                ? 'Order ini masih punya kuota revisi gratis.'
+                : 'Order ini masih punya kuota revisi berbayar (' . $orderModel->paid_revision_quota . 'x).';
+
+            return response()->json(['error' => $msg], 422);
+        }
+
+        $fee = RevisionFee::active()->first();
+
+        if (!$fee) {
+            return response()->json(['error' => 'Biaya revisi belum diatur admin.'], 422);
+        }
+
+        $pendingPayment = Payment::where('order_id', $orderModel->id)
+            ->where('type', Payment::TYPE_REVISION_FEE)
+            ->where('status', Payment::STATUS_PENDING)
+            ->first();
+
+        return response()->json([
+            'amount'      => $fee->fee,
+            'amount_text' => 'Rp ' . number_format($fee->fee, 0, ',', '.'),
+            'has_pending' => (bool) $pendingPayment,
+            'pending_at'  => $pendingPayment?->created_at?->format('d M Y, H:i'),
+            'qr_data'     => 'ARTIV-REVISION-' . $orderModel->order_code,
+        ]);
+    }
+
+    public function storeRevisionPayment(Request $request, string $order)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        if (!$orderModel->needsPaidRevisionPayment()) {
+            $msg = $orderModel->canRequestFreeRevision()
+                ? 'Order ini masih punya kuota revisi gratis.'
+                : 'Order ini masih punya kuota revisi berbayar (' . $orderModel->paid_revision_quota . 'x).';
+
+            return back()->withErrors(['proof' => $msg]);
+        }
+
+        $fee = RevisionFee::active()->first();
+        if (!$fee) {
+            return back()->withErrors(['proof' => 'Biaya revisi belum diatur admin.']);
+        }
+
+        $existing = Payment::where('order_id', $orderModel->id)
+            ->where('type', Payment::TYPE_REVISION_FEE)
+            ->where('status', Payment::STATUS_PENDING)
+            ->first();
+
+        if ($existing) {
+            return back()->withErrors(['proof' => 'Bukti pembayaran revisi sudah di-upload, tunggu verifikasi admin.']);
+        }
+
+        $request->validate([
+            'proof' => 'required|file|mimes:png,jpg,jpeg,webp|max:5120',
+        ], [
+            'proof.required' => 'Bukti pembayaran wajib di-upload.',
+            'proof.mimes'    => 'Format bukti harus PNG, JPG, atau WEBP.',
+            'proof.max'      => 'Ukuran bukti maksimal 5 MB.',
+        ]);
+
+        DB::transaction(function () use ($request, $orderModel, $fee) {
+            /** @var R2StorageService $storage */
+            $storage = app(R2StorageService::class);
+            $proofPath = $storage->upload($request->file('proof'), 'payment-proofs');
+
+            Payment::create([
+                'order_id'  => $orderModel->id,
+                'type'      => Payment::TYPE_REVISION_FEE,
+                'method'    => 'QRIS',
+                'amount'    => $fee->fee,
+                'proof_url' => $proofPath,
+                'status'    => Payment::STATUS_PENDING,
+            ]);
+
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => Auth::id(),
+                'action'   => 'revision_payment_uploaded',
+                'status'   => $orderModel->status,
+                'note'     => 'Customer meng-upload bukti pembayaran biaya revisi sebesar Rp ' . number_format($fee->fee, 0, ',', '.') . '.',
+            ]);
+
+            $admins = \App\Models\User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                Notification::create([
+                    'user_id' => $admin->id,
+                    'type'    => Notification::TYPE_PAYMENT,
+                    'title'   => 'Bukti Bayar Revisi',
+                    'body'    => "Customer upload bukti pembayaran revisi untuk order {$orderModel->order_code}. Segera verifikasi.",
+                    'data'    => ['url' => route('admin.monitoring') . '?tab=pembayaran'],
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Bukti pembayaran terkirim. Menunggu verifikasi admin (1–3 jam).');
     }
 }

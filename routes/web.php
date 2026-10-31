@@ -72,6 +72,12 @@ Route::prefix('customer')->name('customer.')->group(function () {
         Route::post('/pesanan/{order}/deliverable/{deliverable}/revisi', [PesananController::class, 'requestRevision'])
             ->name('pesanan.deliverable.revisi');
 
+        Route::post('/pesanan/{order}/revision-payment', [PesananController::class, 'storeRevisionPayment'])
+            ->name('pesanan.revision.payment');
+
+        Route::get('/pesanan/{order}/revision-payment/info', [PesananController::class, 'revisionPaymentInfo'])
+            ->name('pesanan.revision.payment.info');
+
         // Refund (customer)
         Route::post('/pesanan/{order}/refund', [PesananController::class, 'ajukanRefund'])
             ->name('pesanan.refund');

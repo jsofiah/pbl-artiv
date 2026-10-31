@@ -519,4 +519,84 @@ document.addEventListener('keydown', (e) => {
         if (modal && !modal.classList.contains('hidden')) closeRefundProof();
     }
 });
+
+function openRevisionPaymentModal() {
+    const modal   = document.getElementById('modal-revision-payment');
+    const loading = document.getElementById('revision-payment-loading');
+    const error   = document.getElementById('revision-payment-error');
+    const pending = document.getElementById('revision-payment-pending');
+    const form    = document.getElementById('revision-payment-form');
+
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    loading.classList.remove('hidden');
+    error.classList.add('hidden');
+    pending.classList.add('hidden');
+    form.classList.add('hidden');
+
+    const infoUrl = '{{ route('customer.pesanan.revision.payment.info', $order->id) }}';
+
+    fetch(infoUrl, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            loading.classList.add('hidden');
+
+            if (data.error) {
+                error.textContent = data.error;
+                error.classList.remove('hidden');
+                return;
+            }
+
+            if (data.has_pending) {
+                pending.classList.remove('hidden');
+                document.getElementById('revision-pending-at').textContent =
+                    'Di-upload: ' + (data.pending_at || '-');
+                return;
+            }
+
+            form.classList.remove('hidden');
+
+            document.getElementById('revision-amount-text').textContent = data.amount_text;
+
+            const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' +
+                encodeURIComponent(data.qr_data);
+            document.getElementById('revision-qr-img').src = qrUrl;
+        })
+        .catch(err => {
+            console.error(err);
+            loading.classList.add('hidden');
+            error.textContent = 'Gagal memuat data. Coba lagi.';
+            error.classList.remove('hidden');
+        });
+}
+
+function closeRevisionPaymentModal() {
+    const modal = document.getElementById('modal-revision-payment');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function showRevisionProofPreview(input) {
+    const preview = document.getElementById('revision-proof-preview');
+    const nameEl  = document.getElementById('revision-proof-name');
+
+    if (input.files && input.files[0]) {
+        const f = input.files[0];
+        nameEl.textContent = f.name + ' (' + (f.size / 1024 / 1024).toFixed(2) + ' MB)';
+        preview.classList.remove('hidden');
+    } else {
+        preview.classList.add('hidden');
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('modal-revision-payment');
+        if (modal && !modal.classList.contains('hidden')) closeRevisionPaymentModal();
+    }
+});
 </script>

@@ -35,6 +35,7 @@ class Order extends Model
         'total_price',
         'status',
         'revision_count',
+        'paid_revision_quota',
         'is_late',
         'late_at',
         'cannot_continue_reason',
@@ -65,6 +66,7 @@ class Order extends Model
             'original_deadline'    => 'datetime',
             'completed_at'         => 'datetime',
             'cancelled_at'         => 'datetime',
+            'paid_revision_quota'  => 'integer',
         ];
     }
 
@@ -344,6 +346,27 @@ class Order extends Model
     {
         return $this->revision_count < self::FREE_REVISION_LIMIT;
     }
+    
+    public function canRequestPaidRevision(): bool
+    {
+        return !$this->canRequestFreeRevision() && $this->paid_revision_quota > 0;
+    }
+
+    public function needsPaidRevisionPayment(): bool
+    {
+        return !$this->canRequestFreeRevision() && $this->paid_revision_quota <= 0;
+    }
+
+    public function canRequestRevision(): bool
+    {
+        return $this->canRequestFreeRevision() || $this->canRequestPaidRevision();
+    }
+
+    public function freeRevisionRemaining(): int
+    {
+        return max(0, self::FREE_REVISION_LIMIT - $this->revision_count);
+    }
+
 
     public function needsPaidRevision(): bool
     {

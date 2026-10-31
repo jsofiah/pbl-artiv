@@ -165,3 +165,95 @@
         </div>
     </div>
 </div>
+
+<div id="modal-revision-payment"
+     class="hidden fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+     onclick="if(event.target === this) closeRevisionPaymentModal()">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900">Beli Kuota Revisi</h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Kuota revisi gratis ({{ \App\Models\Order::FREE_REVISION_LIMIT }}x) sudah habis.
+                </p>
+            </div>
+            <button type="button" onclick="closeRevisionPaymentModal()"
+                    class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div id="revision-payment-loading" class="py-8 text-center text-sm text-slate-400">
+            Memuat data...
+        </div>
+
+        <div id="revision-payment-error" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 mb-4"></div>
+
+        <div id="revision-payment-pending" class="hidden text-center py-6">
+            <div class="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <p class="font-bold text-slate-900 mb-1">Menunggu Verifikasi</p>
+            <p class="text-xs text-slate-500" id="revision-pending-at"></p>
+            <p class="text-xs text-slate-400 mt-2">Admin akan memverifikasi pembayaran Anda segera.</p>
+        </div>
+
+        <div id="revision-payment-form" class="hidden">
+            <div class="bg-slate-50 rounded-2xl p-4 mb-4 flex gap-4 items-center">
+                <div class="w-32 h-32 shrink-0 bg-white rounded-xl p-2 shadow-sm border border-slate-200">
+                    <img id="revision-qr-img"
+                         src=""
+                         alt="QRIS"
+                         class="w-full h-full object-contain">
+                </div>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Bayar</p>
+                    <p id="revision-amount-text" class="text-xl font-extrabold text-[#6D28D9] mt-0.5"></p>
+                    <p class="text-xs text-slate-500 mt-1">Merchant: <span class="font-semibold">ARTIV Official</span></p>
+                </div>
+            </div>
+
+            <form id="revision-payment-form-element"
+                  method="POST"
+                  action="{{ route('customer.pesanan.revision.payment', $order->id) }}"
+                  enctype="multipart/form-data">
+                @csrf
+
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Bukti Pembayaran <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="file"
+                           name="proof"
+                           id="revision-proof-input"
+                           required
+                           accept="image/png,image/jpeg,image/webp"
+                           onchange="showRevisionProofPreview(this)"
+                           class="w-full text-sm border border-slate-200 rounded-xl file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-[#6D28D9] hover:file:bg-violet-100">
+                    <p class="text-xs text-slate-400 mt-1.5">Format: PNG, JPG, WEBP · Maks. 5 MB</p>
+
+                    <div id="revision-proof-preview" class="hidden mt-3 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="text-xs text-slate-600 truncate" id="revision-proof-name"></p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="button"
+                            onclick="closeRevisionPaymentModal()"
+                            class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50">
+                        Batal
+                    </button>
+                    <button type="submit"
+                            class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-[#6D28D9] hover:bg-[#5B21B6] rounded-xl shadow-sm">
+                        Kirim Bukti
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
