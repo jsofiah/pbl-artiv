@@ -14,7 +14,7 @@
     <div class="mb-6">
         <h1 class="text-3xl font-extrabold text-slate-900">Detail Job</h1>
         <p class="text-slate-500 mt-1">
-            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F3F1FA] text-[#6D28D9] text-xs font-bold">
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F3F1FA] text-[#6D28D9] text-sm font-bold">
                 {{ $order->order_code }}
             </span>
             · Periksa detail pekerjaan sebelum mengambil order.
@@ -51,7 +51,7 @@
                                     '{{ route('designer.job-pool.reference.download', ['order' => $order->id, 'reference' => $imageRef->id]) }}',
                                     '{{ addslashes($imageRef->file_name) }}'
                                 )"
-                                class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6D28D9] hover:underline">
+                                class="inline-flex items-center gap-1.5 text-sm font-semibold text-[#6D28D9] hover:underline">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
                             </svg>
@@ -102,7 +102,7 @@
                                         <svg class="w-16 h-16 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                         </svg>
-                                        <p class="text-xs text-slate-400 font-medium">Gagal memuat preview</p>
+                                        <p class="text-sm text-slate-400 font-medium">Gagal memuat preview</p>
                                     </div>
                                 </div>
                             </template>
@@ -120,14 +120,14 @@
                                 <svg class="w-16 h-16 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
-                                <p class="text-xs text-slate-400 font-medium">Preview tidak tersedia</p>
+                                <p class="text-sm text-slate-400 font-medium">Preview tidak tersedia</p>
                             </div>
                         @endif
                     @endif
                 </div>
 
                 @if (!$imageRef)
-                    <p class="text-xs text-slate-400 italic text-center">
+                    <p class="text-sm text-slate-400 italic text-center">
                         Customer tidak melampirkan gambar referensi. Preview menampilkan gambar produk.
                     </p>
                 @endif
@@ -200,7 +200,7 @@
                         <span class="w-1 h-5 rounded-full bg-[#6D28D9]"></span>
                         <h2 class="font-bold text-lg text-[#1E1B39]">File Referensi</h2>
                     </div>
-                    <span class="text-xs text-slate-400 font-medium">{{ $order->references->count() }} Berkas</span>
+                    <span class="text-sm text-slate-400 font-medium">{{ $order->references->count() }} Berkas</span>
                 </div>
 
                 @if ($order->references->isEmpty())
@@ -276,7 +276,7 @@
                     <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
-                    <p class="text-xs text-amber-800">
+                    <p class="text-sm text-amber-800">
                         Dengan menekan <strong>Ambil Order</strong>, kamu berkomitmen mengerjakan sesuai deadline.
                     </p>
                 </div>
@@ -341,7 +341,7 @@
                 </p>
 
                 <div class="bg-[#F3F1FA] rounded-2xl p-4 text-left mb-5">
-                    <div class="space-y-2 text-xs">
+                    <div class="space-y-2 text-sm">
                         <div class="flex justify-between gap-2">
                             <span class="text-slate-500">Order Code</span>
                             <span class="font-bold text-[#1E1B39]">{{ $order->order_code }}</span>
