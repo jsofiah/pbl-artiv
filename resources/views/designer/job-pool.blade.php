@@ -13,7 +13,13 @@
     $adaFilter = ($q ?? '') !== '' || ($kategori && $kategori !== 'semua');
 @endphp
 
-<div class="mx-auto max-w-6xl px-4 py-6">
+<div>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-extrabold text-slate-900">Job Pool</h1>
+            <p class="text-slate-500 mt-1.5">Temukan pekerjaan desain yang tersedia dan ambil sesuai keahlianmu.</p>
+        </div>
+    </div>
 
     {{-- ============ ALERT ============ --}}
     @if (session('error'))
@@ -31,51 +37,104 @@
     @endif
 
     {{-- ============ FILTER BAR ============ --}}
-    <form method="GET" action="{{ route('designer.job-pool') }}" id="form-job"
-        class="mb-6 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+    <form method="GET" action="{{ route('designer.job-pool') }}" id="form-job" class="mb-6">
+        <input type="hidden" name="kategori" value="{{ $kategori }}">
+        <input type="hidden" name="urutkan" value="{{ $urutkan }}"> {{-- Tambahkan hidden input untuk urutkan --}}
+        <div class="flex flex-wrap items-center gap-3">
 
-        <div class="flex flex-wrap items-center gap-2">
-
-            {{-- Search — auto-submit saat berhenti ngetik --}}
-            <div class="relative min-w-[220px] flex-1">
-                <label for="cari-job" class="sr-only">Cari job</label>
-                <svg class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <input id="cari-job" type="text" name="q" value="{{ $q }}"
+            {{-- Search Bar --}}
+            <div class="flex-1 min-w-[280px] bg-white rounded-full shadow-sm border border-slate-100 p-2 flex items-center gap-2 focus-within:border-[#6D28D9] transition-colors duration-200">
+                <div class="pl-4 text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                </div>
+                <input type="text" name="q" value="{{ $q }}"
                     placeholder="Cari berdasarkan kode order atau nama jasa..."
-                    class="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-12 pr-4 text-sm focus:border-[#6D28D9]/50 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
+                    class="flex-1 bg-transparent border-0 ring-0 focus:ring-0 focus:outline-none focus:border-transparent focus:bg-transparent shadow-none focus:shadow-none text-slate-700 placeholder:text-slate-400 px-2 py-2 text-sm">
+                <button type="submit" class="bg-[#D5FC55] hover:bg-[#c5ec45] text-neutral-900 font-bold px-5 py-2 rounded-full transition text-sm whitespace-nowrap">
+                    Cari
+                </button>
             </div>
 
-            {{-- Kategori — auto-submit saat berubah --}}
-            <label for="kategori" class="sr-only">Kategori</label>
-            <select id="kategori" name="kategori"
-                    onchange="this.form.submit()"
-                    class="cursor-pointer rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
-                <option value="semua">Semua Kategori</option>
-                @foreach ($kategoris as $kat)
-                    <option value="{{ $kat }}" @selected($kategori === $kat)>{{ $kat }}</option>
-                @endforeach
-            </select>
+            {{-- Filter Kategori (Alpine) --}}
+            <div x-data="{ open: false }" class="relative">
+                <button type="button" @click="open = !open"
+                        class="flex items-center gap-2 bg-white border border-slate-200 rounded-full pl-5 pr-4 py-3.5 text-sm font-medium text-slate-700 hover:border-[#6D28D9] transition min-w-[200px] justify-between">
+                    <span>
+                        {{ empty($kategori) || $kategori === 'semua' ? 'Kategori: Semua' : 'Kategori: ' . $kategori }}
+                    </span>
+                    <svg class="w-4 h-4 text-slate-500 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div x-show="open" @click.outside="open = false"
+                    class="absolute z-30 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-lg py-2 max-h-72 overflow-y-auto"
+                    style="display: none;">
+                    <a href="{{ route('designer.job-pool', array_merge(request()->except('kategori', 'page'), ['kategori' => 'semua'])) }}"
+                       class="block w-full text-left px-5 py-2 text-sm transition {{ $kategori === 'semua' ? 'bg-violet-50 text-[#6D28D9] font-semibold' : 'text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9]' }}">
+                        Semua
+                    </a>
+                    @foreach ($kategoris as $kat)
+                        <a href="{{ route('designer.job-pool', array_merge(request()->except('kategori', 'page'), ['kategori' => $kat])) }}"
+                           class="block w-full text-left px-5 py-2 text-sm transition {{ $kategori === $kat ? 'bg-violet-50 text-[#6D28D9] font-semibold' : 'text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9]' }}">
+                            {{ $kat }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- BARU: Filter Urutkan (Alpine) --}}
+            <div x-data="{ open: false }" class="relative">
+                <button type="button" @click="open = !open"
+                        class="flex items-center gap-2 bg-white border border-slate-200 rounded-full pl-5 pr-4 py-3.5 text-sm font-medium text-slate-700 hover:border-[#6D28D9] transition min-w-[200px] justify-between">
+                    <span>
+                        @php
+                            $sortLabels = [
+                                'terbaru' => 'Urutkan: Terbaru',
+                                'deadline_asc' => 'Urutkan: Deadline',
+                                'harga_desc' => 'Urutkan: Harga Tertinggi',
+                                'harga_asc' => 'Urutkan: Harga Terendah',
+                            ];
+                        @endphp
+                        {{ $sortLabels[$urutkan] ?? 'Urutkan: Terbaru' }}
+                    </span>
+                    <svg class="w-4 h-4 text-slate-500 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div x-show="open" @click.outside="open = false"
+                    class="absolute z-30 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-lg py-2 max-h-72 overflow-y-auto"
+                    style="display: none;">
+                    @foreach (['terbaru' => 'Terbaru', 'deadline_asc' => 'Deadline terdekat', 'harga_desc' => 'Harga tertinggi', 'harga_asc' => 'Harga terendah'] as $val => $label)
+                        <a href="{{ route('designer.job-pool', array_merge(request()->except('urutkan', 'page'), ['urutkan' => $val])) }}"
+                           class="block w-full text-left px-5 py-2 text-sm transition {{ $urutkan === $val ? 'bg-violet-50 text-[#6D28D9] font-semibold' : 'text-slate-600 hover:bg-violet-50 hover:text-[#6D28D9]' }}">
+                            {{ $label }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Tombol Reset --}}
+            @if ($q !== '' || $kategori !== 'semua' || $urutkan !== 'terbaru')
+                <a href="{{ route('designer.job-pool') }}" title="Reset filter"
+                class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-[#6D28D9] hover:border-[#6D28D9] transition shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                </a>
+            @endif
         </div>
     </form>
 
-    {{-- ============ INFO & URUTAN ============ --}}
+    {{-- ============ INFO BAR (Tinggal Info Tersedia Saja) ============ --}}
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
         <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
             <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
             <strong class="text-[#6D28D9]">{{ $totalTersedia }}</strong> Job Tersedia
         </span>
-        <div class="flex items-center gap-2">
-            <label for="urutkan" class="text-sm text-slate-500">Urutkan:</label>
-            <select id="urutkan" name="urutkan" form="form-job" onchange="this.form.submit()"
-                    class="cursor-pointer rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/30">
-                <option value="terbaru"      @selected($urutkan === 'terbaru')>Terbaru</option>
-                <option value="deadline_asc" @selected($urutkan === 'deadline_asc')>Deadline terdekat</option>
-                <option value="harga_desc"   @selected($urutkan === 'harga_desc')>Harga tertinggi</option>
-                <option value="harga_asc"    @selected($urutkan === 'harga_asc')>Harga terendah</option>
-            </select>
-        </div>
     </div>
 
     {{-- ============ DAFTAR JOB ============ --}}
@@ -208,34 +267,53 @@
         @endforelse
     </div>
 
-    {{-- ============ PAGINATION ============ --}}
-    @if ($jobPool->hasPages())
-        <nav class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5" aria-label="Pagination">
-            @if ($jobPool->onFirstPage())
-                <span class="cursor-not-allowed rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400">&larr; Sebelumnya</span>
-            @else
-                <a href="{{ $jobPool->previousPageUrl() }}" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">&larr; Sebelumnya</a>
-            @endif
-
-            <div class="flex items-center gap-1.5">
-                @foreach ($pages as $i => $page)
-                    @if ($i > 0 && $page - $pages[$i - 1] > 1)
-                        <span class="px-1 text-slate-400">&hellip;</span>
-                    @endif
-
-                    @if ($page === $cur)
-                        <span aria-current="page" class="flex h-10 w-10 items-center justify-center rounded-full bg-[#6D28D9] text-sm font-bold text-white shadow-sm">{{ $page }}</span>
-                    @else
-                        <a href="{{ $jobPool->url($page) }}" class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">{{ $page }}</a>
-                    @endif
-                @endforeach
+    @if ($jobPool->total() > 0)
+        <nav class="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between" aria-label="Pagination">
+            <div class="text-sm text-slate-500">
+                Menampilkan {{ $jobPool->firstItem() }} &ndash; {{ $jobPool->lastItem() }} dari <span class="font-semibold text-slate-700">{{ $jobPool->total() }}</span> Job
             </div>
 
-            @if ($jobPool->hasMorePages())
-                <a href="{{ $jobPool->nextPageUrl() }}" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">Selanjutnya &rarr;</a>
-            @else
-                <span class="cursor-not-allowed rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400">Selanjutnya &rarr;</span>
-            @endif
+            <div class="flex items-center gap-2">
+                {{-- Tombol Sebelumnya --}}
+                @if ($jobPool->onFirstPage())
+                    <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                        Sebelumnya
+                    </span>
+                @else
+                    <a href="{{ $jobPool->previousPageUrl() }}" class="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                        Sebelumnya
+                    </a>
+                @endif
+
+                <div class="flex items-center gap-1.5">
+                    @foreach ($jobPool->getUrlRange(max(1, $jobPool->currentPage() - 1), min($jobPool->lastPage(), $jobPool->currentPage() + 1)) as $page => $url)
+                        @if ($page == $jobPool->currentPage())
+                            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#6D28D9] text-sm font-bold text-white">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">{{ $page }}</a>
+                        @endif
+                    @endforeach
+                    
+                    @if ($jobPool->currentPage() + 1 < $jobPool->lastPage())
+                        <span class="px-1 text-slate-400">...</span>
+                        <a href="{{ $jobPool->url($jobPool->lastPage()) }}" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">{{ $jobPool->lastPage() }}</a>
+                    @endif
+                </div>
+
+                @if ($jobPool->hasMorePages())
+                    <a href="{{ $jobPool->nextPageUrl() }}" class="inline-flex items-center gap-1 rounded-full bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-[#6D28D9] hover:text-[#6D28D9]">
+                        Selanjutnya
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                @else
+                    <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+                        Selanjutnya
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </span>
+                @endif
+            </div>
         </nav>
     @endif
 </div>

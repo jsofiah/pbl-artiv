@@ -3,7 +3,7 @@
 @section('title', 'Detail Job')
 
 @section('content')
-<div class="max-w-6xl mx-auto px-4 py-6" x-data="{ showAmbil: false }">
+<div x-data="{ showAmbil: false }">
     <a href="{{ route('designer.job-pool') }}"
     class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-[#6D28D9] mb-4 transition rounded-full px-3 py-2 bg-white border border-slate-200 hover:bg-[#D5FC55] hover:text-[#1A1A1A] hover:border-[#D5FC55]">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
