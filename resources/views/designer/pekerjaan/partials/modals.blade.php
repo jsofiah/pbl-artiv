@@ -21,3 +21,4 @@
 
 @include('designer.pekerjaan.partials.modal-kirim-deliverable')
 @include('designer.pekerjaan.partials.modal-image-preview')
+@include('designer.pekerjaan.partials.modal-batalkan')

@@ -137,3 +137,31 @@
         </div>
     </div>
 </div>
+
+<div id="modal-refund-proof"
+     class="hidden fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4"
+     onclick="if(event.target === this) closeRefundProof()">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
+            <div>
+                <p class="font-bold text-slate-900 text-sm">Bukti Transfer Refund</p>
+                <p id="refund-proof-name" class="text-xs text-slate-400 truncate"></p>
+            </div>
+            <button type="button"
+                    onclick="closeRefundProof()"
+                    class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-50">
+            <div id="refund-proof-loading" class="text-sm text-slate-400">Memuat...</div>
+            <img id="refund-proof-img" src="" alt="Bukti Transfer"
+                 class="hidden max-w-full max-h-[70vh] rounded-lg shadow object-contain">
+            <iframe id="refund-proof-pdf" src=""
+                    class="hidden w-full h-[70vh] rounded-lg"></iframe>
+        </div>
+    </div>
+</div>

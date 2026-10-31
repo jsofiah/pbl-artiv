@@ -460,4 +460,63 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+async function previewRefundProof(previewUrl) {
+    const modal   = document.getElementById('modal-refund-proof');
+    const img     = document.getElementById('refund-proof-img');
+    const pdf     = document.getElementById('refund-proof-pdf');
+    const loading = document.getElementById('refund-proof-loading');
+    const nameEl  = document.getElementById('refund-proof-name');
+
+    if (!modal) return;
+
+    // Reset
+    img.classList.add('hidden');
+    pdf.classList.add('hidden');
+    pdf.src = '';
+    img.src = '';
+    loading.classList.remove('hidden');
+    nameEl.textContent = '';
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const res = await fetch(previewUrl, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('Gagal load bukti');
+        const data = await res.json();
+
+        loading.classList.add('hidden');
+        nameEl.textContent = data.name || '';
+
+        if (data.is_pdf) {
+            pdf.src = data.url;
+            pdf.classList.remove('hidden');
+        } else {
+            img.src = data.url;
+            img.classList.remove('hidden');
+        }
+    } catch (err) {
+        console.error(err);
+        loading.innerHTML = '<span class="text-rose-500 text-sm">Gagal memuat bukti transfer.</span>';
+    }
+}
+
+function closeRefundProof() {
+    const modal = document.getElementById('modal-refund-proof');
+    const img   = document.getElementById('refund-proof-img');
+    const pdf   = document.getElementById('refund-proof-pdf');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    img.src = '';
+    pdf.src = '';
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('modal-refund-proof');
+        if (modal && !modal.classList.contains('hidden')) closeRefundProof();
+    }
+});
 </script>

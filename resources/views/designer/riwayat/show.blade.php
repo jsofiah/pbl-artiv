@@ -73,13 +73,20 @@
         </div>
 
         <div class="mt-4 grid gap-4 rounded-2xl bg-artiv-bg p-4 lg:grid-cols-[2fr_3fr]">
-            {{-- Rating rata-rata --}}
-            <div class="flex flex-col items-center justify-center rounded-xl bg-white p-5">
-                <p class="text-center text-5xl font-extrabold text-primary">{{ number_format($rataRata, 1) }}</p>
-                <div class="mt-2 flex justify-center">
-                    @for ($i = 1; $i <= 5; $i++) {!! $star('h-5 w-5 ' . ($i <= round($rataRata) ? 'text-primary' : 'text-line')) !!} @endfor
+            @if ($order->review)
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-0.5">
+                        @for ($i = 1; $i <= 5; $i++)
+                            <svg class="w-5 h-5 {{ $i <= $order->review->rating ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200' }}" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        @endfor
+                    </div>
+                    <span class="text-sm font-bold text-slate-700">{{ number_format($order->review->rating, 1) }} / 5</span>
                 </div>
-            </div>
+            @else
+                <p class="text-sm text-slate-400 italic">Customer belum memberikan rating.</p>
+            @endif
 
             {{-- Review customer ini --}}
             <div class="rounded-xl bg-white p-5">
@@ -112,7 +119,7 @@
                 @endif
 
                 <p class="mt-4 whitespace-pre-line break-words text-sm leading-relaxed text-ink">
-                    {{ $review->comment ?: 'Customer tidak menulis komentar.' }}
+                    {{ $review->comment ?? 'Customer tidak menulis komentar.' }}
                 </p>
             </div>
         </div>

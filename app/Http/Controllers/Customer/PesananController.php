@@ -8,8 +8,10 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Order;
+use App\Models\OrderRefund;
 use App\Models\OrderLog;
 use App\Models\OrderReference;
+use App\Models\Notification;
 use App\Models\Deliverable;
 use App\Services\BlacklistFilter;
 use App\Services\R2StorageService;
@@ -47,6 +49,7 @@ class PesananController extends Controller
             'deliverables',
             'payments',
             'review',
+            'refund',
         ])
             ->where('customer_id', Auth::id())
             ->findOrFail($order);
@@ -398,6 +401,145 @@ class PesananController extends Controller
             'gross_amount'      => $grossAmount,
             'commission_amount' => $commissionAmount,
             'designer_earning'  => $designerEarning,
+        ]);
+    }
+
+    public function ajukanRefund(Request $request, string $order)
+    {
+        $request->validate([
+            'bank_name'           => 'required|string|max:100',
+            'bank_account_number' => 'required|string|max:30',
+            'bank_account_name'   => 'required|string|max:100',
+        ]);
+
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        if (!$orderModel->canCustomerRefund()) {
+            return back()->with('error', 'Refund tidak tersedia untuk order ini.');
+        }
+
+        DB::transaction(function () use ($request, $orderModel) {
+            $orderModel->update([
+                'status'               => Order::STATUS_REFUND_REQUESTED,
+                'customer_decision'    => Order::DECISION_REFUND,
+                'customer_decision_at' => now(),
+                'cancelled_at'         => now(),
+            ]);
+
+            $refund = OrderRefund::create([
+                'order_id'            => $orderModel->id,
+                'customer_id'         => Auth::id(),
+                'bank_name'           => $request->bank_name,
+                'bank_account_number' => $request->bank_account_number,
+                'bank_account_name'   => $request->bank_account_name,
+                'amount'              => $orderModel->total_price,
+                'status'              => OrderRefund::STATUS_PENDING,
+            ]);
+
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => Auth::id(),
+                'action'   => OrderLog::ACTION_CUSTOMER_REFUND,
+                'status'   => Order::STATUS_REFUND_REQUESTED,
+                'note'     => 'Customer mengajukan refund karena tidak ingin menunggu designer pengganti.',
+            ]);
+
+            $admins = \App\Models\User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                Notification::create([
+                    'user_id' => $admin->id,
+                    'type'    => Notification::TYPE_REFUND_REQUESTED,
+                    'title'   => 'Pengajuan Refund Baru',
+                    'body'    => "Customer mengajukan refund untuk order {$orderModel->order_code} sebesar Rp " . number_format($orderModel->total_price, 0, ',', '.') . ".",
+                    'data'    => ['url' => route('admin.monitoring') . '?tab=refund'],
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Pengajuan refund berhasil. Dana akan diproses admin dalam 1-3 hari kerja.');
+    }
+
+    public function decideReassignment(Request $request, string $order)
+    {
+        $request->validate([
+            'decision' => 'required|in:refund,continue',
+        ]);
+
+        $orderModel = Order::where('customer_id', Auth::id())
+            ->where('status', Order::STATUS_WAITING_CUSTOMER_DECISION)
+            ->findOrFail($order);
+
+        if ($request->decision === 'refund') {
+            return redirect()
+                ->route('customer.pesanan.show', $orderModel->id)
+                ->with('open_refund_modal', true);
+        }
+
+        DB::transaction(function () use ($orderModel) {
+            $orderModel->update([
+                'status'               => Order::STATUS_WAITING_DESIGNER,
+                'customer_decision'    => Order::DECISION_CONTINUE,
+                'customer_decision_at' => now(),
+            ]);
+
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => Auth::id(),
+                'action'   => OrderLog::ACTION_CUSTOMER_CHOOSE_CONTINUE,
+                'status'   => Order::STATUS_WAITING_DESIGNER,
+                'note'     => 'Customer memilih order dilanjutkan oleh designer pengganti.',
+            ]);
+
+            $designers = \App\Models\User::where('role', 'designer')
+                ->whereHas('designerStats', function ($q) {
+                    $q->where('availability_status', 'available')
+                    ->where(function ($q2) {
+                        $q2->whereNull('suspended_until')
+                            ->orWhere('suspended_until', '<=', now());
+                    });
+                })
+                ->get();
+
+            foreach ($designers as $d) {
+                Notification::create([
+                    'user_id' => $d->id,
+                    'type'    => Notification::TYPE_NEW_ORDER,
+                    'title'   => 'Order Urgent Tersedia',
+                    'body'    => "Order {$orderModel->order_code} membutuhkan designer pengganti (Prioritas Urgent).",
+                    'data'    => ['url' => route('designer.job-pool')],
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('customer.pesanan.show', $orderModel->id)
+            ->with('success', 'Order akan segera dialihkan ke designer pengganti.');
+    }
+
+    public function previewRefundProof(string $order)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        $refund = $orderModel->refund;
+
+        if (!$refund || !$refund->proof_url) {
+            return response()->json(['error' => 'Bukti refund tidak ditemukan.'], 404);
+        }
+
+        $path = ltrim($refund->proof_url, '/');
+        if (preg_match('#^https?://[^/]+/(.+)$#', $path, $m)) {
+            $path = $m[1];
+        }
+
+        $url = Storage::disk('r2')->temporaryUrl($path, now()->addMinutes(15));
+
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $isPdf = $ext === 'pdf';
+
+        return response()->json([
+            'url'   => $url,
+            'is_pdf'=> $isPdf,
+            'name'  => 'Bukti-Refund-' . $orderModel->order_code . '.' . $ext,
         ]);
     }
 }

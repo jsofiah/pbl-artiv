@@ -42,6 +42,45 @@
                     <p class="text-sm text-slate-400">Belum ada pesan.</p>
                 </div>
             @endforelse
+
+            @if ($order->status === \App\Models\Order::STATUS_WAITING_CUSTOMER_DECISION)
+                <div class="flex justify-center pt-2">
+                    <div class="max-w-md w-full bg-white border-2 border-[#6D28D9]/20 rounded-2xl p-4 shadow-sm">
+                        <p class="text-sm font-semibold text-slate-700 mb-1">
+                            Pilih Tindakan
+                        </p>
+                        <p class="text-xs text-slate-500 mb-3">
+                            Order ini sedang dialihkan ke designer pengganti dengan prioritas Urgent. Silakan pilih:
+                        </p>
+
+                        <div class="flex flex-col gap-2">
+                            <button type="button"
+                                    onclick="document.getElementById('modal-refund').classList.remove('hidden')"
+                                    class="w-full px-4 py-2.5 text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-xl transition">
+                                Ajukan Refund
+                            </button>
+
+                            <button type="button"
+                                    id="btn-continue-reassign"
+                                    class="w-full px-4 py-2.5 text-sm font-semibold text-white bg-[#6D28D9] hover:bg-[#5B21B6] rounded-xl transition">
+                                Dikerjakan Designer Lain
+                            </button>
+
+                            <form method="POST" action="{{ route('customer.pesanan.decision', $order->id) }}" id="form-continue-reassign" class="hidden">
+                                @csrf
+                                <input type="hidden" name="decision" value="continue">
+                            </form>
+                        </div>
+
+                        <p class="text-[10px] text-slate-400 leading-relaxed mt-3 pt-3 border-t border-slate-100">
+                            <svg class="w-3 h-3 inline-block -mt-0.5 mr-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+                            </svg>
+                            Dengan memilih <strong class="text-slate-500">Dikerjakan Designer Lain</strong>, Anda menyetujui bahwa deadline akan mundur <strong class="text-slate-500">3 hari</strong> dari jadwal sebelumnya.
+                        </p>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div class="px-4">
@@ -82,7 +121,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
                         </svg>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-amber-800">Pesanan telah selesai 🎉</p>
+                            <p class="text-sm font-semibold text-amber-800">Pesanan telah selesai</p>
                             <p class="text-xs text-amber-700 mt-0.5">
                                 Percakapan masih terbuka sampai
                                 <strong>{{ $chatClosesAt->translatedFormat('d M Y, H:i') }} WIB</strong>
