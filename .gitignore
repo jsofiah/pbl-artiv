@@ -1,7 +1,7 @@
 *.log
 .DS_Store
 .env
-.env*
+.env.testing
 .env.backup
 .env.production
 .phpactor.json
@@ -36,4 +36,4 @@ node_modules/
 /playwright/.auth/
 e2e/.auth
 e2e/img
-e2e
+evidence
