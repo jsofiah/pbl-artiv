@@ -37,10 +37,6 @@ class OrderSplitTest extends TestCase
         ], $overrides));
     }
 
-    // ==========================================
-    // 1. TES LOGIKA BISNIS (PERSENTASE & TIPE)
-    // ==========================================
-
     public function test_normal_split_has_10_percent_commission_and_90_percent_designer(): void
     {
         $split = $this->makeNormalSplit();
@@ -63,10 +59,6 @@ class OrderSplitTest extends TestCase
         $this->assertFalse($split->isNormal());
     }
 
-    // ==========================================
-    // 2. TES KONSTANTA (Seperti gaya Sofi)
-    // ==========================================
-
     public function test_split_constants_have_expected_values(): void
     {
         $this->assertSame('normal', OrderSplit::TYPE_NORMAL);
@@ -75,10 +67,6 @@ class OrderSplitTest extends TestCase
         $this->assertSame(10.00, OrderSplit::COMMISSION_NORMAL);
         $this->assertSame(5.00, OrderSplit::COMMISSION_REASSIGNMENT);
     }
-
-    // ==========================================
-    // 3. TES RELASI & UUID
-    // ==========================================
 
     public function test_split_belongs_to_order_and_designer(): void
     {
@@ -96,15 +84,10 @@ class OrderSplitTest extends TestCase
         $this->assertTrue(in_array(\Illuminate\Database\Eloquent\Concerns\HasUuids::class, $traits));
     }
 
-    // ==========================================
-    // 4. TES CASTING TIPE DATA (Desimal)
-    // ==========================================
-
     public function test_split_amounts_are_cast_to_decimal_with_two_places(): void
     {
         $split = $this->makeNormalSplit();
         
-        // Memastikan tipe data di-cast menjadi string desimal dengan 2 angka di belakang koma
         $this->assertSame('100000.00', (string) $split->gross_amount);
         $this->assertSame('10000.00', (string) $split->commission_amount);
         $this->assertSame('90000.00', (string) $split->designer_earning);

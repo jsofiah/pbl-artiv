@@ -48,19 +48,14 @@ class OrderSplitObserverTest extends TestCase
         ]);
     }
 
-    // ==========================================
-    // FUNGSI 1: created()
-    // ==========================================
     public function test_created_function_creates_new_designer_stat(): void
     {
         $customer = $this->createUser('customer');
         $designer = $this->createUser('designer');
         $order    = $this->createOrder($customer, $designer);
 
-        // Sebelum split dibuat, belum ada stat
         $this->assertDatabaseMissing('designer_stats', ['designer_id' => $designer->id]);
 
-        // Memicu created()
         OrderSplit::create([
             'order_id'          => $order->id,
             'designer_id'       => $designer->id,
@@ -71,23 +66,18 @@ class OrderSplitObserverTest extends TestCase
             'designer_earning'  => 90000,
         ]);
 
-        // Memastikan stat baru tercipta
         $this->assertDatabaseHas('designer_stats', [
             'designer_id'   => $designer->id,
             'total_earning' => 90000,
         ]);
     }
 
-    // ==========================================
-    // FUNGSI 2: updated()
-    // ==========================================
     public function test_updated_function_updates_existing_designer_stat(): void
     {
         $customer = $this->createUser('customer');
         $designer = $this->createUser('designer');
         $order    = $this->createOrder($customer, $designer);
 
-        // Buat split awal
         $split = OrderSplit::create([
             'order_id'          => $order->id,
             'designer_id'       => $designer->id,
@@ -98,19 +88,14 @@ class OrderSplitObserverTest extends TestCase
             'designer_earning'  => 90000,
         ]);
 
-        // Memicu updated() dengan mengubah nominal
         $split->update(['designer_earning' => 150000]);
 
-        // Memastikan stat terupdate
         $this->assertDatabaseHas('designer_stats', [
             'designer_id'   => $designer->id,
             'total_earning' => 150000,
         ]);
     }
 
-    // ==========================================
-    // FUNGSI 3: deleted()
-    // ==========================================
     public function test_deleted_function_removes_designer_stat(): void
     {
         $customer = $this->createUser('customer');
@@ -129,19 +114,14 @@ class OrderSplitObserverTest extends TestCase
 
         $this->assertDatabaseHas('designer_stats', ['designer_id' => $designer->id, 'total_earning' => 90000]);
 
-        // Memicu deleted()
         $split->delete();
 
-        // Memastikan stat kembali 0 (karena tidak ada split)
         $this->assertDatabaseHas('designer_stats', [
             'designer_id'   => $designer->id,
             'total_earning' => 0,
         ]);
     }
 
-    // ==========================================
-    // FUNGSI 4: recalcEarning() — tes untuk Sum/UpdateOrCreate
-    // ==========================================
     public function test_recalc_earning_function_sums_multiple_splits(): void
     {
         $customer = $this->createUser('customer');
@@ -149,7 +129,6 @@ class OrderSplitObserverTest extends TestCase
         $order1   = $this->createOrder($customer, $designer);
         $order2   = $this->createOrder($customer, $designer);
 
-        // Buat split pertama (90.000)
         OrderSplit::create([
             'order_id'          => $order1->id,
             'designer_id'       => $designer->id,
@@ -160,7 +139,6 @@ class OrderSplitObserverTest extends TestCase
             'designer_earning'  => 90000,
         ]);
 
-        // Buat split kedua (95.000)
         OrderSplit::create([
             'order_id'          => $order2->id,
             'designer_id'       => $designer->id,
@@ -171,23 +149,18 @@ class OrderSplitObserverTest extends TestCase
             'designer_earning'  => 95000,
         ]);
 
-        // Memastikan recalcEarning() menggunakan sum() dengan benar (90rb + 95rb)
         $this->assertDatabaseHas('designer_stats', [
             'designer_id'   => $designer->id,
-            'total_earning' => 185000, // 90000 + 95000
+            'total_earning' => 185000,
         ]);
     }
 
-    // ==========================================
-    // FUNGSI 4 lanjutan: recalcEarning() — tes UpdateOrCreate
-    // ==========================================
     public function test_recalc_earning_function_updates_existing_stat_not_duplicate(): void
     {
         $customer = $this->createUser('customer');
         $designer = $this->createUser('designer');
         $order    = $this->createOrder($customer, $designer);
 
-        // Buat split pertama
         OrderSplit::create([
             'order_id'          => $order->id,
             'designer_id'       => $designer->id,
@@ -198,7 +171,6 @@ class OrderSplitObserverTest extends TestCase
             'designer_earning'  => 90000,
         ]);
 
-        // Hapus split, lalu buat lagi (harus tetap 1 record, bukan 2)
         $split = OrderSplit::where('designer_id', $designer->id)->first();
         $split->delete();
         
@@ -212,7 +184,6 @@ class OrderSplitObserverTest extends TestCase
             'designer_earning'  => 45000,
         ]);
 
-        // Memastikan updateOrCreate tidak membuat duplikat, hanya update nilai
         $this->assertDatabaseCount('designer_stats', 1);
         $this->assertDatabaseHas('designer_stats', [
             'designer_id'   => $designer->id,

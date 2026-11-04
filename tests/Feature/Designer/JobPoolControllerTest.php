@@ -195,9 +195,6 @@ class JobPoolControllerTest extends TestCase
         $response->assertSee($order->order_code);
     }
 
-    // --- TEST TAMBAHAN UNTUK MENUTUPI SISA KODE CONTROLLER ---
-
-    // 1. Test Method sukses() setelah berhasil ambil job
     public function test_designer_can_view_sukses_page_after_taking_job(): void
     {
         $designer = $this->createUser('designer');
@@ -207,7 +204,6 @@ class JobPoolControllerTest extends TestCase
         $response->assertOk();
     }
 
-    // 2. Test Method downloadReference() dengan Mock R2
     public function test_designer_can_download_reference_file(): void
     {
         $designer = $this->createUser('designer');
@@ -230,7 +226,6 @@ class JobPoolControllerTest extends TestCase
         $response->assertOk();
     }
 
-    // 3. Test Method previewReference() dengan Mock R2
     public function test_designer_can_preview_image_reference(): void
     {
         $designer = $this->createUser('designer');
@@ -258,7 +253,6 @@ class JobPoolControllerTest extends TestCase
         $response->assertJsonStructure(['url', 'name']);
     }
 
-    // 4. Test Method previewReference() ketika file bukan gambar (format salah)
     public function test_designer_cannot_preview_non_image_file(): void
     {
         $designer = $this->createUser('designer');
@@ -269,12 +263,12 @@ class JobPoolControllerTest extends TestCase
             'type' => 'file',
             'file_url' => 'r2/path/test.pdf',
             'file_name' => 'test.pdf',
-            'mime_type' => 'application/pdf' // Bukan gambar
+            'mime_type' => 'application/pdf'
         ]);
 
         $response = $this->actingAs($designer)
             ->getJson(route('designer.job-pool.reference.preview', [$order->id, $reference->id]));
 
-        $response->assertStatus(404); // Harus error 404 karena bukan gambar
+        $response->assertStatus(404);
     }
 }
