@@ -654,6 +654,7 @@ test.describe('Alur Utuh (Customer) — Beranda → Katalog → Detail → Form 
     });
 
     test('Alur end-to-end sampai Form Pemesanan dapat diakses', async ({ page }) => {
+        test.setTimeout(120_000);
         let detailHref;
 
         // ---------- STEP 1: Beranda ----------

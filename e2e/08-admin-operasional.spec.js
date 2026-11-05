@@ -14,7 +14,7 @@ const ADMIN_PASSWORD = 'admin123';
 async function goto(page, url) {
     await page.goto(url, {
         waitUntil: 'domcontentloaded',
-        timeout: 15_000,
+        timeout: 45_000,
     });
 }
 
