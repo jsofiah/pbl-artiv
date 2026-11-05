@@ -131,4 +131,20 @@ test.describe('Auth & Profil', () => {
     await expect(page).toHaveURL(/\/designer\//);
     await expectDenied(page, '/customer/pesanan');
   });
+
+      test('7. Logout berhasil dan diarahkan ke halaman beranda', async ({ page }) => {
+    // Login dulu sebagai customer
+    await login(page, CUSTOMER);
+    await expect(page).toHaveURL(/\/customer\/beranda/);
+
+    // 1. Klik tombol profil (dropdown) di kanan atas
+    // Berdasarkan snapshot: button "L lyly customer"
+    await page.getByRole('button', { name: /customer/i }).first().click();
+
+    // 2. Klik tombol Logout yang muncul di dropdown
+    await page.getByRole('button', { name: /logout|keluar/i }).click();
+
+    // 3. Pastikan diarahkan kembali ke halaman beranda atau login
+    await expect(page).toHaveURL(/\/(customer\/beranda|login)/);
+  });
 });
