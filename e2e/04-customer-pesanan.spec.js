@@ -7,7 +7,8 @@ const USERS = {
 };
 
 async function goto(page, url) {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+    await page.goto(url, { waitUntil: 'commit', timeout: 30_000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
 }
 
 async function skipIntro(page) {
