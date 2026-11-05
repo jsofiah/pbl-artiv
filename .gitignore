@@ -3,6 +3,7 @@
 .env
 .env.backup
 .env.production
+.env.testing
 .phpactor.json
 .phpunit.result.cache
 /.codex
@@ -34,5 +35,6 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 e2e/.auth
-e2e/img
-e2e
+e2e/img/file-besar-25mb.pdf
+e2e/img/test-data-5mb.jpg
+e2e/evidence
