@@ -21,6 +21,8 @@ class OrderRefund extends Model
         'bank_account_name',
         'amount',
         'status',
+        'proof_url',
+        'proof_uploaded_at',
         'processed_by',
         'processed_at',
     ];
@@ -30,6 +32,7 @@ class OrderRefund extends Model
         return [
             'amount' => 'decimal:2',
             'processed_at' => 'datetime',
+            'proof_uploaded_at' => 'datetime',
         ];
     }
 
@@ -67,12 +70,14 @@ class OrderRefund extends Model
         return $this->status === self::STATUS_COMPLETED;
     }
 
-    public function markAsCompleted(User $admin): void
+    public function markAsCompleted(User $admin, ?string $proofUrl = null): void
     {
         $this->update([
-            'status' => self::STATUS_COMPLETED,
-            'processed_by' => $admin->id,
-            'processed_at' => now(),
+            'status'            => self::STATUS_COMPLETED,
+            'processed_by'      => $admin->id,
+            'processed_at'      => now(),
+            'proof_url'         => $proofUrl,
+            'proof_uploaded_at' => $proofUrl ? now() : null,
         ]);
     }
 }

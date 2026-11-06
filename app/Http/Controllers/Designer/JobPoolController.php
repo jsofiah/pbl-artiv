@@ -24,7 +24,7 @@ class JobPoolController extends Controller
 
         $query = Order::query()
             ->whereNull('designer_id')
-            ->whereIn('status', ['pending', 'waiting_designer'])
+            ->whereIn('status', ['waiting_designer'])
             ->with(['product', 'productTier', 'customer', 'references']);
 
         if ($q !== '') {

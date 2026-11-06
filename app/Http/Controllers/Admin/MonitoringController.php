@@ -9,7 +9,11 @@ use App\Services\R2StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
+use App\Models\OrderRefund;
+use App\Models\OrderLog;
+use App\Models\Notification;
+use Illuminate\Support\Facades\Auth;
+
 
 class MonitoringController extends Controller
 {
@@ -29,11 +33,19 @@ class MonitoringController extends Controller
         $stats = [
             'pending_payments' => Payment::where('status', Payment::STATUS_PENDING)->count(),
             'active_orders'     => Order::whereIn('status', [
-                'pending', 'waiting_designer', 'in_progress', 'revision_needed', 'deliverable_sent'
+                'pending',
+                'waiting_designer',
+                'in_progress',
+                'revision_needed',
+                'deliverable_sent'
             ])->count(),
             'completed_orders'  => Order::where('status', Order::STATUS_COMPLETED)->count(),
             'late_orders'       => Order::whereIn('status', [
-                'pending', 'waiting_designer', 'in_progress', 'revision_needed', 'deliverable_sent'
+                'pending',
+                'waiting_designer',
+                'in_progress',
+                'revision_needed',
+                'deliverable_sent'
             ])->where('deadline', '<', now())->count(),
         ];
 
@@ -45,13 +57,13 @@ class MonitoringController extends Controller
             $search = $request->query('q');
             $query->where(function ($q) use ($search) {
                 $q->where('order_code', 'ilike', "%{$search}%")
-                  ->orWhereHas('customer', function ($c) use ($search) {
-                      $c->where('full_name', 'ilike', "%{$search}%")
-                        ->orWhere('email', 'ilike', "%{$search}%");
-                  })
-                  ->orWhereHas('product', function ($p) use ($search) {
-                      $p->where('name', 'ilike', "%{$search}%");
-                  });
+                    ->orWhereHas('customer', function ($c) use ($search) {
+                        $c->where('full_name', 'ilike', "%{$search}%")
+                            ->orWhere('email', 'ilike', "%{$search}%");
+                    })
+                    ->orWhereHas('product', function ($p) use ($search) {
+                        $p->where('name', 'ilike', "%{$search}%");
+                    });
             });
         }
 
@@ -70,15 +82,14 @@ class MonitoringController extends Controller
             $query->latest();
         }
 
-        // Paginate 10 Data per Halaman + Pertahankan Query String URL
+        // Paginate Data
         $orders = $query->paginate(15)->withQueryString();
 
-        // Best Practice Data Verifikasi Pembayaran:
-        // Hanya tarik status PENDING atau riwayat 30 hari terakhir dengan hard limit 100 data
+        // Hanya status PENDING atau riwayat 30 hari terakhir dengan hard limit 100 data
         $payments = Payment::with(['order.customer', 'order.product'])
             ->where(function ($q) {
                 $q->where('status', Payment::STATUS_PENDING)
-                  ->orWhere('created_at', '>=', now()->subDays(30));
+                    ->orWhere('created_at', '>=', now()->subDays(30));
             })
             ->latest()
             ->limit(100)
@@ -100,6 +111,36 @@ class MonitoringController extends Controller
         return view('admin.monitoring', compact('stats', 'orders', 'payments'));
     }
 
+    public function detail(Order $order)
+    {
+        $order->load(['customer', 'designer', 'product', 'productTier', 'logs.actor']);
+
+        // Urutkan riwayat log pengerjaan berdasarkan waktu dibuat
+        $logs = $order->logs->sortBy('created_at')->values()->map(function ($log) {
+            return [
+                'id'         => $log->id,
+                'action'     => $log->action,
+                'status'     => $log->status,
+                'note'       => $log->note ?? 'Tidak ada catatan tambahan.',
+                'actor_name' => $log->actor?->full_name ?? 'Sistem',
+                'time'       => $log->created_at ? $log->created_at->translatedFormat('d M Y, H:i') . ' WIB' : '-',
+            ];
+        });
+
+        return response()->json([
+            'order_code'    => '#' . $order->order_code,
+            'product_name'  => $order->product?->name . ($order->productTier ? ' (' . $order->productTier->name . ')' : ''),
+            'customer_name' => $order->customer?->full_name ?? '-',
+            'designer_name' => $order->designer?->full_name ?? 'Belum Ada Desainer',
+            'deadline'      => $order->deadline ? $order->deadline->translatedFormat('d M Y, H:i') . ' WIB' : '-',
+            'updated_at'    => $order->updated_at ? $order->updated_at->translatedFormat('d M Y, H:i') . ' WIB' : '-',
+            'status'        => $order->status,
+            'status_label'  => Order::STATUS_LABELS[$order->status] ?? $order->status,
+            'is_late'       => $order->isDeadlineMissed(),
+            'logs'          => $logs,
+        ]);
+    }
+
     /**
      * ACC / Approve Pembayaran
      */
@@ -115,15 +156,35 @@ class MonitoringController extends Controller
 
             $order = $payment->order;
             if ($order && $payment->isOrderPayment()) {
-                $nextStatus = $order->designer_id 
-                    ? Order::STATUS_IN_PROGRESS 
+                $nextStatus = $order->designer_id
+                    ? Order::STATUS_IN_PROGRESS
                     : Order::STATUS_WAITING_DESIGNER;
 
                 $order->update([
                     'status'      => $nextStatus,
                     'assigned_at' => $order->assigned_at ?? now(),
                 ]);
+            } elseif ($order && $payment->isRevisionFee()) {
+                $order->increment('paid_revision_quota');
+
+                OrderLog::create([
+                    'order_id' => $order->id,
+                    'actor_id' => Auth::id(),
+                    'action'   => 'revision_payment_approved',
+                    'status'   => $order->status,
+                    'note'     => 'Admin menyetujui pembayaran revisi. Customer kini punya 1 kuota revisi tambahan.',
+                ]);
+
+                Notification::create([
+                    'user_id' => $order->customer_id,
+                    'type'    => Notification::TYPE_PAYMENT,
+                    'title'   => 'Pembayaran Revisi Disetujui',
+                    'body'    => "Pembayaran revisi untuk order {$order->order_code} disetujui. Sekarang Anda bisa mengajukan 1x revisi tambahan.",
+                    'data'    => ['url' => route('customer.pesanan.show', $order->id)],
+                ]);
             }
+
+
 
             DB::commit();
 
@@ -155,5 +216,56 @@ class MonitoringController extends Controller
             Log::error('Gagal Tolak Pembayaran: ' . $e->getMessage());
             return back()->with('error', 'Gagal menolak pembayaran.');
         }
+    }
+
+    public function selesaikanRefund(Request $request, OrderRefund $refund)
+    {
+        if ($refund->isCompleted()) {
+            return back()->with('error', 'Refund ini sudah selesai diproses.');
+        }
+
+        $request->validate([
+            'proof' => 'required|file|mimes:png,jpg,jpeg,webp,pdf|max:5120',
+        ], [
+            'proof.required' => 'Bukti transfer refund wajib diunggah.',
+            'proof.mimes'    => 'Format file harus PNG, JPG, WEBP, atau PDF.',
+            'proof.max'      => 'Ukuran bukti maksimal 5 MB.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            /** @var R2StorageService $storage */
+            $storage = app(R2StorageService::class);
+            $proofPath = $storage->upload($request->file('proof'), 'refund-proofs');
+
+            $refund->markAsCompleted(Auth::user(), $proofPath);
+
+            $order = $refund->order;
+            $order->update(['status' => Order::STATUS_REFUNDED]);
+
+            OrderLog::create([
+                'order_id' => $order->id,
+                'actor_id' => Auth::id(),
+                'action'   => OrderLog::ACTION_REFUND_COMPLETED,
+                'status'   => Order::STATUS_REFUNDED,
+                'note'     => 'Admin telah memproses pengembalian dana ke customer beserta bukti transfer.',
+            ]);
+
+            Notification::create([
+                'user_id' => $order->customer_id,
+                'type'    => Notification::TYPE_REFUND_COMPLETED,
+                'title'   => 'Refund Selesai',
+                'body'    => "Dana refund untuk order {$order->order_code} telah ditransfer. Silakan cek bukti transfer di halaman pesanan.",
+                'data'    => ['url' => route('customer.pesanan.show', $order->id)],
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal proses refund: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memproses refund: ' . $e->getMessage());
+        }
+
+        return back()->with('success', "Refund order {$refund->order->order_code} berhasil diselesaikan.");
     }
 }

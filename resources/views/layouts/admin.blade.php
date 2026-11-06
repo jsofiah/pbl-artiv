@@ -113,6 +113,7 @@
     </div>
 
     @stack('scripts')
+    @include('components.shared.modals.confirm')
 
 </body>
 

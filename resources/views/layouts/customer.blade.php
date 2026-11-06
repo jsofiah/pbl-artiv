@@ -54,5 +54,6 @@
     <x-customer.footer />
 
     @stack('scripts')
+    @include('components.shared.modals.confirm')
 </body>
 </html>

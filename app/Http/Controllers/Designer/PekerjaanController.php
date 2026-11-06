@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderReference;
 use App\Models\Deliverable;
 use App\Models\OrderLog;
+use App\Models\Notification;
 use App\Events\MessageSent;
 use App\Services\BlacklistFilter;
 use App\Services\R2StorageService;
@@ -408,5 +409,71 @@ class PekerjaanController extends Controller
             ->with('status', $fileCount . ' file hasil desain terkirim. Menunggu review customer.')
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache');
+    }
+
+    public function batalkan(Request $request, string $order)
+    {
+        $request->validate([
+            'alasan' => 'required|string|min:10|max:1000',
+        ]);
+
+        $orderModel = Order::where('designer_id', Auth::id())->findOrFail($order);
+
+        if (!$orderModel->canDesignerCancel()) {
+            return back()->withErrors(['alasan' => 'Order tidak dapat dibatalkan pada status ini.']);
+        }
+
+        $designer = Auth::user();
+
+        DB::transaction(function () use ($request, $orderModel, $designer) {
+            $originalDeadline = $orderModel->original_deadline ?? $orderModel->deadline;
+
+            $orderModel->update([
+                'status'                 => Order::STATUS_WAITING_CUSTOMER_DECISION,
+                'designer_id'            => null,
+                'is_urgent'              => true,
+                'reassign_count'         => $orderModel->reassign_count + 1,
+                'cannot_continue_reason' => $request->alasan,
+                'cannot_continue_at'     => now(),
+                'original_deadline'      => $originalDeadline,
+                'deadline'               => $originalDeadline->copy()->addDays(Order::REASSIGN_DEADLINE_DAYS),
+            ]);
+
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => $designer->id,
+                'action'   => OrderLog::ACTION_DESIGNER_CANCEL,
+                'status'   => Order::STATUS_WAITING_CUSTOMER_DECISION,
+                'note'     => "Designer membatalkan order. Alasan: {$request->alasan}",
+            ]);
+
+            $conversation = $orderModel->conversation ?? Conversation::create([
+                'order_id'    => $orderModel->id,
+                'customer_id' => $orderModel->customer_id,
+                'designer_id' => $designer->id,
+                'status'      => 'active',
+            ]);
+
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id'       => $designer->id,
+                'type'            => Message::TYPE_SYSTEM,
+                'body'            => "Designer sebelumnya berhalangan karena: \"{$request->alasan}\". Silakan pilih tindakan Anda.",
+            ]);
+
+            Notification::create([
+                'user_id' => $orderModel->customer_id,
+                'type'    => Notification::TYPE_REASSIGNMENT,
+                'title'   => 'Designer Berhalangan',
+                'body'    => "Order {$orderModel->order_code} sedang dialihkan. Silakan pilih: refund atau dilanjutkan designer lain.",
+                'data'    => ['url' => route('customer.pesanan.show', $orderModel->id)],
+            ]);
+
+            $conversation->touch();
+
+        });
+
+        return redirect()->route('designer.pekerjaan.index')
+            ->with('success', 'Order berhasil dibatalkan. Menunggu keputusan customer.');
     }
 }

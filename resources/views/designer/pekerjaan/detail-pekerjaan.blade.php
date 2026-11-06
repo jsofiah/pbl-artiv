@@ -24,8 +24,7 @@
 </div>
 
 @include('designer.pekerjaan.partials.modals')
-@endsection
-
 @push('scripts')
     @include('designer.pekerjaan.partials.scripts')
 @endpush
+@endsection

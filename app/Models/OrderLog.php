@@ -36,6 +36,9 @@ class OrderLog extends Model
     public const ACTION_CUSTOMER_CHOOSE_CONTINUE = 'customer_choose_continue';
     public const ACTION_REFUND_COMPLETED = 'refund_completed';
 
+    public const ACTION_DESIGNER_CANCEL = 'designer_cancel';
+    public const ACTION_CUSTOMER_REFUND = 'customer_refund';
+
     // ==================== Relasi ====================
 
     public function order(): BelongsTo

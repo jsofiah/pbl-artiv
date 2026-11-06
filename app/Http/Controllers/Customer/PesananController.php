@@ -8,9 +8,13 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Order;
+use App\Models\OrderRefund;
 use App\Models\OrderLog;
 use App\Models\OrderReference;
+use App\Models\Notification;
 use App\Models\Deliverable;
+use App\Models\RevisionFee;
+use App\Models\Payment;
 use App\Services\BlacklistFilter;
 use App\Services\R2StorageService;
 use Illuminate\Http\Request;
@@ -47,6 +51,7 @@ class PesananController extends Controller
             'deliverables',
             'payments',
             'review',
+            'refund',
         ])
             ->where('customer_id', Auth::id())
             ->findOrFail($order);
@@ -329,29 +334,43 @@ class PesananController extends Controller
             return back()->withErrors(['deliverable' => 'Pesanan sudah selesai, tidak bisa revisi.']);
         }
 
-        if (!$orderModel->canRequestFreeRevision()) {
+        if (!$orderModel->canRequestRevision()) {
+            if ($orderModel->needsPaidRevisionPayment()) {
+                return back()->withErrors([
+                    'deliverable' => 'Kuota revisi habis. Silakan beli kuota revisi tambahan terlebih dahulu.',
+                ]);
+            }
+
             return back()->withErrors([
-                'deliverable' => 'Batas revisi gratis (' . \App\Models\Order::FREE_REVISION_LIMIT . 'x) sudah habis.',
+                'deliverable' => 'Tidak bisa request revisi saat ini.',
             ]);
         }
 
-        DB::transaction(function () use ($orderModel, $deliverableModel, $validated) {
+        $usingPaidQuota = !$orderModel->canRequestFreeRevision();
+
+        DB::transaction(function () use ($orderModel, $deliverableModel, $validated, $usingPaidQuota) {
             $deliverableModel->update([
                 'status'        => 'revision_requested',
                 'revision_note' => $validated['revision_note'],
             ]);
 
-            $orderModel->update([
-                'status'         => 'revision_needed',
-                'revision_count' => $orderModel->revision_count + 1,
-            ]);
+            if ($usingPaidQuota) {
+                $orderModel->decrement('paid_revision_quota');
+                $orderModel->increment('revision_count');
+                $note = 'Customer meminta revisi (kuota berbayar).';
+            } else {
+                $orderModel->increment('revision_count');
+                $note = 'Customer meminta revisi (kuota gratis ke-' . ($orderModel->revision_count + 1) . ').';
+            }
+
+            $orderModel->update(['status' => 'revision_needed']);
 
             OrderLog::create([
                 'order_id' => $orderModel->id,
                 'actor_id' => Auth::id(),
                 'action'   => 'revision_requested',
                 'status'   => 'revision_needed',
-                'note'     => 'Customer meminta revisi hasil desain.',
+                'note'     => $note,
             ]);
         });
 
@@ -399,5 +418,247 @@ class PesananController extends Controller
             'commission_amount' => $commissionAmount,
             'designer_earning'  => $designerEarning,
         ]);
+    }
+
+    public function ajukanRefund(Request $request, string $order)
+    {
+        $request->validate([
+            'bank_name'           => 'required|string|max:100',
+            'bank_account_number' => 'required|string|max:30',
+            'bank_account_name'   => 'required|string|max:100',
+        ]);
+
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        if (!$orderModel->canCustomerRefund()) {
+            return back()->with('error', 'Refund tidak tersedia untuk order ini.');
+        }
+
+        DB::transaction(function () use ($request, $orderModel) {
+            $orderModel->update([
+                'status'               => Order::STATUS_REFUND_REQUESTED,
+                'customer_decision'    => Order::DECISION_REFUND,
+                'customer_decision_at' => now(),
+                'cancelled_at'         => now(),
+            ]);
+
+            $refund = OrderRefund::create([
+                'order_id'            => $orderModel->id,
+                'customer_id'         => Auth::id(),
+                'bank_name'           => $request->bank_name,
+                'bank_account_number' => $request->bank_account_number,
+                'bank_account_name'   => $request->bank_account_name,
+                'amount'              => $orderModel->total_price,
+                'status'              => OrderRefund::STATUS_PENDING,
+            ]);
+
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => Auth::id(),
+                'action'   => OrderLog::ACTION_CUSTOMER_REFUND,
+                'status'   => Order::STATUS_REFUND_REQUESTED,
+                'note'     => 'Customer mengajukan refund karena tidak ingin menunggu designer pengganti.',
+            ]);
+
+            $admins = \App\Models\User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                Notification::create([
+                    'user_id' => $admin->id,
+                    'type'    => Notification::TYPE_REFUND_REQUESTED,
+                    'title'   => 'Pengajuan Refund Baru',
+                    'body'    => "Customer mengajukan refund untuk order {$orderModel->order_code} sebesar Rp " . number_format($orderModel->total_price, 0, ',', '.') . ".",
+                    'data'    => ['url' => route('admin.monitoring') . '?tab=refund'],
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Pengajuan refund berhasil. Dana akan diproses admin dalam 1-3 hari kerja.');
+    }
+
+    public function decideReassignment(Request $request, string $order)
+    {
+        $request->validate([
+            'decision' => 'required|in:refund,continue',
+        ]);
+
+        $orderModel = Order::where('customer_id', Auth::id())
+            ->where('status', Order::STATUS_WAITING_CUSTOMER_DECISION)
+            ->findOrFail($order);
+
+        if ($request->decision === 'refund') {
+            return redirect()
+                ->route('customer.pesanan.show', $orderModel->id)
+                ->with('open_refund_modal', true);
+        }
+
+        DB::transaction(function () use ($orderModel) {
+            $orderModel->update([
+                'status'               => Order::STATUS_WAITING_DESIGNER,
+                'customer_decision'    => Order::DECISION_CONTINUE,
+                'customer_decision_at' => now(),
+            ]);
+
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => Auth::id(),
+                'action'   => OrderLog::ACTION_CUSTOMER_CHOOSE_CONTINUE,
+                'status'   => Order::STATUS_WAITING_DESIGNER,
+                'note'     => 'Customer memilih order dilanjutkan oleh designer pengganti.',
+            ]);
+
+            $designers = \App\Models\User::where('role', 'designer')
+                ->whereHas('designerStats', function ($q) {
+                    $q->where('availability_status', 'available')
+                    ->where(function ($q2) {
+                        $q2->whereNull('suspended_until')
+                            ->orWhere('suspended_until', '<=', now());
+                    });
+                })
+                ->get();
+
+            foreach ($designers as $d) {
+                Notification::create([
+                    'user_id' => $d->id,
+                    'type'    => Notification::TYPE_NEW_ORDER,
+                    'title'   => 'Order Urgent Tersedia',
+                    'body'    => "Order {$orderModel->order_code} membutuhkan designer pengganti (Prioritas Urgent).",
+                    'data'    => ['url' => route('designer.job-pool')],
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('customer.pesanan.show', $orderModel->id)
+            ->with('success', 'Order akan segera dialihkan ke designer pengganti.');
+    }
+
+    public function previewRefundProof(string $order)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        $refund = $orderModel->refund;
+
+        if (!$refund || !$refund->proof_url) {
+            return response()->json(['error' => 'Bukti refund tidak ditemukan.'], 404);
+        }
+
+        $path = ltrim($refund->proof_url, '/');
+        if (preg_match('#^https?://[^/]+/(.+)$#', $path, $m)) {
+            $path = $m[1];
+        }
+
+        $url = Storage::disk('r2')->temporaryUrl($path, now()->addMinutes(15));
+
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $isPdf = $ext === 'pdf';
+
+        return response()->json([
+            'url'   => $url,
+            'is_pdf'=> $isPdf,
+            'name'  => 'Bukti-Refund-' . $orderModel->order_code . '.' . $ext,
+        ]);
+    }
+
+    public function revisionPaymentInfo(string $order)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        if (!$orderModel->needsPaidRevisionPayment()) {
+            $msg = $orderModel->canRequestFreeRevision()
+                ? 'Order ini masih punya kuota revisi gratis.'
+                : 'Order ini masih punya kuota revisi berbayar (' . $orderModel->paid_revision_quota . 'x).';
+
+            return response()->json(['error' => $msg], 422);
+        }
+
+        $fee = RevisionFee::active()->first();
+
+        if (!$fee) {
+            return response()->json(['error' => 'Biaya revisi belum diatur admin.'], 422);
+        }
+
+        $pendingPayment = Payment::where('order_id', $orderModel->id)
+            ->where('type', Payment::TYPE_REVISION_FEE)
+            ->where('status', Payment::STATUS_PENDING)
+            ->first();
+
+        return response()->json([
+            'amount'      => $fee->fee,
+            'amount_text' => 'Rp ' . number_format($fee->fee, 0, ',', '.'),
+            'has_pending' => (bool) $pendingPayment,
+            'pending_at'  => $pendingPayment?->created_at?->format('d M Y, H:i'),
+            'qr_data'     => 'ARTIV-REVISION-' . $orderModel->order_code,
+        ]);
+    }
+
+    public function storeRevisionPayment(Request $request, string $order)
+    {
+        $orderModel = Order::where('customer_id', Auth::id())->findOrFail($order);
+
+        if (!$orderModel->needsPaidRevisionPayment()) {
+            $msg = $orderModel->canRequestFreeRevision()
+                ? 'Order ini masih punya kuota revisi gratis.'
+                : 'Order ini masih punya kuota revisi berbayar (' . $orderModel->paid_revision_quota . 'x).';
+
+            return back()->withErrors(['proof' => $msg]);
+        }
+
+        $fee = RevisionFee::active()->first();
+        if (!$fee) {
+            return back()->withErrors(['proof' => 'Biaya revisi belum diatur admin.']);
+        }
+
+        $existing = Payment::where('order_id', $orderModel->id)
+            ->where('type', Payment::TYPE_REVISION_FEE)
+            ->where('status', Payment::STATUS_PENDING)
+            ->first();
+
+        if ($existing) {
+            return back()->withErrors(['proof' => 'Bukti pembayaran revisi sudah di-upload, tunggu verifikasi admin.']);
+        }
+
+        $request->validate([
+            'proof' => 'required|file|mimes:png,jpg,jpeg,webp|max:5120',
+        ], [
+            'proof.required' => 'Bukti pembayaran wajib di-upload.',
+            'proof.mimes'    => 'Format bukti harus PNG, JPG, atau WEBP.',
+            'proof.max'      => 'Ukuran bukti maksimal 5 MB.',
+        ]);
+
+        DB::transaction(function () use ($request, $orderModel, $fee) {
+            /** @var R2StorageService $storage */
+            $storage = app(R2StorageService::class);
+            $proofPath = $storage->upload($request->file('proof'), 'payment-proofs');
+
+            Payment::create([
+                'order_id'  => $orderModel->id,
+                'type'      => Payment::TYPE_REVISION_FEE,
+                'method'    => 'QRIS',
+                'amount'    => $fee->fee,
+                'proof_url' => $proofPath,
+                'status'    => Payment::STATUS_PENDING,
+            ]);
+
+            OrderLog::create([
+                'order_id' => $orderModel->id,
+                'actor_id' => Auth::id(),
+                'action'   => 'revision_payment_uploaded',
+                'status'   => $orderModel->status,
+                'note'     => 'Customer meng-upload bukti pembayaran biaya revisi sebesar Rp ' . number_format($fee->fee, 0, ',', '.') . '.',
+            ]);
+
+            $admins = \App\Models\User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                Notification::create([
+                    'user_id' => $admin->id,
+                    'type'    => Notification::TYPE_PAYMENT,
+                    'title'   => 'Bukti Bayar Revisi',
+                    'body'    => "Customer upload bukti pembayaran revisi untuk order {$orderModel->order_code}. Segera verifikasi.",
+                    'data'    => ['url' => route('admin.monitoring') . '?tab=pembayaran'],
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Bukti pembayaran terkirim. Menunggu verifikasi admin (1–3 jam).');
     }
 }

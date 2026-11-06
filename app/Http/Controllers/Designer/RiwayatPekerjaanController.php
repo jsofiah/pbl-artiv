@@ -23,6 +23,7 @@ class RiwayatPekerjaanController extends Controller
 
         // Dropdown kategori: semua layanan (Poster, Banner, dll), bukan hanya yang pernah selesai
         $kategori = Product::orderBy('name')->get(['id', 'name']);
+        $rating = 'rating';
 
         return view('designer.riwayat', [
             'orders'   => $orders,
