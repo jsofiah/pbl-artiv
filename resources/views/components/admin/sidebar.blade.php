@@ -105,7 +105,7 @@
                                             <x-dynamic-component :component="'heroicon-o-' . $item['icon']" class="w-4 h-4" />
                                         </span>
 
-                                        <span class="flex-1 truncate">{{ $item['label'] }}</span>
+                                        <span class="flex-1 whitespace-normal break-words">{{ $item['label'] }}</span>
                                     </a>
                                 </li>
 

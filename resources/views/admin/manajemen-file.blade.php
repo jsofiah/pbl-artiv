@@ -173,7 +173,7 @@
             </div>
 
             <div id="table-container" class="w-full">
-                @include('admin.manajemenFileTable')
+                @include('admin.manajemen-file-table')
             </div>
         </div>
 
