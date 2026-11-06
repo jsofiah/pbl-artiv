@@ -40,6 +40,7 @@ class ManajemenFileController extends Controller
                 ->paginate(15)
                 ->withQueryString();
         } else {
+            // Mengambil lampiran dari pesan bertipe 'deliverable'
             $query = MessageAttachment::whereHas('message', function ($m) {
                 $m->where('type', Message::TYPE_DELIVERABLE);
             })->with([
@@ -63,10 +64,10 @@ class ManajemenFileController extends Controller
 
         // Jika dipanggil via AJAX / Fetch (Berpindah Tab / Pagination)
         if ($request->ajax()) {
-    return view('admin.manajemen-file-table', compact('files', 'tab'))->render();
-}
+            return view('admin.manajemen-file-table', compact('files', 'tab'))->render();
+        }
 
-return view('admin.manajemen-file', compact('files', 'tab', 'search', 'sort'));
+        return view('admin.manajemen-file', compact('files', 'tab', 'search', 'sort'));
     }
 
     public function preview(Request $request, string $type, string $id)
@@ -89,6 +90,7 @@ return view('admin.manajemen-file', compact('files', 'tab', 'search', 'sort'));
 
         $url = $this->r2Service->temporaryUrlPrivate($cleanPath, 15);
 
+        // Jika dipanggil via Fetch/AJAX (Alpine.js)
         if ($request->expectsJson()) {
             return response()->json([
                 'url'       => $url,

@@ -9,7 +9,6 @@ use App\Services\R2StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use App\Models\OrderRefund;
 use App\Models\OrderLog;
 use App\Models\Notification;
@@ -34,11 +33,19 @@ class MonitoringController extends Controller
         $stats = [
             'pending_payments' => Payment::where('status', Payment::STATUS_PENDING)->count(),
             'active_orders'     => Order::whereIn('status', [
-                'pending', 'waiting_designer', 'in_progress', 'revision_needed', 'deliverable_sent'
+                'pending',
+                'waiting_designer',
+                'in_progress',
+                'revision_needed',
+                'deliverable_sent'
             ])->count(),
             'completed_orders'  => Order::where('status', Order::STATUS_COMPLETED)->count(),
             'late_orders'       => Order::whereIn('status', [
-                'pending', 'waiting_designer', 'in_progress', 'revision_needed', 'deliverable_sent'
+                'pending',
+                'waiting_designer',
+                'in_progress',
+                'revision_needed',
+                'deliverable_sent'
             ])->where('deadline', '<', now())->count(),
         ];
 
@@ -50,13 +57,13 @@ class MonitoringController extends Controller
             $search = $request->query('q');
             $query->where(function ($q) use ($search) {
                 $q->where('order_code', 'ilike', "%{$search}%")
-                  ->orWhereHas('customer', function ($c) use ($search) {
-                      $c->where('full_name', 'ilike', "%{$search}%")
-                        ->orWhere('email', 'ilike', "%{$search}%");
-                  })
-                  ->orWhereHas('product', function ($p) use ($search) {
-                      $p->where('name', 'ilike', "%{$search}%");
-                  });
+                    ->orWhereHas('customer', function ($c) use ($search) {
+                        $c->where('full_name', 'ilike', "%{$search}%")
+                            ->orWhere('email', 'ilike', "%{$search}%");
+                    })
+                    ->orWhereHas('product', function ($p) use ($search) {
+                        $p->where('name', 'ilike', "%{$search}%");
+                    });
             });
         }
 
@@ -75,15 +82,14 @@ class MonitoringController extends Controller
             $query->latest();
         }
 
-        // Paginate 10 Data per Halaman + Pertahankan Query String URL
+        // Paginate Data
         $orders = $query->paginate(15)->withQueryString();
 
-        // Best Practice Data Verifikasi Pembayaran:
-        // Hanya tarik status PENDING atau riwayat 30 hari terakhir dengan hard limit 100 data
+        // Hanya status PENDING atau riwayat 30 hari terakhir dengan hard limit 100 data
         $payments = Payment::with(['order.customer', 'order.product'])
             ->where(function ($q) {
                 $q->where('status', Payment::STATUS_PENDING)
-                  ->orWhere('created_at', '>=', now()->subDays(30));
+                    ->orWhere('created_at', '>=', now()->subDays(30));
             })
             ->latest()
             ->limit(100)
@@ -105,6 +111,36 @@ class MonitoringController extends Controller
         return view('admin.monitoring', compact('stats', 'orders', 'payments'));
     }
 
+    public function detail(Order $order)
+    {
+        $order->load(['customer', 'designer', 'product', 'productTier', 'logs.actor']);
+
+        // Urutkan riwayat log pengerjaan berdasarkan waktu dibuat
+        $logs = $order->logs->sortBy('created_at')->values()->map(function ($log) {
+            return [
+                'id'         => $log->id,
+                'action'     => $log->action,
+                'status'     => $log->status,
+                'note'       => $log->note ?? 'Tidak ada catatan tambahan.',
+                'actor_name' => $log->actor?->full_name ?? 'Sistem',
+                'time'       => $log->created_at ? $log->created_at->translatedFormat('d M Y, H:i') . ' WIB' : '-',
+            ];
+        });
+
+        return response()->json([
+            'order_code'    => '#' . $order->order_code,
+            'product_name'  => $order->product?->name . ($order->productTier ? ' (' . $order->productTier->name . ')' : ''),
+            'customer_name' => $order->customer?->full_name ?? '-',
+            'designer_name' => $order->designer?->full_name ?? 'Belum Ada Desainer',
+            'deadline'      => $order->deadline ? $order->deadline->translatedFormat('d M Y, H:i') . ' WIB' : '-',
+            'updated_at'    => $order->updated_at ? $order->updated_at->translatedFormat('d M Y, H:i') . ' WIB' : '-',
+            'status'        => $order->status,
+            'status_label'  => Order::STATUS_LABELS[$order->status] ?? $order->status,
+            'is_late'       => $order->isDeadlineMissed(),
+            'logs'          => $logs,
+        ]);
+    }
+
     /**
      * ACC / Approve Pembayaran
      */
@@ -120,8 +156,8 @@ class MonitoringController extends Controller
 
             $order = $payment->order;
             if ($order && $payment->isOrderPayment()) {
-                $nextStatus = $order->designer_id 
-                    ? Order::STATUS_IN_PROGRESS 
+                $nextStatus = $order->designer_id
+                    ? Order::STATUS_IN_PROGRESS
                     : Order::STATUS_WAITING_DESIGNER;
 
                 $order->update([
@@ -226,7 +262,7 @@ class MonitoringController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Gagal proses refund: ' . $e->getMessage());
+            Log::error('Gagal proses refund: ' . $e->getMessage());
             return back()->with('error', 'Gagal memproses refund: ' . $e->getMessage());
         }
 

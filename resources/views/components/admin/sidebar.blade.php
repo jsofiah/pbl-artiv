@@ -2,7 +2,9 @@
     $menuGroups = [
         [
             'title' => 'MENU',
-            'items' => [['type' => 'link', 'label' => 'Dashboard', 'route' => 'admin.dashboard', 'icon' => 'home']],
+            'items' => [
+                ['type' => 'link', 'label' => 'Dashboard', 'route' => 'admin.dashboard', 'icon' => 'home'],
+            ],
         ],
         [
             'title' => 'MANAJEMEN',
@@ -109,7 +111,7 @@
                                     </a>
                                 </li>
 
-                                {{-- ================= DROPDOWN ================= --}}
+                            {{-- ================= DROPDOWN ================= --}}
                             @elseif ($item['type'] === 'dropdown')
                                 @php
                                     $parentActive = request()->routeIs($item['prefix'] ?? 'admin.akun.*');

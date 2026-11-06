@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', 'Laporan Transaksi')
+@section('title', 'Laporan Transaksi')
 
 @section('content')
 <div class="space-y-6" x-data="{ openCustomModal: false }">
