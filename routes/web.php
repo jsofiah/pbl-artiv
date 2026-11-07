@@ -47,6 +47,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
     Route::get('/katalog', [BerandaController::class, 'katalog'])->name('katalog');
     Route::get('/katalog/{product}', [BerandaController::class, 'detailKatalog'])->name('katalog.detail');
+    Route::get('/galeri', [BerandaController::class, 'galeri'])->name('galeri');
 
     // Halaman wajib login + role customer
     Route::middleware(['auth', 'role:customer'])->group(function () {
