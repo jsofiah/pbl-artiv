@@ -189,10 +189,31 @@
             @endforeach
         </div>
 
-        {{-- Pagination --}}
-        <div class="mt-10">
-            {{ $products->links('vendor.pagination.artiv') }}
-        </div>
+        @if ($products->hasPages())
+            <div class="mt-10 flex justify-center items-center w-full">
+                <div class="flex items-center gap-2">
+                    <a href="{{ $products->previousPageUrl() ?? '#' }}"
+                        class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $products->onFirstPage() ? 'text-slate-300 pointer-events-none' : 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' }} transition">
+                        &lt; Sebelumnya
+                    </a>
+                    
+                    @for ($i = 1; $i <= $products->lastPage(); $i++)
+                        <a href="{{ $products->url($i) }}"
+                            class="w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition
+                                    {{ $i === $products->currentPage()
+                                        ? 'bg-[#6D28D9] text-white shadow-sm'
+                                        : 'border border-slate-200 bg-white text-slate-600 hover:border-[#6D28D9] hover:text-[#6D28D9]' }}">
+                            {{ $i }}
+                        </a>
+                    @endfor
+                    
+                    <a href="{{ $products->nextPageUrl() ?? '#' }}"
+                        class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $products->hasMorePages() ? 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' : 'text-slate-300 pointer-events-none' }} transition">
+                        Selanjutnya &gt;
+                    </a>
+                </div>
+            </div>
+        @endif
     @endif
 
 </div>
