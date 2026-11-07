@@ -84,7 +84,7 @@
             }
         }
     }" x-init="document.addEventListener('click', (e) => {
-        const link = e.target.closest('#table-container a');
+        onst link = e.target.closest('#table-container a[data-ajax-page]');
         if (link) {
             e.preventDefault();
             fetchTableData(link.href);
