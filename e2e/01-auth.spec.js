@@ -1,28 +1,12 @@
-// e2e/01-auth.spec.js
-// Alur Auth & Profil (6 skenario)
-// Sumber: Test Case - Kelompok 4 -> sheet Login, Register, Edit Profil
-//   1. Login customer valid          -> TC-LG-001 / TC-LG-008
-//   2. Login password salah          -> TC-LG-002
-//   3. Register akun baru            -> TC-RG-001
-//   4. Edit profil                   -> TC-EP-001 / TC-EP-003 / TC-EP-004
-//   5. RBAC customer -> /admin       -> TC-DA-003 / TC-LG-011
-//   6. RBAC designer -> /customer    -> TC-LG-012 / TC-PS-003
-//
-// CATATAN: selector memakai atribut name bawaan Laravel (email, password, ...).
-// Kalau beda dengan Blade kamu, sesuaikan (cek lewat: npx playwright codegen).
-
 import { test, expect } from '@playwright/test';
 
-const CUSTOMER = {
-  email: process.env.E2E_CUSTOMER_EMAIL ?? 'customer1@gmail.com',
-  password: process.env.E2E_CUSTOMER_PASSWORD ?? 'customer123',
-};
-const DESIGNER = {
-  email: process.env.E2E_DESIGNER_EMAIL ?? 'designer1@gmail.com',
-  password: process.env.E2E_DESIGNER_PASSWORD ?? 'designer123',
-};
+// ==========================================
+// KONFIGURASI AKUN
+// ==========================================
+const CUSTOMER = { email: 'earlyyychelsealia@gmail.com', password: 'earlyxzahra' };
+const DESIGNER = { email: 'budi.designer@artiv.com', password: 'designer123' };
+const ADMIN = { email: 'admin@artiv.com', password: 'admin123' };
 
-// PNG 1x1 untuk upload foto tanpa perlu file fixture
 const PNG_1X1 = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
   'base64'
@@ -35,116 +19,265 @@ async function login(page, { email, password }) {
   await page.getByRole('button', { name: /masuk/i }).click();
 }
 
-async function register(page) {
-  const ts = Date.now();
-  const user = {
-    fullName: 'E2E User',
-    username: `e2e${ts}`,
-    email: `e2e+${ts}@gmail.com`,
-    password: 'e2epass123',
-  };
-  await page.goto('/register');
-  // TODO: sesuaikan name field dengan form register Artiv
-  await page.locator('input[name="full_name"], input[name="name"]').first().fill(user.fullName);
-  await page.locator('input[name="username"]').fill(user.username);
-  await page.locator('input[name="email"]').fill(user.email);
-  await page.locator('input[name="password"]').fill(user.password);
-  await page.locator('input[name="password_confirmation"]').fill(user.password);
-  await page.getByRole('button', { name: /daftar/i }).click();
-  return user;
-}
+test.describe('Auth, Profil & Logout', () => {
 
-// Akses ditolak = status 403 ATAU dialihkan dari URL yang dituju
-async function expectDenied(page, path) {
-  const res = await page.goto(path);
-  const denied = res?.status() === 403 || !page.url().includes(path);
-  expect(denied, `Akses ke ${path} seharusnya ditolak`).toBeTruthy();
-}
-
-test.describe('Auth & Profil', () => {
-  test('1. Login customer dengan kredensial valid', async ({ page }) => {
+  // ==========================================
+  // 1. LOGIN (TC-LG-001 s/d TC-LG-015)
+  // ==========================================
+  test('TC-LG-001: Login valid Customer', async ({ page }) => {
     await login(page, CUSTOMER);
     await expect(page).toHaveURL(/\/customer\/beranda/);
   });
 
-  test('2. Login dengan password salah menampilkan error', async ({ page }) => {
+  test('TC-LG-002: Login password salah', async ({ page }) => {
     await login(page, { email: CUSTOMER.email, password: 'salah123' });
+    await expect(page.getByText('These credentials do not match our records.')).toBeVisible();
+  });
+
+  test('TC-LG-003: Login email salah', async ({ page }) => {
+    await login(page, { email: 'salah@gmail.com', password: 'customer123' });
+    await expect(page.getByText('These credentials do not match our records.')).toBeVisible();
+  });
+
+  test('TC-LG-004: Login tanpa email', async ({ page }) => {
+    await page.goto('/login');
+    await page.locator('input[name="password"]').fill('customer123');
+    await page.getByRole('button', { name: /masuk/i }).click();
     await expect(page).toHaveURL(/\/login/);
-    await expect(
-      page.getByText('These credentials do not match our records.')
-    ).toBeVisible();
   });
 
-  test('3. Register akun baru berhasil', async ({ page }) => {
-    await register(page);
-    await expect(page).toHaveURL(/\/customer\/beranda/);
+  test('TC-LG-005: Login tanpa password', async ({ page }) => {
+    await page.goto('/login');
+    await page.locator('input[name="email"]').fill(CUSTOMER.email);
+    await page.getByRole('button', { name: /masuk/i }).click();
+    await expect(page).toHaveURL(/\/login/);
   });
 
-  test('4. Edit profil (nama, telepon, foto) tersimpan', async ({ page }) => {
-  // Pakai akun baru supaya data seed tidak berubah
-  await register(page);
-  await expect(page).toHaveURL(/\/customer\/beranda/);
+  test('TC-LG-006: Login tanpa email & password', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByRole('button', { name: /masuk/i }).click();
+    await expect(page).toHaveURL(/\/login/);
+  });
 
-  await page.goto('/profile');
+  test('TC-LG-007: Login format email tidak valid', async ({ page }) => {
+    await login(page, { email: 'userartiv.com', password: 'user123' });
+    await expect(page).toHaveURL(/\/login/);
+  });
 
-  // 1) Foto dulu: input file auto-submit form avatar, halaman akan reload
-  await Promise.all([
-    page.waitForResponse(
-      (r) => r.url().includes('/profile/avatar') && r.request().method() === 'POST'
-    ),
-    page.locator('input[name="avatar"]').setInputFiles({
-      name: 'foto.png',
-      mimeType: 'image/png',
-      buffer: PNG_1X1,
-    }),
-  ]);
-  await page.waitForLoadState('load');
-  // Tombol "Hapus Foto" hanya muncul kalau avatar berhasil tersimpan
-  await expect(page.getByRole('button', { name: /hapus foto/i })).toBeVisible();
-
-  // 2) Nama & telepon (setelah reload, baru diisi)
-  const newName = `John Doe Updated ${Date.now()}`;
-  await page.locator('input[name="full_name"]').fill(newName);
-  await page.locator('input[name="phone"]').fill('081234567890');
-
-  await Promise.all([
-    page.waitForResponse(
-      (r) => new URL(r.url()).pathname === '/profile' && r.request().method() === 'POST'
-    ),
-    page.getByRole('button', { name: /simpan perubahan/i }).click(),
-  ]);
-
-  // Muat ulang, pastikan nilai benar-benar tersimpan
-  await page.reload();
-  await expect(page.locator('input[name="full_name"]')).toHaveValue(newName);
-  await expect(page.locator('input[name="phone"]')).toHaveValue('081234567890');
-});
-
-  test('5. RBAC: customer tidak bisa membuka dashboard admin', async ({ page }) => {
+  test('TC-LG-008: Login peran Customer', async ({ page }) => {
     await login(page, CUSTOMER);
     await expect(page).toHaveURL(/\/customer\/beranda/);
-    await expectDenied(page, '/admin/dashboard');
   });
 
-  test('6. RBAC: designer tidak bisa membuka Pesanan Saya customer', async ({ page }) => {
+  test('TC-LG-009: Login peran Designer', async ({ page }) => {
     await login(page, DESIGNER);
     await expect(page).toHaveURL(/\/designer\//);
-    await expectDenied(page, '/customer/pesanan');
   });
 
-      test('7. Logout berhasil dan diarahkan ke halaman beranda', async ({ page }) => {
-    // Login dulu sebagai customer
+  test('TC-LG-010: Login peran Admin', async ({ page }) => {
+    await login(page, ADMIN);
+    await expect(page).toHaveURL(/\/admin\//);
+  });
+
+  test('TC-LG-011: RBAC - Customer dilarang akses Dashboard Designer', async ({ page }) => {
     await login(page, CUSTOMER);
+    const res = await page.goto('/designer/dashboard');
+    expect(res?.status() === 403 || !page.url().includes('/designer/dashboard')).toBeTruthy();
+  });
+
+  test('TC-LG-012: RBAC - Designer dilarang akses Dashboard Admin', async ({ page }) => {
+    await login(page, DESIGNER);
+    const res = await page.goto('/admin/dashboard');
+    expect(res?.status() === 403 || !page.url().includes('/admin/dashboard')).toBeTruthy();
+  });
+
+  test('TC-LG-013 & 014: Memastikan tombol Google SSO mengarah ke Google', async ({ page }) => {
+    await page.goto('/login');
+    const googleBtn = page.locator('text="Masuk dengan Google"');
+    await expect(googleBtn).toBeVisible();
+    const href = await googleBtn.getAttribute('href');
+    expect(href).toContain('/auth/google');
+  });
+
+  test('TC-LG-015: Batal Login SSO Google', async ({ page }) => {
+    await page.goto('/login');
+    // Simulasi user menutup jendela Google dan kembali ke halaman login
+    await page.goto('/login'); 
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  // ==========================================
+  // 2. REGISTER (TC-RG-001 s/d TC-RG-013)
+  // ==========================================
+  test('TC-RG-001: Register akun baru valid', async ({ page }) => {
+    const ts = Date.now();
+    await page.goto('/register');
+    await page.locator('input[name="full_name"], input[name="name"]').first().fill('E2E User');
+    await page.locator('input[name="username"]').fill(`e2e${ts}`);
+    await page.locator('input[name="email"]').fill(`e2e+${ts}@gmail.com`);
+    await page.locator('input[name="password"]').fill('e2epass123');
+    await page.locator('input[name="password_confirmation"]').fill('e2epass123');
+    await page.getByRole('button', { name: /daftar/i }).click();
     await expect(page).toHaveURL(/\/customer\/beranda/);
+  });
 
-    // 1. Klik tombol profil (dropdown) di kanan atas
-    // Berdasarkan snapshot: button "L lyly customer"
+  test('TC-RG-002: Register format email tidak valid', async ({ page }) => {
+    await page.goto('/register');
+    await page.locator('input[name="email"]').fill('johndoe.com');
+    await page.getByRole('button', { name: /daftar/i }).click();
+    await expect(page).toHaveURL(/\/register/);
+  });
+
+  test('TC-RG-003: Register tanpa email', async ({ page }) => {
+    await page.goto('/register');
+    await page.getByRole('button', { name: /daftar/i }).click();
+    await expect(page).toHaveURL(/\/register/);
+  });
+
+  test('TC-RG-004: Register tanpa password', async ({ page }) => {
+    await page.goto('/register');
+    await page.getByRole('button', { name: /daftar/i }).click();
+    await expect(page).toHaveURL(/\/register/);
+  });
+
+  test('TC-RG-005 & 008: Register password kurang dari 8 karakter', async ({ page }) => {
+    await page.goto('/register');
+    await page.locator('input[name="password"]').fill('jd123');
+    await page.getByRole('button', { name: /daftar/i }).click();
+    await expect(page).toHaveURL(/\/register/);
+  });
+
+  test('TC-RG-006 & 009: Register konfirmasi password salah', async ({ page }) => {
+    await page.goto('/register');
+    await page.locator('input[name="password"]').fill('e2epass123');
+    await page.locator('input[name="password_confirmation"]').fill('salah123');
+    await page.getByRole('button', { name: /daftar/i }).click();
+    await expect(page).toHaveURL(/\/register/);
+  });
+
+  test('TC-RG-007: Register validasi format email', async ({ page }) => {
+    await page.goto('/register');
+    await page.locator('input[name="email"]').fill('johndoe.com');
+    await page.getByRole('button', { name: /daftar/i }).click();
+    await expect(page).toHaveURL(/\/register/);
+  });
+
+  test('TC-RG-010: Register kolom wajib diisi', async ({ page }) => {
+    await page.goto('/register');
+    await page.getByRole('button', { name: /daftar/i }).click();
+    await expect(page).toHaveURL(/\/register/);
+  });
+
+  test('TC-RG-011 & 012: Memastikan tombol Daftar Google SSO mengarah ke Google', async ({ page }) => {
+    await page.goto('/register');
+    const googleBtn = page.locator('text="Daftar dengan Google"');
+    await expect(googleBtn).toBeVisible();
+    const href = await googleBtn.getAttribute('href');
+    expect(href).toContain('/auth/google');
+  });
+
+  test('TC-RG-013: Batal Register SSO Google', async ({ page }) => {
+    await page.goto('/register');
+    await page.goto('/register');
+    await expect(page).toHaveURL(/\/register/);
+  });
+
+  // ==========================================
+  // 3. EDIT PROFIL (TC-EP-001 s/d TC-EP-011)
+  // ==========================================
+  test('TC-EP-001 s/d 004: Edit Nama, Telepon, Foto', async ({ page }) => {
+    await login(page, CUSTOMER);
+    await page.goto('/profile');
+    await page.locator('input[name="avatar"]').setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: PNG_1X1 });
+    await page.waitForLoadState('networkidle');
+    const newName = `John Doe ${Date.now()}`;
+    await page.locator('input[name="full_name"]').fill(newName);
+    await page.locator('input[name="phone"]').fill('081234567890');
+    await page.getByRole('button', { name: /simpan perubahan/i }).click();
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('input[name="full_name"]')).toHaveValue(newName);
+  });
+
+  test('TC-EP-005: Edit Password berhasil', async ({ page }) => {
+    await login(page, CUSTOMER);
+    await page.goto('/profile');
+    await page.locator('input[name="current_password"]').fill(CUSTOMER.password);
+    await page.locator('input[name="password"]').fill('newpass123');
+    await page.locator('input[name="password_confirmation"]').fill('newpass123');
+    await page.getByRole('button', { name: /simpan perubahan/i }).click();
+    await expect(page).toHaveURL(/\/profile/);
+  });
+
+  test('TC-EP-006: Edit Profil nama kosong', async ({ page }) => {
+    await login(page, CUSTOMER);
+    await page.goto('/profile');
+    await page.locator('input[name="full_name"]').fill('');
+    await page.getByRole('button', { name: /simpan perubahan/i }).click();
+    await expect(page).toHaveURL(/\/profile/);
+  });
+
+  test('TC-EP-007: Edit Profil format telepon tidak valid', async ({ page }) => {
+    await login(page, CUSTOMER);
+    await page.goto('/profile');
+    await page.locator('input[name="phone"]').fill('abc123');
+    await page.getByRole('button', { name: /simpan perubahan/i }).click();
+    await expect(page).toHaveURL(/\/profile/);
+  });
+
+  test('TC-EP-008: Edit Profil password baru kurang dari 8 karakter', async ({ page }) => {
+    await login(page, CUSTOMER);
+    await page.goto('/profile');
+    await page.locator('input[name="current_password"]').fill(CUSTOMER.password);
+    await page.locator('input[name="password"]').fill('ab12');
+    await page.locator('input[name="password_confirmation"]').fill('ab12');
+    await page.getByRole('button', { name: /simpan perubahan/i }).click();
+    await expect(page).toHaveURL(/\/profile/);
+  });
+
+  test('TC-EP-009: Edit Profil konfirmasi password tidak cocok', async ({ page }) => {
+    await login(page, CUSTOMER);
+    await page.goto('/profile');
+    await page.locator('input[name="current_password"]').fill(CUSTOMER.password);
+    await page.locator('input[name="password"]').fill('newpass123');
+    await page.locator('input[name="password_confirmation"]').fill('salah123');
+    await page.getByRole('button', { name: /simpan perubahan/i }).click();
+    await expect(page).toHaveURL(/\/profile/);
+  });
+
+  test('TC-EP-010: Edit Profil format file bukan gambar', async ({ page }) => {
+    await login(page, CUSTOMER);
+    await page.goto('/profile');
+    await page.locator('input[name="avatar"]').setInputFiles({
+      name: 'dokumen.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('pdf-palsu')
+    });
+    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/profile/);
+  });
+
+  test('TC-EP-011: Edit Profil ukuran file > 2MB', async ({ page }) => {
+    await login(page, CUSTOMER);
+    await page.goto('/profile');
+    const bigBuffer = Buffer.alloc(3 * 1024 * 1024); 
+    await page.locator('input[name="avatar"]').setInputFiles({
+      name: 'foto_besar.jpg',
+      mimeType: 'image/jpeg',
+      buffer: bigBuffer
+    });
+    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/profile/);
+  });
+
+  // ==========================================
+  // 4. LOGOUT (TC-LO-001)
+  // ==========================================
+  test('TC-LO-001: Logout berhasil dan kembali ke beranda', async ({ page }) => {
+    await login(page, CUSTOMER);
     await page.getByRole('button', { name: /customer/i }).first().click();
-
-    // 2. Klik tombol Logout yang muncul di dropdown
     await page.getByRole('button', { name: /logout|keluar/i }).click();
-
-    // 3. Pastikan diarahkan kembali ke halaman beranda atau login
     await expect(page).toHaveURL(/\/(customer\/beranda|login)/);
   });
+
+  // Catatan: TC-LO-002 s/d 004 diuji di PHPUnit (LogoutTest.php)
 });

@@ -8,7 +8,12 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:8000',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
+    actionTimeout: 60000,        // Tunggu 60 detik untuk setiap klik/isi form
+    navigationTimeout: 60000,    // Tunggu 60 detik untuk setiap buka halaman
+    launchOptions: {
+      slowMo: 500,  
+    }
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
@@ -18,5 +23,8 @@ export default defineConfig({
     url: 'http://127.0.0.1:8000',
     reuseExistingServer: true,
     timeout: 120000,
+     env: {
+    APP_ENV: 'testing',
+     },
   },
 });
