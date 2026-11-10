@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\TermsController;
 use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\PemesananController;
 use App\Http\Controllers\Customer\PembayaranController;
@@ -120,6 +121,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
 
 // ============ ROUTE WAJIB LOGIN ============
 Route::middleware('auth')->group(function () {
+
+    Route::post('/terms/accept', [TermsController::class, 'accept'])
+        ->name('terms.accept');
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
