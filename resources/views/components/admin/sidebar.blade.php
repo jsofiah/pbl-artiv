@@ -33,6 +33,12 @@
                     'route' => 'admin.manajemen-file.index',
                     'icon' => 'folder',
                 ],
+                [
+                    'type'  => 'link',
+                    'label' => 'Manajemen Galeri',
+                    'route' => 'admin.galeri.index',
+                    'icon'  => 'photo',
+                ],
             ],
         ],
         [
