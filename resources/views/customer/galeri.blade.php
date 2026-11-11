@@ -187,7 +187,15 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        import('{{ Vite::asset('resources/js/galeri.js') }}').then(m => m.initGaleri());
+        import('{{ Vite::asset('resources/js/galeri.js') }}')
+            .then(() => {
+                if (typeof window.initGaleri === 'function') {
+                    window.initGaleri();
+                } else {
+                    console.error('initGaleri tidak ditemukan di window');
+                }
+            })
+            .catch(e => console.error('Gagal load galeri.js:', e));
     });
 </script>
 @endpush
