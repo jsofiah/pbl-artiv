@@ -2,6 +2,14 @@
 
 @section('title', 'Form Pemesanan')
 
+@unless(auth()->user()->hasAcceptedTerms('customer_tos'))
+    <x-terms-modal
+        document="customer_tos"
+        :show="false"
+        :dismissible="true"
+    />
+@endunless
+
 @section('content')
 <div class="max-w-5xl mx-auto py-8">
         <div x-data="pemesananForm" x-init="setup(@js([

@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GoogleController;
+use App\Http\Controllers\TermsController;
 use App\Http\Controllers\Customer\BerandaController;
 use App\Http\Controllers\Customer\PemesananController;
 use App\Http\Controllers\Customer\PembayaranController;
 use App\Http\Controllers\Customer\PesananController;
+use App\Http\Controllers\Customer\GalleryController;
 use App\Http\Controllers\Designer\DashboardController;
 use App\Http\Controllers\Designer\JobPoolController;
 use App\Http\Controllers\Designer\PekerjaanController;
@@ -17,6 +19,7 @@ use App\Http\Controllers\Admin\ProductTierController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\PengaturanController;
 use App\Http\Controllers\Admin\AkunController;
+use App\Http\Controllers\Admin\AdminGalleryController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Middleware\Customer\EnsureOrderCanBePaid;
@@ -47,7 +50,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
     Route::get('/katalog', [BerandaController::class, 'katalog'])->name('katalog');
     Route::get('/katalog/{product}', [BerandaController::class, 'detailKatalog'])->name('katalog.detail');
-    Route::get('/galeri', [BerandaController::class, 'galeri'])->name('galeri');
+    Route::get('/galeri', [GalleryController::class, 'index'])->name('galeri');
 
     // Halaman wajib login + role customer
     Route::middleware(['auth', 'role:customer'])->group(function () {
@@ -118,6 +121,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
 
 // ============ ROUTE WAJIB LOGIN ============
 Route::middleware('auth')->group(function () {
+
+    Route::post('/terms/accept', [TermsController::class, 'accept'])
+        ->name('terms.accept');
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -252,6 +258,14 @@ Route::middleware('auth')->group(function () {
             Route::patch('/{user}/status', [AkunController::class, 'toggleStatus'])->whereUuid('user')->name('status');
             Route::delete('/{user}', [AkunController::class, 'destroy'])->whereUuid('user')->name('destroy');
 
+        });
+
+        Route::prefix('galeri')->name('galeri.')->group(function () {
+            Route::get('/', [AdminGalleryController::class, 'index'])->name('index');
+            Route::get('/kandidat', [AdminGalleryController::class, 'kandidat'])->name('kandidat');
+            Route::post('/simpan', [AdminGalleryController::class, 'simpan'])->name('simpan');
+            Route::delete('/{galleryItem}', [AdminGalleryController::class, 'destroy'])->name('destroy');
+            Route::patch('/{galleryItem}/toggle', [AdminGalleryController::class, 'toggle'])->name('toggle');
         });
     });
 });
