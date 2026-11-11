@@ -125,6 +125,8 @@
                                      data-shown="{{ $k === 0 ? 'true' : 'false' }}">
                             @endforeach
 
+                            <span class="gt-frame-dim" aria-hidden="true"></span>
+
                             <span class="gt-frame-num">{{ sprintf('%02d', $i + 1) }}</span>
                             <span class="gt-frame-badge">{{ $w['category'] }}</span>
                             <span class="gt-frame-shade"></span>

@@ -337,6 +337,15 @@ html { overflow-x: clip; }
     outline: 2px solid var(--acc);
     outline-offset: -2px;
 }
+.gt-frame-dim {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: #18181b;
+    opacity: 0.7;
+    pointer-events: none;
+    transition: opacity .5s ease;
+}
 
 /* Gambar: default hidden */
 .gt-frame-img {
@@ -346,13 +355,17 @@ html { overflow-x: clip; }
     height: 100%;
     object-fit: cover;
     display: block;
-    opacity: 0;
+    opacity: 1;
     transform: scale(1.18);
     transition: opacity .6s ease, transform 1s cubic-bezier(.22, 1, .36, 1);
 }
 .gt-frame[data-revealed="true"] .gt-frame-img[data-shown="true"] {
     opacity: 1;
     transform: scale(1);
+}
+.gt-frame[data-active="true"] .gt-frame-dim,
+.gt-frame[data-revealed="true"] .gt-frame-dim {
+    opacity: 0;
 }
 
 .gt-frame-num {
