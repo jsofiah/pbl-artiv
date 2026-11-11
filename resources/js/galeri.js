@@ -260,7 +260,7 @@ function waitForGSAP(cb, tries = 0) {
     document.getElementById('gt-root')?.classList.add('gt--static');
 }
 
-export function initGaleri() {
+function initGaleri() {
     initLightbox();
     initFrames();
 
@@ -275,3 +275,5 @@ export function initGaleri() {
         initFrameReveal();
     });
 }
+
+window.initGaleri = initGaleri;
