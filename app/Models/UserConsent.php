@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserConsent extends Model
 {
+    use HasUuids;
+
     protected $table = 'user_consents';
+
+    protected $keyType = 'string';   // ← WAJIB
+    public $incrementing = false;    // ← WAJIB
 
     protected $fillable = [
         'user_id',
