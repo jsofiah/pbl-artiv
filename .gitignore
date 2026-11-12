@@ -35,8 +35,10 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 e2e/.auth
-e2e/img
 
 
 .env.testing
 tests/_disabled/
+e2e/img/file-besar-25mb.pdf
+e2e/img/test-data-5mb.jpg
+e2e/evidence
