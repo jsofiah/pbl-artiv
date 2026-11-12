@@ -66,8 +66,34 @@
         @endforelse
     </div>
 
-    <div class="mt-4">
-        {{ $items->links() }}
+    <div class="mt-6 pt-5 border-t border-slate-200 flex items-center justify-between gap-3 flex-wrap p-4">
+        <p class="text-sm text-slate-500">
+            Menampilkan {{ $items->firstItem() ?? 0 }} - {{ $items->lastItem() ?? 0 }} dari {{ $items->total() }} data
+        </p>
+
+        @if($items->hasPages())
+            <div class="flex items-center gap-2">
+                <a href="{{ $items->previousPageUrl() ?? '#' }}"
+                    class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $items->onFirstPage() ? 'text-slate-300 pointer-events-none' : 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' }} transition">
+                    &lt; Sebelumnya
+                </a>
+                
+                @for ($i = 1; $i <= $items->lastPage(); $i++)
+                    <a href="{{ $items->url($i) }}"
+                        class="w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition
+                                {{ $i === $items->currentPage()
+                                    ? 'bg-[#6D28D9] text-white shadow-sm'
+                                    : 'border border-slate-200 bg-white text-slate-600 hover:border-[#6D28D9] hover:text-[#6D28D9]' }}">
+                        {{ $i }}
+                    </a>
+                @endfor
+                
+                <a href="{{ $items->nextPageUrl() ?? '#' }}"
+                    class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $items->hasMorePages() ? 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' : 'text-slate-300 pointer-events-none' }} transition">
+                    Selanjutnya &gt;
+                </a>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

@@ -208,7 +208,7 @@
                                         <span class="w-1.5 h-1.5 rounded-full {{ $k->is_active && $i === 0 ? 'bg-[#6D28D9]' : 'bg-slate-400' }}"></span>
                                         {{ $v->name }}
                                     </span>
-                                    <span class="font-semibold {{ $k->is_active ? 'text-slate-900' : 'text-slate-500' }}">
+                                    <span class="text-base font-bold {{ $k->is_active ? 'text-[#6D28D9]' : 'text-slate-500' }}">
                                         Rp {{ number_format($v->price, 0, ',', '.') }}
                                     </span>
                                 </li>

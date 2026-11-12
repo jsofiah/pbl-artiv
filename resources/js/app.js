@@ -1,4 +1,5 @@
 import './bootstrap';
+import './galeri';
 
 import Alpine from 'alpinejs';
 import Echo from 'laravel-echo';
