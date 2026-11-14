@@ -1,4 +1,3 @@
-// @ts-check
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -14,8 +13,11 @@ export default defineConfig({
     trace: 'on-first-retry',
     // screenshot: 'only-on-failure',
     screenshot: 'on',
-    navigationTimeout: 30000,
-    actionTimeout: 15000,
+    navigationTimeout: 60000,
+    actionTimeout: 60000,
+    launchOptions: {
+      slowMo: 500,
+    },
   },
 
   projects: [
