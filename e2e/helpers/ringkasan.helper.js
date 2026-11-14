@@ -1,7 +1,11 @@
 import { expect } from "@playwright/test";
 
+/**
+ * Lanjut dari halaman ringkasan ke pembayaran.
+ * Return true jika berhasil ke pembayaran.
+ * Return false jika order sudah punya payment (redirect ke /sukses).
+ */
 export async function lanjutKePembayaran(page) {
-    // Pastikan sedang berada di halaman ringkasan
     await expect(page.locator("h1")).toHaveText("Ringkasan Pesanan");
 
     const formKonfirmasi = page.locator('form[action*="konfirmasi"]');
@@ -10,14 +14,23 @@ export async function lanjutKePembayaran(page) {
     await expect(tombolKonfirmasi).toBeVisible();
     await expect(tombolKonfirmasi).toBeEnabled();
 
-    await tombolKonfirmasi.click();
+    await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {}),
+        tombolKonfirmasi.click(),
+    ]);
 
-    // Pastikan masuk ke halaman pembayaran
-    await expect(page).toHaveURL(
-        /\/customer\/pemesanan\/[^/]+\/pembayaran$/,
-        { timeout: 15000 },
-    );
+    const currentUrl = page.url();
+    console.log('URL setelah konfirmasi:', currentUrl);
 
-    // Cek heading halaman pembayaran
-    await expect(page.locator("h1, h2").first()).toContainText(/Pembayaran/i);
+    if (currentUrl.includes('/sukses')) {
+        console.log('Order sudah punya payment — redirect ke sukses');
+        return false;
+    }
+
+    if (currentUrl.includes('/pembayaran')) {
+        await expect(page.locator("h1, h2").first()).toContainText(/Pembayaran/i);
+        return true;
+    }
+
+    throw new Error(`Tidak redirect ke pembayaran atau sukses. URL: ${currentUrl}`);
 }

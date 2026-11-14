@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import path from "path";
 import { snap, snapElementHighlight, saveEvidence } from "./helpers/evidence.js";
 
-const PRODUCT_ID = "01a196f3-2bff-7333-904a-553b1004d27b";
+const PRODUCT_ID = "01a1d02c-bb4d-70fc-8646-65e9616a7af9";
 const fotoRef = path.resolve("e2e/img/tes-upload-foto.jpg");
 
 test.use({ storageState: "e2e/.auth/customer.json" });

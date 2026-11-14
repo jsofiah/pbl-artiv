@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import path from "path";
 import { snap, snapElementHighlight, saveEvidence } from "./helpers/evidence.js";
 
-const PRODUCT_ID = "01a196f3-2bff-7333-904a-553b1004d27b";
+const PRODUCT_ID = "01a1d02c-bb4d-70fc-8646-65e9616a7af9";
 
 test.use({ storageState: "e2e/.auth/customer.json" });
 
@@ -148,7 +148,7 @@ test("TC-FP-008 – Biaya express tampil setelah tanggal dipilih", async ({
 test("TC-FP-009 – File > 20 MB ditolak dengan pesan error", async ({
     page,
 }) => {
-    const fileBesar = path.resolve("e2e/img/file-besar-25mb.pdf");
+    const fileBesar = path.resolve("e2e/img/Dataset_Jobsheet4.xlsx");
     const input = page.locator('input[name="reference_files[]"]');
     await expect(input).toHaveCount(1);
     await input.setInputFiles(fileBesar);
@@ -157,10 +157,10 @@ test("TC-FP-009 – File > 20 MB ditolak dengan pesan error", async ({
     const errorEl = page.locator("#file-error");
     await expect(errorEl).toBeVisible();
     await expect(errorEl).toContainText(/melebihi 20MB/i);
-    await expect(errorEl).toContainText(/file-besar-25mb\.pdf/i);
+    await expect(errorEl).toContainText(/Dataset_Jobsheet4\.xlsx/i);
 
     await expect(page.locator("#file-list")).not.toContainText(
-        "file-besar-25mb.pdf"
+        "Dataset_Jobsheet4.xlsx"
     );
 
     const filesCount = await page.evaluate(() =>

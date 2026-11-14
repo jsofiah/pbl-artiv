@@ -10,7 +10,7 @@ import { lanjutKePembayaran } from "./helpers/ringkasan.helper.js";
 
 const buktiValid = path.resolve("e2e/img/tes-upload-foto.jpg");
 const buktiExe = path.resolve("e2e/img/test-data.exe");
-const buktiBesar = path.resolve("e2e/img/test-data-5mb.jpg");
+const buktiBesar = path.resolve("e2e/img/test-data-5mb.png");
 
 test.use({ storageState: "e2e/.auth/customer.json" });
 
