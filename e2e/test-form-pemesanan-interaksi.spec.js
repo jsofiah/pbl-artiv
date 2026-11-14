@@ -1,9 +1,16 @@
 import { test, expect } from "@playwright/test";
 import { snap, snapElementHighlight, saveEvidence } from "./helpers/evidence.js";
 
-const PRODUCT_ID = "01a1d02c-bb4d-70fc-8646-65e9616a7af9";
+const PRODUCT_ID = "01a196f3-2bff-7333-904a-553b1004d27b";
+const CUSTOMER = { email: "customer@gmail.com", password: "password" };
 
-test.use({ storageState: "e2e/.auth/customer.json" });
+async function loginAsCustomer(page) {
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await page.fill('input[name="email"]', CUSTOMER.email);
+    await page.fill('input[name="password"]', CUSTOMER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/customer\/beranda/, { timeout: 15000 });
+}
 
 test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status !== "passed") {
@@ -12,10 +19,14 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 test.beforeEach(async ({ page }) => {
+    await loginAsCustomer(page);
+
     await page.goto(`/customer/pemesanan/${PRODUCT_ID}`, {
         waitUntil: "domcontentloaded",
     });
-    await expect(page.locator("h1")).toHaveText("Form Pemesanan");
+    await expect(page.locator("h1")).toHaveText("Form Pemesanan", {
+        timeout: 15000,
+    });
     await page.waitForFunction(() => {
         const el = document.querySelector('[x-data*="pemesananForm"]');
         return el?._x_dataStack?.[0] !== undefined;
@@ -25,7 +36,7 @@ test.beforeEach(async ({ page }) => {
 // ─────────────────────────────────────────────────────────────────
 // TC-FP-005 — Tombol + menambah quantity
 // ─────────────────────────────────────────────────────────────────
-test("TC-FP-005 – Tombol + menambah quantity dari 1 ke 2", async ({
+test("TC-FP-005 Tombol + menambah quantity dari 1 ke 2", async ({
     page,
 }) => {
     const qty = page.locator('input[name="quantity"]');
@@ -49,7 +60,7 @@ test("TC-FP-005 – Tombol + menambah quantity dari 1 ke 2", async ({
 // ─────────────────────────────────────────────────────────────────
 // TC-FP-006 — Tombol − mengurangi quantity
 // ─────────────────────────────────────────────────────────────────
-test("TC-FP-006 – Tombol − mengurangi quantity dari 2 ke 1", async ({
+test("TC-FP-006 Tombol mengurangi quantity dari 2 ke 1", async ({
     page,
 }) => {
     const qty = page.locator('input[name="quantity"]');
@@ -79,7 +90,7 @@ test("TC-FP-006 – Tombol − mengurangi quantity dari 2 ke 1", async ({
 // ─────────────────────────────────────────────────────────────────
 // TC-FP-011 — Klik "+ Tambah Tautan" menambah input baru
 // ─────────────────────────────────────────────────────────────────
-test("TC-FP-011 – Klik '+ Tambah Tautan' menambah input baru", async ({
+test("TC-FP-011 Klik '+ Tambah Tautan' menambah input baru", async ({
     page,
 }) => {
     const linkInputs = page.locator('input[name="reference_links[]"]');

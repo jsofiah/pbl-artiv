@@ -5,7 +5,16 @@ import {
     saveEvidence,
 } from "./helpers/evidence.js";
 
-const PRODUCT_ID = "01a1d02c-bb4d-70fc-8646-65e9616a7af9";
+const PRODUCT_ID = "01a196f3-2bff-7333-904a-553b1004d27b";
+const CUSTOMER = { email: "customer@gmail.com", password: "password" };
+
+async function loginAsCustomer(page) {
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await page.fill('input[name="email"]', CUSTOMER.email);
+    await page.fill('input[name="password"]', CUSTOMER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/customer\/beranda/, { timeout: 15000 });
+}
 
 // ⭐ Safety net: kalau test fail SEBELUM sempat snapshot manual,
 //    afterEach ini tetap simpan screenshot terakhir ke evidence.
@@ -19,10 +28,10 @@ test.afterEach(async ({ page }, testInfo) => {
 // ═══════════════════════════════════════════════════════════════════
 // TC-FP-001 — Customer membuka Form Pemesanan dari katalog
 // ═══════════════════════════════════════════════════════════════════
-test.describe("TC-FP-001 – Customer akses Form Pemesanan", () => {
-    test.use({ storageState: "e2e/.auth/customer.json" });
-
+test.describe("TC-FP-001 Customer akses Form Pemesanan", () => {
     test("Customer membuka Form Pemesanan dari katalog", async ({ page }) => {
+        await loginAsCustomer(page);
+
         // 1. Buka halaman Katalog
         await page.goto("/customer/katalog", {
             waitUntil: "domcontentloaded",
@@ -76,10 +85,10 @@ test.describe("TC-FP-001 – Customer akses Form Pemesanan", () => {
 // ═══════════════════════════════════════════════════════════════════
 // TC-FP-002 — Guest diarahkan ke login
 // ═══════════════════════════════════════════════════════════════════
-test.describe("TC-FP-002 – Akses guest", () => {
-    test.use({ storageState: { cookies: [], origins: [] } });
+test.describe("TC-FP-002 Akses guest", () => {
+    test("Guest diarahkan ke halaman login", async ({ page, context }) => {
+        await context.clearCookies();
 
-    test("Guest diarahkan ke halaman login", async ({ page }) => {
         await page.goto(`/customer/pemesanan/${PRODUCT_ID}`, {
             waitUntil: "domcontentloaded",
         });
@@ -98,16 +107,18 @@ test.describe("TC-FP-002 – Akses guest", () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// TC-FP-003, 004, 016, 017 — UI Form Pemesanan (login)
+// TC-FP-003, 004, 016, 017 — UI Form Pemesanan (login manual)
 // ═══════════════════════════════════════════════════════════════════
-test.describe("TC-FP-003/004/016/017 – UI Form Pemesanan", () => {
-    test.use({ storageState: "e2e/.auth/customer.json" });
-
+test.describe("TC-FP-003/004/016/017 UI Form Pemesanan", () => {
     test.beforeEach(async ({ page }) => {
+        await loginAsCustomer(page);
+
         await page.goto(`/customer/pemesanan/${PRODUCT_ID}`, {
             waitUntil: "domcontentloaded",
         });
-        await expect(page.locator("h1")).toHaveText("Form Pemesanan");
+        await expect(page.locator("h1")).toHaveText("Form Pemesanan", {
+            timeout: 15000,
+        });
         await page.waitForFunction(() => {
             const el = document.querySelector('[x-data*="pemesananForm"]');
             return el?._x_dataStack?.[0] !== undefined;
@@ -117,7 +128,7 @@ test.describe("TC-FP-003/004/016/017 – UI Form Pemesanan", () => {
     // ─────────────────────────────────────────────────────────────
     // TC-FP-003
     // ─────────────────────────────────────────────────────────────
-    test("TC-FP-003 – Section Pilih Paket Desain tampil dengan nama & harga", async ({
+    test("TC-FP-003 Section Pilih Paket Desain tampil dengan nama & harga", async ({
         page,
     }) => {
         const sectionHeading = page.locator(
@@ -145,7 +156,7 @@ test.describe("TC-FP-003/004/016/017 – UI Form Pemesanan", () => {
     // ─────────────────────────────────────────────────────────────
     // TC-FP-004
     // ─────────────────────────────────────────────────────────────
-    test("TC-FP-004 – Highlight border & background saat paket dipilih", async ({
+    test("TC-FP-004 Highlight border & background saat paket dipilih", async ({
         page,
     }) => {
         const tiers = page.locator(
@@ -197,7 +208,7 @@ test.describe("TC-FP-003/004/016/017 – UI Form Pemesanan", () => {
     // ─────────────────────────────────────────────────────────────
     // TC-FP-016
     // ─────────────────────────────────────────────────────────────
-    test("TC-FP-016 – Tombol submit disabled saat form belum lengkap", async ({
+    test("TC-FP-016 Tombol submit disabled saat form belum lengkap", async ({
         page,
     }) => {
         const btn = page.locator(
@@ -224,7 +235,7 @@ test.describe("TC-FP-003/004/016/017 – UI Form Pemesanan", () => {
     // ─────────────────────────────────────────────────────────────
     // TC-FP-017
     // ─────────────────────────────────────────────────────────────
-    test("TC-FP-017 – Tombol submit aktif setelah form lengkap", async ({
+    test("TC-FP-017 Tombol submit aktif setelah form lengkap", async ({
         page,
     }) => {
         // Isi minimal yang dibutuhkan

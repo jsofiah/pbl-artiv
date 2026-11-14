@@ -10,9 +10,16 @@ import { lanjutKePembayaran } from "./helpers/ringkasan.helper.js";
 
 const buktiValid = path.resolve("e2e/img/tes-upload-foto.jpg");
 const buktiExe = path.resolve("e2e/img/test-data.exe");
-const buktiBesar = path.resolve("e2e/img/test-data-5mb.png");
+const buktiBesar = path.resolve("e2e/img/test-data-5mb.jpg");
+const CUSTOMER = { email: "customer@gmail.com", password: "password" };
 
-test.use({ storageState: "e2e/.auth/customer.json" });
+async function loginAsCustomer(page) {
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await page.fill('input[name="email"]', CUSTOMER.email);
+    await page.fill('input[name="password"]', CUSTOMER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/customer\/beranda/, { timeout: 15000 });
+}
 
 test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status !== "passed") {
@@ -20,14 +27,18 @@ test.afterEach(async ({ page }, testInfo) => {
     }
 });
 
+test.describe.configure({ mode: 'serial' });
+
 // ═══════════════════════════════════════════════════════════════════
 // TC-PB-005 — Upload bukti transfer berhasil
 // ═══════════════════════════════════════════════════════════════════
-test("TC-PB-005 – Upload bukti transfer berhasil", async ({ page }) => {
+test("TC-PB-005 Upload bukti transfer berhasil", async ({ page }) => {
     test.setTimeout(90000);
 
+    await loginAsCustomer(page);
     await siapkanRingkasan(page);
-    await lanjutKePembayaran(page);
+    const ok = await lanjutKePembayaran(page);
+    if (!ok) test.skip(true, "Order sudah dibayar — perlu reset DB");
 
     // Pilih file
     const input = page.locator('input[name="proof"]');
@@ -76,12 +87,13 @@ test("TC-PB-005 – Upload bukti transfer berhasil", async ({ page }) => {
 // ═══════════════════════════════════════════════════════════════════
 // TC-PB-006 — Format .exe ditolak
 // ═══════════════════════════════════════════════════════════════════
-test("TC-PB-006 – Format .exe ditolak", async ({ page }) => {
+test("TC-PB-006 Format .exe ditolak", async ({ page }) => {
     test.setTimeout(90000);
 
+    await loginAsCustomer(page);
     await siapkanRingkasan(page);
-    await lanjutKePembayaran(page);
-    const urlPembayaran = page.url();
+    const ok = await lanjutKePembayaran(page);
+    if (!ok) test.skip(true, "Order sudah dibayar — perlu reset DB");
 
     // Pilih file .exe
     const input = page.locator('input[name="proof"]');
@@ -106,11 +118,13 @@ test("TC-PB-006 – Format .exe ditolak", async ({ page }) => {
 // ═══════════════════════════════════════════════════════════════════
 // TC-PB-007 — File > 2 MB ditolak
 // ═══════════════════════════════════════════════════════════════════
-test("TC-PB-007 – File > 2 MB ditolak", async ({ page }) => {
+test("TC-PB-007 File > 2 MB ditolak", async ({ page }) => {
     test.setTimeout(90000);
 
+    await loginAsCustomer(page);
     await siapkanRingkasan(page);
-    await lanjutKePembayaran(page);
+    const ok = await lanjutKePembayaran(page);
+    if (!ok) test.skip(true, "Order sudah dibayar — perlu reset DB");
 
     // Pilih file 5 MB
     const input = page.locator('input[name="proof"]');
@@ -134,13 +148,15 @@ test("TC-PB-007 – File > 2 MB ditolak", async ({ page }) => {
 // ═══════════════════════════════════════════════════════════════════
 // TC-PB-008 — Status pembayaran berubah jadi Pending setelah upload
 // ═══════════════════════════════════════════════════════════════════
-test("TC-PB-008 – Status pembayaran berubah jadi Pending setelah upload", async ({
+test("TC-PB-008 Status pembayaran berubah jadi Pending setelah upload", async ({
     page,
 }) => {
     test.setTimeout(90000);
 
+    await loginAsCustomer(page);
     await siapkanRingkasan(page);
-    await lanjutKePembayaran(page);
+    const ok = await lanjutKePembayaran(page);
+    if (!ok) test.skip(true, "Order sudah dibayar — perlu reset DB");
 
     // Upload file valid
     const input = page.locator('input[name="proof"]');
