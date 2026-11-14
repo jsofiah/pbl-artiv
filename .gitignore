@@ -1,6 +1,7 @@
 *.log
 .DS_Store
 .env
+.env.testing
 .env.backup
 .env.production
 .env.testing
@@ -35,9 +36,7 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 e2e/.auth
-
-
-.env.testing
+e2e/img
 tests/_disabled/
 e2e/img/file-besar-25mb.pdf
 e2e/img/test-data-5mb.jpg

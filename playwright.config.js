@@ -2,85 +2,41 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
-  retries: 0,
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  // workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: 'html',
   use: {
-    baseURL: 'http://127.0.0.1:8000',
+    baseURL: 'http://localhost:8000',
     trace: 'on-first-retry',
+    // screenshot: 'only-on-failure',
     screenshot: 'on',
-    actionTimeout: 60000,        // Tunggu 60 detik untuk setiap klik/isi form
-    navigationTimeout: 60000,    // Tunggu 60 detik untuk setiap buka halaman
+    navigationTimeout: 60000,
+    actionTimeout: 60000,
     launchOptions: {
-      slowMo: 500,  
-    }
+      slowMo: 500,
+    },
   },
-  projects: [
-    // { name: 'setup', testMatch: '**/auth-setup.spec.js'},
-            {
-            name: "setup",
-            testMatch: /auth\.setup\.js/,
-            use: { storageState: undefined },
-        },
-        {
-            name: "chromium",
-            use: {
-                ...devices["Desktop Chrome"],
-                storageState: "e2e/.auth/customer.json",
-            },
-            dependencies: ["setup"],  
-        },
-    
-    // {
-    //   name: 'chromium',
-    //   use: { ...devices['Desktop Chrome'],
-    //     storageState: 'e2e/.auth/customer.json'
-    //   },
-    //   dependencies: ['setup'],
-    // },
 
+  projects: [
+    // 1. Setup project: hanya auth-setup.spec.js
+    {
+      name: 'setup',
+      testMatch: /auth-setup\.spec\.js/,
+      use: { storageState: undefined },
+    },
+
+    // 2. Chromium: semua test KECUALI auth-setup.spec.js
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      testMatch: /^(?!.*auth-setup\.spec\.js).*\.spec\.js$/,
+      use: {
+        ...devices['Desktop Chrome'],
+        // storageState: 'e2e/.auth/customer.json',
+      },
+      dependencies: ['setup'],
     },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
-  webServer: {
-    command: 'php artisan serve',
-    url: 'http://127.0.0.1:8000',
-    reuseExistingServer: true,
-    timeout: 120000,
-     env: {
-    APP_ENV: 'testing',
-     },
-  },
 });
