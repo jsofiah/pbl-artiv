@@ -43,7 +43,7 @@
          x-show="{{ $showVar }}"
          x-cloak
      @else
-         class="hidden"
+         style="display: none"
      @endif
      @if ($isAlpine)
          x-transition:enter="transition ease-out duration-200"
@@ -57,7 +57,7 @@
      @if ($isAlpine)
          @keydown.escape.window="{{ $showVar }} = false"
      @endif
-     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style="margin-top: 0;">
+     class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style="margin-top: 0;">
 
     <div class="bg-white rounded-2xl shadow-xl w-full {{ $sizeCls }} max-h-[90vh] flex flex-col overflow-hidden"
          @if ($isAlpine)
