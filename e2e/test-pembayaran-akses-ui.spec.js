@@ -10,6 +10,15 @@ import { lanjutKePembayaran } from "./helpers/ringkasan.helper.js";
 // UUID placeholder — untuk TC-PB-002 (guest), middleware auth redirect dulu,
 // jadi ID apa pun valid (bahkan yang tidak ada di DB).
 const ORDER_ID_PLACEHOLDER = "01a196f3-2bff-7333-904a-553b1004d27b";
+const CUSTOMER = { email: "customer@gmail.com", password: "password" };
+
+async function loginAsCustomer(page) {
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await page.fill('input[name="email"]', CUSTOMER.email);
+    await page.fill('input[name="password"]', CUSTOMER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/customer\/beranda/, { timeout: 15000 });
+}
 
 test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status !== "passed") {
@@ -20,17 +29,18 @@ test.afterEach(async ({ page }, testInfo) => {
 // ═══════════════════════════════════════════════════════════════════
 // TC-PB-001 — Customer membuka halaman Pembayaran dari Ringkasan
 // ═══════════════════════════════════════════════════════════════════
-test.describe("TC-PB-001 – Akses halaman Pembayaran", () => {
-    test.use({ storageState: "e2e/.auth/customer.json" });
-
+test.describe("TC-PB-001 Akses halaman Pembayaran", () => {
     test("Customer membuka halaman Pembayaran dari Ringkasan", async ({
         page,
     }) => {
         test.setTimeout(90000);
 
+        await loginAsCustomer(page);
+
         // Setup: sampai di Ringkasan, lalu klik "Lanjut ke Pembayaran"
         await siapkanRingkasan(page);
-        await lanjutKePembayaran(page);
+        const ok = await lanjutKePembayaran(page);
+        if (!ok) test.skip(true, "Order sudah dibayar — perlu reset DB");
 
         // Assertion: halaman pembayaran tampil
         await expect(page).toHaveURL(
@@ -55,12 +65,13 @@ test.describe("TC-PB-001 – Akses halaman Pembayaran", () => {
 // ═══════════════════════════════════════════════════════════════════
 // TC-PB-002 — Guest diarahkan ke login
 // ═══════════════════════════════════════════════════════════════════
-test.describe("TC-PB-002 – Guest diarahkan ke login", () => {
-    test.use({ storageState: { cookies: [], origins: [] } });
-
+test.describe("TC-PB-002 Guest diarahkan ke login", () => {
     test("Guest diarahkan ke halaman login saat akses URL pembayaran", async ({
         page,
+        context,
     }) => {
+        await context.clearCookies();
+
         await page.goto(
             `/customer/pemesanan/${ORDER_ID_PLACEHOLDER}/pembayaran`,
             { waitUntil: "domcontentloaded" }
@@ -81,71 +92,73 @@ test.describe("TC-PB-002 – Guest diarahkan ke login", () => {
 // ═══════════════════════════════════════════════════════════════════
 // TC-PB-003 — Detail tagihan tampil
 // ═══════════════════════════════════════════════════════════════════
-test.describe("TC-PB-003 – Detail tagihan tampil", () => {
-    test.use({ storageState: "e2e/.auth/customer.json" });
-
+test.describe("TC-PB-003 Detail tagihan tampil", () => {
     test("Halaman Pembayaran menampilkan detail tagihan", async ({ page }) => {
-    test.setTimeout(90000);
+        test.setTimeout(90000);
 
-    await siapkanRingkasan(page);
-    await lanjutKePembayaran(page);
+        await loginAsCustomer(page);
 
-    // Total Nominal
-    await expect(
-        page.getByText("Total Nominal:", { exact: false })
-    ).toBeVisible();
-    await expect(page.locator("body")).toContainText(/Rp\s?[\d.]+/);
+        await siapkanRingkasan(page);
+        const ok = await lanjutKePembayaran(page);
+        if (!ok) test.skip(true, "Order sudah dibayar — perlu reset DB");
 
-    // Merchant resmi
-    await expect(
-        page.getByText("Merchant Resmi:", { exact: false })
-    ).toBeVisible();
-    await expect(page.locator("body")).toContainText("ARTIV Official");
+        // Total Nominal
+        await expect(
+            page.getByText("Total Nominal:", { exact: false })
+        ).toBeVisible();
+        await expect(page.locator("body")).toContainText(/Rp\s?[\d.]+/);
 
-    // ⭐ Tunggu QR image benar-benar LOAD (dari api.qrserver.com)
-    const qrImg = page.locator('img[alt="QRIS Code"]');
-    await expect(qrImg).toBeAttached();
+        // Merchant resmi
+        await expect(
+            page.getByText("Merchant Resmi:", { exact: false })
+        ).toBeVisible();
+        await expect(page.locator("body")).toContainText("ARTIV Official");
 
-    try {
-        // Tunggu sampai naturalWidth > 0 (artinya gambar render)
-        await page.waitForFunction(
-            () => {
-                const img = document.querySelector('img[alt="QRIS Code"]');
-                return img && img.complete && img.naturalWidth > 0;
-            },
-            { timeout: 20000 }   // 20 detik — cukup kalau internet normal
+        // ⭐ Tunggu QR image benar-benar LOAD (dari api.qrserver.com)
+        const qrImg = page.locator('img[alt="QRIS Code"]');
+        await expect(qrImg).toBeAttached();
+
+        try {
+            // Tunggu sampai naturalWidth > 0 (artinya gambar render)
+            await page.waitForFunction(
+                () => {
+                    const img = document.querySelector('img[alt="QRIS Code"]');
+                    return img && img.complete && img.naturalWidth > 0;
+                },
+                { timeout: 20000 }   // 20 detik — cukup kalau internet normal
+            );
+            console.log("✅ QR image berhasil load dari API");
+        } catch (err) {
+            console.warn("⚠️ QR gagal load dalam 20 detik dari api.qrserver.com");
+            // Kalau gagal, test tetap lanjut — screenshot diambil dengan QR blank
+        }
+
+        // 📸 Evidence
+        const infoCard = page
+            .getByText("Total Nominal:", { exact: false })
+            .locator("xpath=ancestor::div[contains(@class,'bg-neutral-50')][1]");
+        await snapElementHighlight(
+            page,
+            "TC-PB-003_detail_tagihan",
+            infoCard
         );
-        console.log("✅ QR image berhasil load dari API");
-    } catch (err) {
-        console.warn("⚠️ QR gagal load dalam 20 detik dari api.qrserver.com");
-        // Kalau gagal, test tetap lanjut — screenshot diambil dengan QR blank
-    }
-
-    // 📸 Evidence
-    const infoCard = page
-        .getByText("Total Nominal:", { exact: false })
-        .locator("xpath=ancestor::div[contains(@class,'bg-neutral-50')][1]");
-    await snapElementHighlight(
-        page,
-        "TC-PB-003_detail_tagihan",
-        infoCard
-    );
-});
+    });
 });
 
 // ═══════════════════════════════════════════════════════════════════
 // TC-PB-004 — Instruksi pembayaran QRIS ditampilkan
 // ═══════════════════════════════════════════════════════════════════
-test.describe("TC-PB-004 – Instruksi pembayaran tampil", () => {
-    test.use({ storageState: "e2e/.auth/customer.json" });
-
+test.describe("TC-PB-004 Instruksi pembayaran tampil", () => {
     test("Halaman Pembayaran menampilkan instruksi pembayaran QRIS", async ({
         page,
     }) => {
         test.setTimeout(90000);
 
+        await loginAsCustomer(page);
+
         await siapkanRingkasan(page);
-        await lanjutKePembayaran(page);
+        const ok = await lanjutKePembayaran(page);
+        if (!ok) test.skip(true, "Order sudah dibayar — perlu reset DB");
 
         // ── Assertion instruksi QRIS ─────────────────────────────
         await expect(
@@ -178,9 +191,7 @@ test.describe("TC-PB-004 – Instruksi pembayaran tampil", () => {
             );
             console.log("✅ QR image berhasil load dari API");
         } catch (err) {
-            console.warn(
-                "⚠️ QR gagal load dalam 20 detik dari api.qrserver.com"
-            );
+            console.warn("⚠️ QR gagal load dalam 20 detik dari api.qrserver.com");
         }
 
         // 📸 Evidence 1: instruksi QRIS

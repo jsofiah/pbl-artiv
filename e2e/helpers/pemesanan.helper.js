@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import path from "path";
 
-const PRODUCT_ID = "01a1d02c-bb4d-70fc-8646-65e9616a7af9";
+const PRODUCT_ID = "01a196f3-2bff-7333-904a-553b1004d27b";
 const fotoReferensi = path.resolve("e2e/img/tes-upload-foto.jpg");
 
 /**
@@ -181,26 +181,30 @@ export async function siapkanRingkasan(page) {
     console.log("\n📊 ALPINE STATE:", JSON.stringify(state, null, 2));
 
     // ══════════════════════════════════════════════════════════════════
-    // 9. Submit form via native (bypass Alpine disabled state)
+    // 9. Submit form via native — PASTIKAN FILE TERKIRIM
     // ══════════════════════════════════════════════════════════════════
     const postResponsePromise = page.waitForResponse(
         (response) =>
             response.request().method() === "POST" &&
-            response
-                .url()
-                .includes(`/customer/pemesanan/${PRODUCT_ID}/ringkasan`),
+            response.url().includes(`/customer/pemesanan/${PRODUCT_ID}/ringkasan`),
         { timeout: 20000 }
     );
 
     await page.evaluate(() => {
-        const form = document.querySelector('form[action*="ringkasan"]');
-        if (form) {
-            form.querySelectorAll('button[type="submit"]').forEach((btn) => {
-                btn.disabled = false;
-                btn.removeAttribute("disabled");
-            });
-            form.submit();
+        const inputFile = document.querySelector('input[name="reference_files[]"]');
+        if (inputFile && typeof selectedFiles !== 'undefined' && selectedFiles.length > 0) {
+            const dt = new DataTransfer();
+            selectedFiles.forEach(f => dt.items.add(f));
+            inputFile.files = dt.files;
         }
+
+        const form = document.querySelector('form[action*="ringkasan"]');
+        form.querySelectorAll('button[type="submit"]').forEach((btn) => {
+            btn.disabled = false;
+            btn.removeAttribute("disabled");
+        });
+
+        form.submit();
     });
 
     // ══════════════════════════════════════════════════════════════════

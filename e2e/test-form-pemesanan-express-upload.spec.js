@@ -2,9 +2,16 @@ import { test, expect } from "@playwright/test";
 import path from "path";
 import { snap, snapElementHighlight, saveEvidence } from "./helpers/evidence.js";
 
-const PRODUCT_ID = "01a1d02c-bb4d-70fc-8646-65e9616a7af9";
+const PRODUCT_ID = "01a196f3-2bff-7333-904a-553b1004d27b";
+const CUSTOMER = { email: "customer@gmail.com", password: "password" };
 
-test.use({ storageState: "e2e/.auth/customer.json" });
+async function loginAsCustomer(page) {
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await page.fill('input[name="email"]', CUSTOMER.email);
+    await page.fill('input[name="password"]', CUSTOMER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/customer\/beranda/, { timeout: 15000 });
+}
 
 test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status !== "passed") {
@@ -13,10 +20,14 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 test.beforeEach(async ({ page }) => {
+    await loginAsCustomer(page);
+
     await page.goto(`/customer/pemesanan/${PRODUCT_ID}`, {
         waitUntil: "domcontentloaded",
     });
-    await expect(page.locator("h1")).toHaveText("Form Pemesanan");
+    await expect(page.locator("h1")).toHaveText("Form Pemesanan", {
+        timeout: 15000,
+    });
     await page.waitForFunction(() => {
         const el = document.querySelector('[x-data*="pemesananForm"]');
         return el?._x_dataStack?.[0] !== undefined;
@@ -33,7 +44,7 @@ function toYMD(d) {
 // ─────────────────────────────────────────────────────────────────
 // TC-FP-007 — Kalender menolak tanggal < H+2
 // ─────────────────────────────────────────────────────────────────
-test("TC-FP-007 – Kalender menolak tanggal < H+2", async ({ page }) => {
+test("TC-FP-007 Kalender menolak tanggal < H+2", async ({ page }) => {
     await page
         .locator('label:has(input[name="deadline_option"][value="express"])')
         .click();
@@ -82,7 +93,7 @@ test("TC-FP-007 – Kalender menolak tanggal < H+2", async ({ page }) => {
 // ─────────────────────────────────────────────────────────────────
 // TC-FP-008 — Biaya express tampil setelah tanggal dipilih
 // ─────────────────────────────────────────────────────────────────
-test("TC-FP-008 – Biaya express tampil setelah tanggal dipilih", async ({
+test("TC-FP-008 Biaya express tampil setelah tanggal dipilih", async ({
     page,
 }) => {
     await page
@@ -145,10 +156,10 @@ test("TC-FP-008 – Biaya express tampil setelah tanggal dipilih", async ({
 // ─────────────────────────────────────────────────────────────────
 // TC-FP-009 — File > 20 MB ditolak
 // ─────────────────────────────────────────────────────────────────
-test("TC-FP-009 – File > 20 MB ditolak dengan pesan error", async ({
+test("TC-FP-009 File > 20 MB ditolak dengan pesan error", async ({
     page,
 }) => {
-    const fileBesar = path.resolve("e2e/img/Dataset_Jobsheet4.xlsx");
+    const fileBesar = path.resolve("e2e/img/file-besar-25mb.pdf");
     const input = page.locator('input[name="reference_files[]"]');
     await expect(input).toHaveCount(1);
     await input.setInputFiles(fileBesar);
@@ -157,17 +168,17 @@ test("TC-FP-009 – File > 20 MB ditolak dengan pesan error", async ({
     const errorEl = page.locator("#file-error");
     await expect(errorEl).toBeVisible();
     await expect(errorEl).toContainText(/melebihi 20MB/i);
-    await expect(errorEl).toContainText(/Dataset_Jobsheet4\.xlsx/i);
+    await expect(errorEl).toContainText(/file-besar-25mb\.pdf/i);
 
     await expect(page.locator("#file-list")).not.toContainText(
-        "Dataset_Jobsheet4.xlsx"
+        "file-besar-25mb.pdf"
     );
 
     const filesCount = await page.evaluate(() =>
         typeof selectedFiles !== "undefined" ? selectedFiles.length : 0
     );
     expect(filesCount).toBe(0);
-
+    
     // 📸 Evidence: highlight pesan error merah
     await snapElementHighlight(
         page,
@@ -175,10 +186,11 @@ test("TC-FP-009 – File > 20 MB ditolak dengan pesan error", async ({
         errorEl
     );
 });
+
 // ─────────────────────────────────────────────────────────────────
 // TC-FP-010 — File < 20 MB diterima
 // ─────────────────────────────────────────────────────────────────
-test("TC-FP-010 – File < 20 MB diterima dan muncul di daftar", async ({
+test("TC-FP-010 File < 20 MB diterima dan muncul di daftar", async ({
     page,
 }) => {
     const fotoRef = path.resolve("e2e/img/tes-upload-foto.jpg");
