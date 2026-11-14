@@ -92,7 +92,7 @@
         @if ($order->brief_note)
             <x-slot:action>
                 <button type="button"
-                        onclick="document.getElementById('brief-modal').classList.remove('hidden')"
+                        onclick="document.getElementById('brief-modal').style.display = 'flex'"
                         class="text-xs font-semibold text-[#6D28D9] hover:underline">
                     Detail
                 </button>
