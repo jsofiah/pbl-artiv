@@ -4,8 +4,8 @@ import { test, expect } from '@playwright/test';
 // ============================================================================
 // KONSTANTA
 // ============================================================================
-const PRODUCT_WITH_TIER = '01a0fd63-bbcc-7368-9e94-580091555067';
-const PRODUCT_NO_TIER   = '01a0fd63-bbdd-70c2-86f7-4a255707894b';
+const PRODUCT_WITH_TIER = '01a1d02c-bb4d-70fc-8646-65e9616a7af9';
+const PRODUCT_NO_TIER   = '01a1d02c-bb4f-7116-aad7-61c3accbf4a7';
 const DETAIL_URL_RE     = /\/customer\/katalog\/[A-Za-z0-9_-]+/;
 
 const CUSTOMER_EMAIL    = 'customer1@gmail.com';
@@ -68,7 +68,7 @@ async function screenshotWithWait(page, tcId) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     await page.screenshot({
-        path: `evidence/${tcId}.png`,
+        path: `e2e/evidence/jelajah/${tcId}.png`,
         fullPage: true,
     });
 }

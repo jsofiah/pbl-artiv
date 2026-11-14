@@ -30,7 +30,7 @@ async function screenshotWithWait(page, tcId) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     await page.screenshot({
-        path: `evidence/${tcId}.png`,
+        path: `e2e/evidence/admin-operasional/${tcId}.png`,
         fullPage: true,
     });
 }
