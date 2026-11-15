@@ -26,7 +26,7 @@ async function loginAsCustomer(page) {
 async function screenshotWithWait(page, tcId) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: `evidence/${tcId}.png`, fullPage: true });
+    await page.screenshot({ path: `e2e/evidence/designer-job-pool/${tcId}.png`, fullPage: true });
 }
 
 test.describe('Job Pool — Designer', () => {

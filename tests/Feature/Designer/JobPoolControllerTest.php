@@ -216,6 +216,9 @@ class JobPoolControllerTest extends TestCase
             'file_name' => 'test.pdf'
         ]);
 
+        Storage::fake('r2');
+        Storage::disk('r2')->put('r2/path/test.pdf', 'fake-pdf-content');
+
         Http::fake([
             '*' => Http::response('fake-file-content', 200),
         ]);
