@@ -108,6 +108,17 @@
             @endif
         </div>
 
+        {{-- ===== WEB PUSH: ajakan aktifkan notifikasi browser ===== --}}
+        <div id="push-prompt" class="hidden border-t border-slate-200 bg-violet-50/60 px-5 py-3">
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-xs text-slate-600">Terima notifikasi langsung di browser, walau tab sedang ditutup.</p>
+                <button type="button" id="push-enable"
+                        class="shrink-0 rounded-full bg-[#6D28D9] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#5B21B6]">
+                    Aktifkan
+                </button>
+            </div>
+        </div>
+
         <a href="{{ route('notifikasi.index') }}"
            class="block border-t border-slate-200 px-5 py-3 text-center text-sm font-semibold text-[#6D28D9] hover:bg-slate-50">
             Lihat semua notifikasi
@@ -131,5 +142,31 @@
         close.addEventListener('click', () => setOpen(false));
         document.addEventListener('click', (e) => { if (!root.contains(e.target)) setOpen(false); });
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+
+        // ===== WEB PUSH: tampilkan ajakan hanya kalau browser mendukung & izin belum diputuskan =====
+        const pushPrompt = document.getElementById('push-prompt');
+        const pushEnable = document.getElementById('push-enable');
+
+        if (pushPrompt && pushEnable
+            && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
+            && Notification.permission === 'default') {
+            pushPrompt.classList.remove('hidden');
+
+            pushEnable.addEventListener('click', async () => {
+                pushEnable.disabled = true;
+                pushEnable.textContent = 'Memproses...';
+                try {
+                    const ok = await window.subscribeUserToPush();
+                    if (ok) {
+                        pushPrompt.classList.add('hidden');
+                        return;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+                pushEnable.disabled = false;
+                pushEnable.textContent = 'Aktifkan';
+            });
+        }
     })();
 </script>
