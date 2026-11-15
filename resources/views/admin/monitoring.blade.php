@@ -14,7 +14,35 @@
     confirmModalOpen: false,
     confirmUrl: '',
     confirmAction: '',
-    confirmOrderCode: ''
+    confirmOrderCode: '',
+
+    // Modal Detail Monitoring
+    detailModalOpen: false,
+    detailLoading: false,
+    detailData: null,
+
+    async fetchDetail(url) {
+        this.detailModalOpen = true;
+        this.detailLoading = true;
+        this.detailData = null;
+
+        try {
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (response.ok) {
+                this.detailData = await response.json();
+            } else {
+                alert('Gagal mengambil data detail pengerjaan.');
+                this.detailModalOpen = false;
+            }
+        } catch (e) {
+            alert('Terjadi kesalahan koneksi.');
+            this.detailModalOpen = false;
+        } finally {
+            this.detailLoading = false;
+        }
+    }
 }" class="space-y-6">
 
     {{-- Header Halaman --}}
@@ -103,7 +131,7 @@
         </div>
     </div>
 
-    {{-- Main Tab Switcher Utama (Garis Bawah) --}}
+    {{-- Main Tab Switcher Utama --}}
     <div class="border-b border-slate-200 mb-6 flex items-center gap-8">
         <button type="button" @click="tab = 'pekerjaan'" 
                 :class="tab === 'pekerjaan' ? 'border-[#6D28D9] text-[#6D28D9]' : 'border-transparent text-slate-500 hover:text-slate-700'"
@@ -146,7 +174,7 @@
         <form action="{{ route('admin.monitoring') }}" method="GET" class="flex flex-wrap items-center justify-end gap-3 mb-6 w-full">
             <input type="hidden" name="tab" value="pekerjaan">
 
-            {{-- Search Bar (Ukuran disamakan dengan Katalog) --}}
+            {{-- Search Bar --}}
             <div class="bg-white rounded-full shadow-sm border border-slate-200 p-1.5 flex items-center gap-2 w-full flex-1">
                 <div class="pl-3 text-slate-400">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
@@ -232,6 +260,7 @@
                             <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Total Harga</th>
                             <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Tenggat Waktu</th>
                             <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Status Pengerjaan</th>
+                            <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Detail</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -293,10 +322,17 @@
                                         {{ \App\Models\Order::STATUS_LABELS[$order->status] ?? $order->status }}
                                     </span>
                                 </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button type="button" 
+                                            @click="fetchDetail('{{ route('admin.monitoring.detail', $order->id) }}')" 
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#6D28D9] bg-purple-50 hover:bg-purple-100 rounded-full transition shadow-sm">
+                                        Detail
+                                    </button>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-10 text-slate-400">
+                                <td colspan="7" class="text-center py-10 text-slate-400">
                                     Tidak ada data pesanan/pekerjaan yang ditemukan.
                                 </td>
                             </tr>
@@ -306,12 +342,10 @@
             </div>
 
             <div class="mt-6 pt-5 border-t border-slate-200 flex items-center justify-between gap-3 flex-wrap p-4">
-                {{-- Teks info selalu muncul, baik datanya 1 halaman maupun banyak --}}
                 <p class="text-sm text-slate-500">
                     Menampilkan {{ $orders->firstItem() ?? 0 }} - {{ $orders->lastItem() ?? 0 }} dari {{ $orders->total() }} data
                 </p>
 
-                {{-- Tombol navigasi hanya muncul jika lebih dari 1 halaman --}}
                 @if($orders->hasPages())
                     <div class="flex items-center gap-2">
                         <a href="{{ $orders->previousPageUrl() ?? '#' }}"
@@ -339,7 +373,6 @@
 
     {{-- ==================== TAB 2: VERIFIKASI PEMBAYARAN ==================== --}}
     <div x-show="tab === 'pembayaran'" x-cloak>
-        {{-- Subtab Filter (Pill Style) --}}
         <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-2 flex-wrap">
                 <button type="button" @click="subtab = 'pending'" 
@@ -365,7 +398,6 @@
             </div>
         </div>
 
-        {{-- Tabel Pembayaran --}}
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm text-slate-600">
@@ -470,6 +502,7 @@
         </div>
     </div>
 
+    {{-- ==================== TAB 3: REFUND ==================== --}}
     <div x-show="tab === 'refund'" x-cloak>
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div class="overflow-x-auto no-scrollbar">
@@ -541,6 +574,7 @@
         </div>
     </div>
 
+    {{-- MODAL PREVIEW BUKTI TRANSFER PEMBAYARAN --}}
     <template x-teleport="body">
         <div x-show="openModal" 
              x-cloak
@@ -599,6 +633,7 @@
         </div>
     </template>
 
+    {{-- MODAL KONFIRMASI ACC/TOLAK PEMBAYARAN --}}
     <template x-teleport="body">
         <div x-show="confirmModalOpen" 
              x-cloak
@@ -639,8 +674,136 @@
         </div>
     </template>
 
+    {{-- MODAL DETAIL MONITORING PENGERJAAN --}}
+    <template x-teleport="body">
+        <div x-show="detailModalOpen" 
+             x-cloak
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+
+            <div @click.away="detailModalOpen = false" class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-6">
+                
+                {{-- Modal Header --}}
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Detail Monitoring Pengerjaan</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Informasi lengkap status dan rekam jejak progres pesanan.</p>
+                    </div>
+                    <button @click="detailModalOpen = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                {{-- Loading Indicator --}}
+                <template x-if="detailLoading">
+                    <div class="flex items-center justify-center gap-2 py-12 text-xs text-slate-400 font-medium">
+                        <svg class="w-5 h-5 animate-spin text-purple-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Memuat detail pesanan...
+                    </div>
+                </template>
+
+                {{-- Modal Body Data --}}
+                <template x-if="!detailLoading && detailData">
+                    <div class="space-y-6 max-h-[75vh] overflow-y-auto pr-1 no-scrollbar">
+                        
+                        {{-- Section 1: Informasi Pesanan --}}
+                        <div class="p-5 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-4">
+                            <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-200/60 pb-2">Informasi Pesanan</h4>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <p class="text-[11px] font-semibold text-slate-400">Nama Jasa / Paket</p>
+                                    <p class="font-bold text-slate-800 mt-0.5" x-text="detailData.product_name"></p>
+                                </div>
+
+                                <div>
+                                    <p class="text-[11px] font-semibold text-slate-400">Nomor Pesanan</p>
+                                    <p class="font-bold text-purple-600 mt-0.5" x-text="detailData.order_code"></p>
+                                </div>
+
+                                <div>
+                                    <p class="text-[11px] font-semibold text-slate-400">Nama Customer (Klien)</p>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <div class="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-[10px]" x-text="detailData.customer_name.charAt(0).toUpperCase()"></div>
+                                        <span class="font-semibold text-slate-800" x-text="detailData.customer_name"></span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[11px] font-semibold text-slate-400">Nama Designer (Kreator)</p>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-[10px]" x-text="detailData.designer_name.charAt(0).toUpperCase()"></div>
+                                        <span class="font-semibold text-slate-800" x-text="detailData.designer_name"></span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[11px] font-semibold text-slate-400">Batas Waktu Pengerjaan (Deadline)</p>
+                                    <p class="font-semibold mt-0.5" :class="detailData.is_late ? 'text-rose-600 font-bold' : 'text-slate-800'" x-text="detailData.deadline"></p>
+                                </div>
+
+                                <div>
+                                    <p class="text-[11px] font-semibold text-slate-400">Terakhir Diperbarui</p>
+                                    <p class="font-semibold text-slate-800 mt-0.5" x-text="detailData.updated_at"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Section 2: Timeline Progress --}}
+                        <div class="p-5 bg-white rounded-2xl border border-slate-100 space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Timeline Progress</h4>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200" x-text="detailData.status_label"></span>
+                            </div>
+
+                            <div class="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                                <template x-for="(log, idx) in detailData.logs" :key="log.id || idx">
+                                    <div class="relative flex items-start justify-between gap-4">
+                                        
+                                        {{-- Node Marker Icon --}}
+                                        <span class="absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2"
+                                              :class="idx === detailData.logs.length - 1 ? 'bg-purple-600 border-purple-600 text-white shadow-sm ring-4 ring-purple-100' : 'bg-slate-900 border-slate-900 text-white'">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                        </span>
+
+                                        {{-- Content Info --}}
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-xs font-bold text-slate-900" x-text="log.action.replace(/_/g, ' ').toUpperCase()"></p>
+                                                <template x-if="idx === detailData.logs.length - 1">
+                                                    <span class="px-2 py-0.5 rounded text-[9px] font-extrabold bg-purple-100 text-purple-700 uppercase">Tahap Aktif</span>
+                                                </template>
+                                            </div>
+                                            <p class="text-xs text-slate-600 mt-1" x-text="log.note"></p>
+                                            <p class="text-[10px] text-slate-400 mt-1">Oleh: <span class="font-medium text-slate-500" x-text="log.actor_name"></span></p>
+                                        </div>
+
+                                        {{-- Timestamp --}}
+                                        <span class="text-[11px] font-semibold text-slate-400 shrink-0 whitespace-nowrap" x-text="log.time"></span>
+                                    </div>
+                                </template>
+
+                                <template x-if="!detailData.logs || detailData.logs.length === 0">
+                                    <p class="text-xs text-slate-400 italic">Belum ada catatan aktivitas untuk pesanan ini.</p>
+                                </template>
+                            </div>
+                        </div>
+
+                    </div>
+                </template>
+
+            </div>
+        </div>
+    </template>
+
 </div>
 
+{{-- MODAL REFUND (di luar root Alpine karena pakai vanilla JS) --}}
 @foreach($refunds as $refund)
     @if(!$refund->isCompleted())
         <div id="modal-refund-{{ $refund->id }}" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">

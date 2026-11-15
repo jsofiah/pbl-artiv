@@ -15,10 +15,13 @@ class GalleryItem extends Model
 
     protected $fillable = [
         'product_id',
+        'order_id',
+        'message_attachment_id',
         'title',
         'description',
         'image_url',
         'is_active',
+        'created_by',
     ];
 
     protected function casts(): array
@@ -34,6 +37,22 @@ class GalleryItem extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function attachment(): BelongsTo
+    {
+        return $this->belongsTo(MessageAttachment::class, 'message_attachment_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
 
     // ==================== Scope ====================
 

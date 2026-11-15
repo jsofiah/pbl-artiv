@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', 'Laporan Transaksi')
+@section('title', 'Laporan Transaksi')
 
 @section('content')
 <div class="space-y-6" x-data="{ openCustomModal: false }">
@@ -85,7 +86,7 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-50 overflow-y-auto bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4"
-         style="display: none;">
+         style="display: none; margin-top: 0;">
         
         <div @click.away="openCustomModal = false" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-5">
             <div class="flex items-center justify-between border-b border-gray-100 pb-3">

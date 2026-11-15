@@ -97,13 +97,16 @@ class BerandaController extends Controller
             ->map(function ($review) {
                 $customer = $review->customer;
 
+                // Use correct column names: full_name & avatar_url
+                $name = $customer->full_name ?? $customer->username ?? 'Customer';
+
                 return [
-                    'name'        => $customer->name ?? 'Customer',
-                    'handle'      => '@' . \Illuminate\Support\Str::slug($customer->name ?? 'customer'),
+                    'name'        => $name,
+                    'handle'      => '@' . \Illuminate\Support\Str::slug($customer->username ?? $name),
                     'description' => $review->comment ?? 'Pelayanan ARTIV sangat memuaskan!',
-                    'image'       => $customer && $customer->avatar
-                        ? \App\Helpers\R2Helper::url($customer->avatar)
-                        : 'https://ui-avatars.com/api/?name=' . urlencode($customer->name ?? 'C') . '&background=6D28D9&color=fff',
+                    'image'       => $customer && $customer->avatar_url
+                        ? \App\Helpers\R2Helper::url($customer->avatar_url)
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=6D28D9&color=fff',
                     'rating'      => (int) $review->rating,
                 ];
             })
@@ -218,4 +221,10 @@ class BerandaController extends Controller
             'categories'    => self::CATEGORIES,
         ]);
     }
+
+    public function galeri()
+    {
+        return view('customer.galeri');
+    }
+
 }

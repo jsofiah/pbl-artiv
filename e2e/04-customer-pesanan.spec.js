@@ -29,7 +29,7 @@ async function loginAs(page, user) {
 async function screenshotWithWait(page, tcId) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: `evidence/${tcId}.png`, fullPage: true });
+    await page.screenshot({ path: `e2e/evidence/customer-pesanan/${tcId}.png`, fullPage: true });
 }
 
 async function gotoPesananSaya(page) {

@@ -139,6 +139,12 @@ class User extends Authenticatable
         return $this->hasMany(OrderLog::class, 'actor_id');
     }
 
+    public function consents(): HasMany
+    {
+        return $this->hasMany(UserConsent::class);
+    }
+
+
     // ==================== Helper ====================
 
     public function isCustomer(): bool
@@ -160,4 +166,33 @@ class User extends Authenticatable
     {
         return $this->hasOne(DesignerStat::class, 'designer_id');
     }
+
+    public function hasAcceptedTerms(string $document): bool
+    {
+        $version = config("terms.{$document}_version");
+
+        if (! $version) return false;
+
+        return $this->consents()
+            ->where('document', $document)
+            ->where('version', $version)
+            ->exists();
+    }
+
+    public function acceptTerms(string $document): UserConsent
+    {
+        return $this->consents()->firstOrCreate(
+            [
+                'document' => $document,
+                'version'  => config("terms.{$document}_version"),
+            ],
+            [
+                'ip_address'  => request()->ip(),
+                'user_agent'  => substr((string) request()->userAgent(), 0, 500),
+                'accepted_at' => now(),
+            ]
+        );
+    }
+
+
 }

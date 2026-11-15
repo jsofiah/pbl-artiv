@@ -152,11 +152,18 @@ class JobPoolController extends Controller
             ->where('id', $reference)
             ->firstOrFail();
 
-        if ($ref->type !== 'file' || !$ref->file_url) {
-            abort(404, 'File tidak ditemukan.');
+        $path = ltrim($ref->file_url, '/');
+        if (preg_match('#^https?://[^/]+/(.+)$#', $path, $m)) {
+            $path = $m[1];
         }
 
-        return $this->streamFileFromR2($ref->file_url, $ref->file_name ?? 'file');
+        $r2Disk = Storage::disk('r2');
+
+        if ($r2Disk->exists($path)) {
+            return $r2Disk->download($path, $ref->file_name ?? 'file');
+        }
+
+        return back()->withErrors(['error' => 'File gagal diunduh karena path tidak ditemukan di storage.']);
     }
 
     public function previewReference(string $order, string $reference)

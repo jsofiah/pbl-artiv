@@ -2,6 +2,10 @@
 
 @section('title', 'Ringkasan Pesanan')
 
+@unless(auth()->user()->hasAcceptedTerms('customer_tos'))
+    <x-terms-modal document="customer_tos" :show="false" :dismissible="true" />
+@endunless
+
 @section('content')
 <div class="max-w-6xl mx-auto px-4 py-8">
 
@@ -241,14 +245,35 @@
                     </span>
                 </div>
 
-                <form action="{{ route('customer.pemesanan.konfirmasi', $product->id) }}" method="POST" class="mt-4">
+                <form action="{{ route('customer.pemesanan.konfirmasi', $product->id) }}"
+                    method="POST"
+                    class="mt-4"
+                    x-data="{ submitting: false }"
+                    @submit.prevent="
+                        @unless(auth()->user()->hasAcceptedTerms('customer_tos'))
+                            window.dispatchEvent(new CustomEvent('open-terms-modal', { detail: { document: 'customer_tos' } }));
+                        @else
+                            submitting = true;
+                            $el.submit();
+                        @endunless
+                    ">
                     @csrf
                     <button type="submit"
-                            class="w-full inline-flex items-center justify-center gap-2 bg-[#D5FC55] hover:bg-[#c5ec45] text-neutral-900 font-bold px-4 py-3.5 rounded-xl transition shadow-sm">
-                        Lanjut ke Pembayaran
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                        </svg>
+                            :disabled="submitting"
+                            class="w-full inline-flex items-center justify-center gap-2 bg-[#D5FC55] hover:bg-[#c5ec45] text-neutral-900 font-bold px-4 py-3.5 rounded-xl transition shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-show="!submitting" class="inline-flex items-center gap-2">
+                            Lanjut ke Pembayaran
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                        </span>
+                        <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            Memproses...
+                        </span>
                     </button>
                 </form>
 

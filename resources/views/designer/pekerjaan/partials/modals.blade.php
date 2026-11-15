@@ -12,7 +12,7 @@
         <x-slot:footer>
             <x-shared.ui.button
                 variant="primary"
-                onclick="document.getElementById('brief-modal').classList.add('hidden')">
+                onclick="document.getElementById('brief-modal').style.display = 'none'">
                 Tutup
             </x-shared.ui.button>
         </x-slot:footer>

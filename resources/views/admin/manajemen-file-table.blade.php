@@ -98,13 +98,13 @@
 
     @if($files->hasPages())
         <div class="flex items-center gap-2">
-            <a href="{{ $files->previousPageUrl() ?? '#' }}"
+            <a href="{{ $files->previousPageUrl() ?? '#' }}" data-ajax-page
                 class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $files->onFirstPage() ? 'text-slate-300 pointer-events-none' : 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' }} transition">
                 &lt; Sebelumnya
             </a>
 
             @for ($i = 1; $i <= $files->lastPage(); $i++)
-                <a href="{{ $files->url($i) }}"
+                <a href="{{ $files->url($i) }}" data-ajax-page
                     class="w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition
                             {{ $i === $files->currentPage()
                                 ? 'bg-[#6D28D9] text-white shadow-sm'
@@ -113,7 +113,7 @@
                 </a>
             @endfor
 
-            <a href="{{ $files->nextPageUrl() ?? '#' }}"
+            <a href="{{ $files->nextPageUrl() ?? '#' }}" data-ajax-page
                 class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white {{ $files->hasMorePages() ? 'text-slate-700 hover:border-[#6D28D9] hover:text-[#6D28D9]' : 'text-slate-300 pointer-events-none' }} transition">
                 Selanjutnya &gt;
             </a>

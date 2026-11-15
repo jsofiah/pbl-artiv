@@ -1,0 +1,692 @@
+{
+  "info": {
+    "_postman_id": "92251bc1-ba13-4780-a462-613f4217b329",
+    "name": "pbl-artiv",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "55070017",
+    "_collection_link": "https://go.postman.co/collection/55070017-92251bc1-ba13-4780-a462-613f4217b329?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "login customer",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-XSRF-TOKEN",
+            "value": "{{csrf_token}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "email",
+              "value": "customer@gmail.com"
+            },
+            {
+              "key": "password",
+              "value": "password"
+            },
+            {
+              "key": "_token",
+              "value": "{{csrf_token}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login admin",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "",
+            "value": "",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "email",
+              "value": "admin@gmail.com"
+            },
+            {
+              "key": "password",
+              "value": "password"
+            },
+            {
+              "key": "_token",
+              "value": "{{csrf_token}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login designer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "",
+            "value": "",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "email",
+              "value": "designer@gmail.com"
+            },
+            {
+              "key": "password",
+              "value": "password"
+            },
+            {
+              "key": "_token",
+              "value": "{{csrf_token}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "logout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 1. Tembak halaman beranda (atau halaman apa saja yang bisa diakses)\r\npm.sendRequest({\r\n    url: pm.environment.get(\"base_url\") + \"/customer/beranda\", \r\n    method: 'GET'\r\n}, function (err, res) {\r\n    if (err) {\r\n        console.log(\"Gagal ambil halaman:\", err);\r\n    } else {\r\n        // 2. Cari token di dalam tag <meta name=\"csrf-token\" content=\"...\">\r\n        let html = res.text();\r\n        let match = html.match(/<meta name=\"csrf-token\" content=\"([^\"]+)\"/);\r\n        \r\n        if (match && match[1]) {\r\n            // 3. Simpan token ke environment\r\n            pm.environment.set(\"csrf_token\", match[1]);\r\n            console.log(\"✅ Token Meta berhasil didapat: \" + match[1].substring(0, 10) + \"...\");\r\n        } else {\r\n            console.log(\"❌ Token meta tidak ditemukan. Cek response HTML.\");\r\n        }\r\n    }\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "_token",
+              "value": "{{csrf_token}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/logout",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get admin dashboard",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get designer dashboard",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get catalog sticker",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "pemesanan (sticker) ringkasan",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-XSRF-TOKEN",
+            "value": "{{X-XSRF-TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "quantity",
+              "value": "1"
+            },
+            {
+              "key": "deadline_option",
+              "value": "default"
+            },
+            {
+              "key": "brief_note",
+              "value": "tes aja"
+            },
+            {
+              "key": "reference_links[]",
+              "value": "https://pinterest.com/contoh"
+            },
+            {
+              "key": "_token",
+              "value": "{{csrf_token}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/customer/pemesanan/01a196f3-2bbb-73de-bba5-923bb520ab29/ringkasan",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "customer",
+            "pemesanan",
+            "01a196f3-2bbb-73de-bba5-923bb520ab29",
+            "ringkasan"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "konfirmasi pemesanan ke pembayaran",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{[base_url}}/customer/pemesanan/01a196f3-2bbb-73de-bba5-923bb520ab29/konfirmasi",
+          "host": [
+            "{[base_url}}"
+          ],
+          "path": [
+            "customer",
+            "pemesanan",
+            "01a196f3-2bbb-73de-bba5-923bb520ab29",
+            "konfirmasi"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get halaman pembayaran (order id sesuaiin) Copy",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "XSRF_TOKEN",
+            "value": "{{X-XSRF-TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "CSRF_TOKEN",
+              "value": "{{csrf_token}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/customer/pemesanan/01a1a1d8-0204-7364-b3ff-5f259bfb8fc7/pembayaran",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "customer",
+            "pemesanan",
+            "01a1a1d8-0204-7364-b3ff-5f259bfb8fc7",
+            "pembayaran"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post pembayaran (order id sesuaiin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "XSRF_TOKEN",
+            "value": "{{X-XSRF-TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "CSRF_TOKEN",
+              "value": "{{csrf_token}}",
+              "type": "text"
+            },
+            {
+              "key": "amount",
+              "value": "10000",
+              "type": "text"
+            },
+            {
+              "key": "type",
+              "value": "order",
+              "type": "text"
+            },
+            {
+              "key": "proof",
+              "type": "file",
+              "src": [
+                "postman-cloud:///1f161984-764a-4ee0-b8d3-aab59e8ac938"
+              ]
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/customer/pemesanan/01a1a1d8-0204-7364-b3ff-5f259bfb8fc7/pembayaran",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "customer",
+            "pemesanan",
+            "01a1a1d8-0204-7364-b3ff-5f259bfb8fc7",
+            "pembayaran"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get halaman monitoring admin",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "patch approve pembayaran (payment id sesuaiin)",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/admin/monitoring/pembayaran/{payment_id}/approve",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "admin",
+            "monitoring",
+            "pembayaran",
+            "{payment_id}",
+            "approve"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "patch reject pembayaran (payment id sesuaiin",
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/admin/monitoring/pembayaran/{payment_id}/approve",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "admin",
+            "monitoring",
+            "pembayaran",
+            "{payment_id}",
+            "approve"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get dashboard designer",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get job pool designer",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post ambil job di job pool (order id sesuaiin)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post designer kirim pesan (order id sesuaiin)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "kirim hasil design (order id sesuaiin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-XSRF-TOKEN",
+            "value": "{{X-XSRF-TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "_token",
+              "value": "{{csrf_token}}",
+              "type": "text"
+            },
+            {
+              "key": "isi",
+              "value": "ini designnya bisa di cek",
+              "type": "text"
+            },
+            {
+              "key": "attachment[]",
+              "type": "file",
+              "src": [
+                "postman-cloud:///1f161075-ee9c-4500-aad9-26e8a2265c9f"
+              ]
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/designer/pekerjaan-saya/01a1a1d8-0204-7364-b3ff-5f259bfb8fc7/deliverable",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "designer",
+            "pekerjaan-saya",
+            "01a1a1d8-0204-7364-b3ff-5f259bfb8fc7",
+            "deliverable"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "post minta revisi (order id deliverable id sesuaiin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-XSRF-TOKEN",
+            "value": "{{X-XSRF-TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "_token",
+              "value": "{{csrf_token}}"
+            },
+            {
+              "key": "revision_note",
+              "value": "warnanya terlalu cerah"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/customer/pesanan/01a1a1d8-0204-7364-b3ff-5f259bfb8fc7/deliverable/01a1a21a-6522-731c-a96d-502ff9cf203d/revisi",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "customer",
+            "pesanan",
+            "01a1a1d8-0204-7364-b3ff-5f259bfb8fc7",
+            "deliverable",
+            "01a1a21a-6522-731c-a96d-502ff9cf203d",
+            "revisi"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "customer approve (order id dan deliverable id sesuaiin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-XSRF-TOKEN",
+            "value": "{{X-XSRF-TOKEN}}"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "_token",
+              "value": "{{csrf_token}}"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/customer/pesanan/01a1a1d8-0204-7364-b3ff-5f259bfb8fc7/deliverable/01a1a21a-6522-731c-a96d-502ff9cf203d/approve",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "customer",
+            "pesanan",
+            "01a1a1d8-0204-7364-b3ff-5f259bfb8fc7",
+            "deliverable",
+            "01a1a21a-6522-731c-a96d-502ff9cf203d",
+            "approve"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "customer review (order id sesuaiin)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Coba ambil dari meta tag dulu (lebih universal)\r",
+          "pm.sendRequest({\r",
+          "    url: pm.environment.get(\"base_url\") + \"/customer/beranda\", \r",
+          "    method: 'GET'\r",
+          "}, function (err, res) {\r",
+          "    if (!err) {\r",
+          "        let html = res.text();\r",
+          "        let match = html.match(/<meta name=\"csrf-token\" content=\"([^\"]+)\"/);\r",
+          "        if (match && match[1]) {\r",
+          "            pm.environment.set(\"csrf_token\", match[1]);\r",
+          "            console.log(\"✅ Token dari meta:\", match[1].substring(0, 10));\r",
+          "            return;\r",
+          "        }\r",
+          "        // Fallback: cari di form input\r",
+          "        let match2 = html.match(/name=\"_token\" value=\"([^\"]+)\"/);\r",
+          "        if (match2 && match2[1]) {\r",
+          "            pm.environment.set(\"csrf_token\", match2[1]);\r",
+          "            console.log(\"✅ Token dari form:\", match2[1].substring(0, 10));\r",
+          "        }\r",
+          "    }\r",
+          "});"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "X-XSRF-TOKEN",
+      "value": ""
+    }
+  ]
+}

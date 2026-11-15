@@ -5,6 +5,14 @@
     $rp = fn (float|int $n) => 'Rp ' . number_format($n, 0, ',', '.');
 @endphp
 
+@unless(auth()->user()->hasAcceptedTerms('designer_tos'))
+    <x-terms-modal
+        document="designer_tos"
+        :show="true"
+        :dismissible="false"
+    />
+@endunless
+
 @section('content')
     <div class="flex items-start justify-between gap-4 flex-wrap mb-8">
         <div>

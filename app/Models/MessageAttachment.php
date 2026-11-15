@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class MessageAttachment extends Model
 {
@@ -35,6 +37,27 @@ class MessageAttachment extends Model
     {
         return $this->belongsTo(Message::class);
     }
+
+    public function galleryItem(): HasOne
+    {
+        return $this->hasOne(GalleryItem::class, 'message_attachment_id');
+    }
+
+    // ==================== Scope ====================
+    public function scopeGalleryCandidate(Builder $q): Builder
+    {
+        return $q->where('mime_type', 'like', 'image/%')
+            ->whereHas('message.conversation.order', function ($order) {
+                $order->where('status', Order::STATUS_COMPLETED);
+            })
+            ->whereHas('message.deliverable', function ($deliverable) {
+                $deliverable->where('status', 'approved');
+            })
+            ->whereDoesntHave('galleryItem');
+    }
+
+
+
 
     // ==================== Helper ====================
 
