@@ -17,7 +17,7 @@ async function loginAsDesigner(page) {
 async function screenshotWithWait(page, tcId) {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: `evidence/${tcId}.png`, fullPage: true });
+    await page.screenshot({ path: `e2e/evidence/designer-kerja/${tcId}.png`, fullPage: true });
 }
 
 async function gotoDetailPekerjaan(page) {
