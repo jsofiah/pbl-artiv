@@ -1,6 +1,15 @@
 import { test, expect } from '@playwright/test';
 
-const ADMIN = { email: 'admin@artiv.com', password: 'admin123' };
+const ADMIN = { email: 'admin@artiv.com', password: 'admin123' }
+
+async function screenshotWithWait(page, tcId) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(800);
+  await page.screenshot({
+    path: `e2e/evidence/admin-kelola/${tcId}.png`,
+    fullPage: true,
+  });
+}
 
 async function loginAdmin(page) {
   await page.goto('/login');
@@ -25,6 +34,7 @@ test.describe('07 - Admin Kelola (Katalog & Akun)', () => {
   test('TC-MK-001: Admin dapat membuka halaman Manajemen Katalog', async ({ page }) => {
     await page.goto('/admin/katalog');
     await expect(page.locator('main h1')).toContainText('Manajemen Katalog');
+    await screenshotWithWait(page, 'TC-MK-001');
   });
 
 test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
@@ -36,12 +46,14 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     
     // Pastikan diarahkan ke login
     await expect(page).toHaveURL(/\/login/);
+    await screenshotWithWait(page, 'TC-MK-002');
   });
 
   test('TC-MK-003: Daftar jasa ditampilkan', async ({ page }) => {
     await page.goto('/admin/katalog');
     const cards = page.locator('article');
     await expect(cards.first()).toBeVisible();
+    await screenshotWithWait(page, 'TC-MK-003');
   });
 
   test('TC-MK-004: Informasi jasa ditampilkan', async ({ page }) => {
@@ -49,6 +61,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     const firstCard = page.locator('article').first();
     await expect(firstCard).toContainText(/Harga|Rp/);
     await expect(firstCard).toContainText('Aktif');
+    await screenshotWithWait(page, 'TC-MK-004');
   });
 
   test('TC-MK-005: Pencarian jasa berdasarkan nama', async ({ page }) => {
@@ -56,11 +69,13 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('input[placeholder*="Cari katalog"]').fill('Poster');
     await page.locator('button:has-text("Cari")').click();
     await expect(page).toHaveURL(/q=Poster/);
+    await screenshotWithWait(page, 'TC-MK-005');
   });
 
   test('TC-MK-006: Filter berdasarkan kategori', async ({ page }) => {
     await page.goto('/admin/katalog?kategori=Poster');
     await expect(page).toHaveURL(/kategori=Poster/);
+    await screenshotWithWait(page, 'TC-MK-006');
   });
 
   test('TC-MK-007: Filter berdasarkan status aktif/nonaktif', async ({ page }) => {
@@ -68,6 +83,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     // Gunakan selector href agar lebih akurat
     await page.locator('a[href*="status=aktif"]').click();
     await expect(page).toHaveURL(/status=aktif/);
+    await screenshotWithWait(page, 'TC-MK-007');
   });
 
   test('TC-MK-008: Pencarian dengan kata kunci tidak ditemukan', async ({ page }) => {
@@ -75,6 +91,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('input[placeholder*="Cari katalog"]').fill('xyz123');
     await page.locator('button:has-text("Cari")').click();
     await expect(page.locator('body')).toContainText(/Tidak ada katalog/i);
+    await screenshotWithWait(page, 'TC-MK-008');
   });
 
     test('TC-MK-009: Admin dapat menambahkan jasa baru', async ({ page }) => {
@@ -100,12 +117,14 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     
     // Pastikan teks "E2E Jasa Baru" muncul di halaman
     await expect(page.locator('body')).toContainText('E2E Jasa Baru');
+    await screenshotWithWait(page, 'TC-MK-009');
   });
 
   test('TC-MK-010: Validasi data jasa kosong', async ({ page }) => {
     await page.goto('/admin/katalog/create');
     await page.locator('button:has-text("Simpan Katalog")').click();
     await expect(page).toHaveURL(/\/admin\/katalog\/create/); 
+    await screenshotWithWait(page, 'TC-MK-010');
   });
 
    test('TC-MK-011: Admin dapat mengubah informasi jasa', async ({ page }) => {
@@ -118,6 +137,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     
     // TUNGGU URL KEMBALI KE HALAMAN KATALOG
     await page.waitForURL(/\/admin\/katalog/, { timeout: 30000 });
+    await screenshotWithWait(page, 'TC-MK-011');
   });
 
       test('TC-MK-012: Admin dapat mengubah status jasa', async ({ page }) => {
@@ -136,6 +156,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     
     // TUNGGU URL KEMBALI KE HALAMAN KATALOG
     await page.waitForURL(/\/admin\/katalog/, { timeout: 30000 });
+    await screenshotWithWait(page, 'TC-MK-012');
   });
 
   test('TC-MK-013: Konfirmasi nonaktifkan jasa', async ({ page }) => {
@@ -145,6 +166,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
       await dialog.dismiss();
     });
     await page.locator('a:has-text("Edit")').first().click();
+    await screenshotWithWait(page, 'TC-MK-013');
   });
 
   test('TC-MK-014: Admin dapat menghapus jasa', async ({ page }) => {
@@ -168,6 +190,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     // Cek apakah masih ada <article> yang judulnya sama
     // (Mengabaikan pesan sukses di body)
     await expect(page.locator('article', { hasText: jasaName })).toHaveCount(0);
+    await screenshotWithWait(page, 'TC-MK-014');
   });
 
   test('TC-MK-015: Konfirmasi hapus muncul', async ({ page }) => {
@@ -181,11 +204,13 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
 
     await page.locator('button:has-text("Hapus")').first().click();
     // Test selesai, data tidak terhapus
+    await screenshotWithWait(page, 'TC-MK-015');
   });
 
   test('TC-MK-016: Jasa dengan pesanan aktif tidak dapat dihapus', async ({ page }) => {
     await page.goto('/admin/katalog');
     await expect(page.locator('main h1')).toContainText('Manajemen Katalog');
+    await screenshotWithWait(page, 'TC-MK-016');
   });
 
 
@@ -196,12 +221,14 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
   test('TC-MA-001: Admin dapat membuka halaman Manajemen Akun', async ({ page }) => {
     await page.goto('/admin/akun/designer');
     await expect(page.locator('main h1')).toContainText('Akun Designer');
+    await screenshotWithWait(page, 'TC-MA-001');
   });
 
  test('TC-MA-002: Guest diarahkan ke login', async ({ page }) => {
     await page.context().clearCookies();
     await page.goto('/admin/akun/designer');
     await expect(page).toHaveURL(/\/login/);
+    await screenshotWithWait(page, 'TC-MA-002');
   });
 
   test('TC-MA-003: Customer tidak bisa akses', async ({ page }) => {
@@ -218,6 +245,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     expect(res?.status() === 403 || !page.url().includes('/admin/akun')).toBeTruthy();
     
     // JANGAN panggil loginAdmin di sini. Biarkan beforeEach yang mengurusnya.
+    await screenshotWithWait(page, 'TC-MA-003');
   });
 
   test('TC-MA-004: Designer tidak bisa akses', async ({ page }) => {
@@ -231,6 +259,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     
     const res = await page.goto('/admin/akun/designer');
     expect(res?.status() === 403 || !page.url().includes('/admin/akun')).toBeTruthy();
+    await screenshotWithWait(page, 'TC-MA-004');
   });
 
   test('TC-MA-005: Tab Semua, Aktif, Dinonaktifkan tampil', async ({ page }) => {
@@ -238,6 +267,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await expect(page.locator('text="Semua"').first()).toBeVisible();
     await expect(page.locator('text="Aktif"').first()).toBeVisible();
     await expect(page.locator('text="Dinonaktifkan"').first()).toBeVisible();
+    await screenshotWithWait(page, 'TC-MA-005');
   });
 
   test('TC-MA-006: Pencarian berdasarkan nama atau email', async ({ page }) => {
@@ -245,6 +275,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('input[placeholder*="Cari nama"]').fill('Budi');
     await page.locator('button:has-text("Cari")').click();
     await expect(page).toHaveURL(/q=Budi/);
+    await screenshotWithWait(page, 'TC-MA-006');
   });
 
   test('TC-MA-007: Pengurutan daftar akun', async ({ page }) => {
@@ -252,6 +283,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('button:has-text("Urutkan")').click();
     await page.locator('text="Terbaru"').click();
     await expect(page).toHaveURL(/sort=terbaru/);
+    await screenshotWithWait(page, 'TC-MA-007');
   });
 
   test('TC-MA-008: Pencarian tidak ditemukan', async ({ page }) => {
@@ -259,6 +291,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('input[placeholder*="Cari nama"]').fill('xyz123');
     await page.locator('button:has-text("Cari")').click();
     await expect(page.locator('body')).toContainText(/Tidak ada akun ditemukan/i);
+    await screenshotWithWait(page, 'TC-MA-008');
   });
 
   test('TC-MA-009: Admin dapat menambahkan akun baru', async ({ page }) => {
@@ -272,6 +305,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('input[name="password_confirmation"]').fill('password123');
     await page.locator('button:has-text("Simpan")').click();
     await expect(page.locator('body')).toContainText(/berhasil ditambahkan/i);
+    await screenshotWithWait(page, 'TC-MA-009');
   });
 
   test('TC-MA-010: Validasi form tambah akun kosong', async ({ page }) => {
@@ -279,6 +313,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('button:has-text("Tambah Designer")').click();
     await page.locator('button:has-text("Simpan")').click();
     await expect(page.locator('input[name="full_name"]')).toBeVisible(); 
+    await screenshotWithWait(page, 'TC-MA-010');
   });
 
   test('TC-MA-011: Validasi email sudah terdaftar', async ({ page }) => {
@@ -291,18 +326,21 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('input[name="password_confirmation"]').fill('password123');
     await page.locator('button:has-text("Simpan")').click();
     await expect(page.locator('body')).toContainText(/sudah dipakai|terdaftar/i);
+    await screenshotWithWait(page, 'TC-MA-011');
   });
 
   test('TC-MA-012: Admin dapat melihat detail akun', async ({ page }) => {
     await page.goto('/admin/akun/designer');
     await page.locator('button:has-text("Lihat Selengkapnya")').first().click();
     await expect(page.locator('body')).toContainText(/Email|Role|Status/i);
+    await screenshotWithWait(page, 'TC-MA-012');
   });
 
   test('TC-MA-013: Informasi detail akun lengkap', async ({ page }) => {
     await page.goto('/admin/akun/designer');
     await page.locator('button:has-text("Lihat Selengkapnya")').first().click();
     await expect(page.locator('body')).toContainText(/Nama|Email|Username/i);
+    await screenshotWithWait(page, 'TC-MA-013');
   });
 
   test('TC-MA-014: Admin dapat mengubah data akun', async ({ page }) => {
@@ -312,6 +350,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('input[name="full_name"]').fill(newName);
     await page.locator('button:has-text("Simpan Perubahan")').click();
     await expect(page.locator('body')).toContainText(/berhasil diperbarui/i);
+    await screenshotWithWait(page, 'TC-MA-014');
   });
 
   test('TC-MA-015: Validasi data saat edit (kosongkan nama)', async ({ page }) => {
@@ -320,6 +359,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('input[name="full_name"]').fill('');
     await page.locator('button:has-text("Simpan Perubahan")').click();
     await expect(page.locator('input[name="full_name"]')).toBeVisible();
+    await screenshotWithWait(page, 'TC-MA-015');
   });
 
   test('TC-MA-016: Admin dapat menonaktifkan akun', async ({ page }) => {
@@ -332,12 +372,14 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     await page.locator('button:has-text("Simpan Perubahan")').click();
     await page.waitForLoadState('networkidle');
     await expect(page.locator('input[name="full_name"]')).not.toBeVisible();
+    await screenshotWithWait(page, 'TC-MA-016');
   });
 
   test('TC-MA-017: Konfirmasi nonaktifkan akun', async ({ page }) => {
     await page.goto('/admin/akun/designer');
     await page.locator('button:has-text("Edit")').first().click();
     await expect(page.locator('text="Akun aktif"').first()).toBeVisible(); 
+    await screenshotWithWait(page, 'TC-MA-017');
   });
 
   test('TC-MA-018: Admin dapat menghapus akun', async ({ page }) => {
@@ -352,6 +394,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     
     // Tunggu hingga data terhapus
     await expect(page.locator('body')).toContainText(/berhasil dihapus/i);
+    await screenshotWithWait(page, 'TC-MA-018');
   });
 
   test('TC-MA-019: Konfirmasi hapus muncul', async ({ page }) => {
@@ -360,6 +403,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
     
     // Pastikan modal muncul
     await expect(page.locator('text="Yakin mau hapus akun?"')).toBeVisible();
+    await screenshotWithWait(page, 'TC-MA-019');
     
     // Klik tombol Batal yang spesifik untuk modal hapus akun
     await page.locator('button[onclick="tutupHapusAkun()"]').click();
@@ -368,6 +412,7 @@ test('TC-MK-002: Guest diarahkan ke login', async ({ page }) => {
   test('TC-MA-020: Akun dengan pesanan aktif tidak dapat dihapus', async ({ page }) => {
     await page.goto('/admin/akun/designer');
     await expect(page.locator('main h1')).toContainText('Akun Designer');
+    await screenshotWithWait(page, 'TC-MA-020');
   });
 
 });
