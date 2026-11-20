@@ -13,6 +13,7 @@ use App\Models\OrderRefund;
 use App\Models\OrderLog;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ActivityLog;
 
 
 class MonitoringController extends Controller
@@ -141,7 +142,7 @@ class MonitoringController extends Controller
         ]);
     }
 
-    /**
+       /**
      * ACC / Approve Pembayaran
      */
     public function approvePayment(Payment $payment)
@@ -184,7 +185,12 @@ class MonitoringController extends Controller
                 ]);
             }
 
-
+            ActivityLog::record(
+                'approve_pembayaran',
+                "Menyetujui pembayaran {$payment->type} untuk order {$payment->order->order_code}",
+                'payment',
+                $payment->id
+            );
 
             DB::commit();
 
@@ -208,6 +214,13 @@ class MonitoringController extends Controller
                 'paid_at' => null,
             ]);
 
+            ActivityLog::record(
+                'reject_pembayaran',
+                "Menolak pembayaran {$payment->type} untuk order {$payment->order->order_code}",
+                'payment',
+                $payment->id
+            );
+
             DB::commit();
 
             return back()->with('warning', "Pembayaran untuk Order {$payment->order->order_code} telah ditolak.");
@@ -216,56 +229,5 @@ class MonitoringController extends Controller
             Log::error('Gagal Tolak Pembayaran: ' . $e->getMessage());
             return back()->with('error', 'Gagal menolak pembayaran.');
         }
-    }
-
-    public function selesaikanRefund(Request $request, OrderRefund $refund)
-    {
-        if ($refund->isCompleted()) {
-            return back()->with('error', 'Refund ini sudah selesai diproses.');
-        }
-
-        $request->validate([
-            'proof' => 'required|file|mimes:png,jpg,jpeg,webp,pdf|max:5120',
-        ], [
-            'proof.required' => 'Bukti transfer refund wajib diunggah.',
-            'proof.mimes'    => 'Format file harus PNG, JPG, WEBP, atau PDF.',
-            'proof.max'      => 'Ukuran bukti maksimal 5 MB.',
-        ]);
-
-        DB::beginTransaction();
-        try {
-            /** @var R2StorageService $storage */
-            $storage = app(R2StorageService::class);
-            $proofPath = $storage->upload($request->file('proof'), 'refund-proofs');
-
-            $refund->markAsCompleted(Auth::user(), $proofPath);
-
-            $order = $refund->order;
-            $order->update(['status' => Order::STATUS_REFUNDED]);
-
-            OrderLog::create([
-                'order_id' => $order->id,
-                'actor_id' => Auth::id(),
-                'action'   => OrderLog::ACTION_REFUND_COMPLETED,
-                'status'   => Order::STATUS_REFUNDED,
-                'note'     => 'Admin telah memproses pengembalian dana ke customer beserta bukti transfer.',
-            ]);
-
-            Notification::create([
-                'user_id' => $order->customer_id,
-                'type'    => Notification::TYPE_REFUND_COMPLETED,
-                'title'   => 'Refund Selesai',
-                'body'    => "Dana refund untuk order {$order->order_code} telah ditransfer. Silakan cek bukti transfer di halaman pesanan.",
-                'data'    => ['url' => route('customer.pesanan.show', $order->id)],
-            ]);
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Gagal proses refund: ' . $e->getMessage());
-            return back()->with('error', 'Gagal memproses refund: ' . $e->getMessage());
-        }
-
-        return back()->with('success', "Refund order {$refund->order->order_code} berhasil diselesaikan.");
     }
 }

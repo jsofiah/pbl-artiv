@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\BlacklistKeyword;
 use App\Models\RevisionFee;
 use Illuminate\Http\Request;
@@ -108,18 +109,35 @@ class PengaturanController extends Controller
         ]);
 
         $revisionFee = RevisionFee::first();
+
         if ($revisionFee) {
+            $biayaLama = $revisionFee->fee;
+
             $revisionFee->update([
                 'fee'       => $validated['fee'],
                 'name'      => $validated['name'] ?? $revisionFee->name ?? 'Revisi Tambahan',
                 'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
             ]);
+
+            ActivityLog::record(
+                'update_revision_fee',
+                "Memperbarui harga revisi \"{$revisionFee->name}\": {$biayaLama} → {$revisionFee->fee}",
+                'revision_fee',
+                $revisionFee->id
+            );
         } else {
-            RevisionFee::create([
+            $revisionFee = RevisionFee::create([
                 'fee'       => $validated['fee'],
                 'name'      => $validated['name'] ?? 'Revisi Tambahan',
                 'is_active' => true,
             ]);
+
+            ActivityLog::record(
+                'create_revision_fee',
+                "Menambahkan harga revisi \"{$revisionFee->name}\": {$revisionFee->fee}",
+                'revision_fee',
+                $revisionFee->id
+            );
         }
 
         return redirect()->route('admin.pengaturan')->with('success', 'Pengaturan harga revisi berhasil diperbarui.');

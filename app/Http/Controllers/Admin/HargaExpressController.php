@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\ExpressFee;
 use Illuminate\Http\Request;
 
@@ -68,11 +69,18 @@ class HargaExpressController extends Controller
             'fee.required'          => 'Biaya tambahan wajib diisi.',
         ]);
 
-        ExpressFee::create([
+        $expressFee = ExpressFee::create([
             'name'      => $formattedName,
             'fee'       => $request->fee,
             'is_active' => $request->boolean('is_active'),
         ]);
+
+        ActivityLog::record(
+            'create_harga_express',
+            "Menambahkan harga express \"{$expressFee->name}\" (biaya: {$expressFee->fee})",
+            'express_fee',
+            $expressFee->id
+        );
 
         return back()->with('success', 'Harga Express berhasil ditambahkan.');
     }
@@ -87,10 +95,21 @@ class HargaExpressController extends Controller
             'fee.numeric'  => 'Biaya tambahan harus berupa angka.',
         ]);
 
+        $biayaLama  = $hargaExpress->fee;
+        $statusLama = $hargaExpress->is_active;
+
         $hargaExpress->update([
             'fee'       => $validated['fee'],
             'is_active' => $request->boolean('is_active'),
         ]);
+
+        ActivityLog::record(
+            'update_harga_express',
+            "Memperbarui harga express \"{$hargaExpress->name}\": biaya {$biayaLama} → {$hargaExpress->fee}, status "
+                . ($statusLama ? 'aktif' : 'nonaktif') . ' → ' . ($hargaExpress->is_active ? 'aktif' : 'nonaktif'),
+            'express_fee',
+            $hargaExpress->id
+        );
 
         return back()->with('success', 'Harga Express berhasil diperbarui.');
     }
@@ -101,7 +120,17 @@ class HargaExpressController extends Controller
             return back()->with('error', 'Gagal menghapus! Paket ini sudah pernah digunakan dalam transaksi pesanan.');
         }
 
+        $nama = $hargaExpress->name;
+        $id   = $hargaExpress->id;
+
         $hargaExpress->delete();
+
+        ActivityLog::record(
+            'delete_harga_express',
+            "Menghapus harga express \"{$nama}\"",
+            'express_fee',
+            $id
+        );
 
         return back()->with('success', 'Harga Express berhasil dihapus.');
     }

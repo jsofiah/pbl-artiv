@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Models\ActivityLog;
 use App\Models\DesignerStat;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
@@ -52,6 +53,20 @@ class ProfileController extends Controller
 
         $user->save();
 
+        $kolom = array_values(array_diff(
+            array_keys($user->getChanges()),
+            ['updated_at', 'email_verified_at']
+        ));
+
+        if ($kolom) {
+            ActivityLog::record(
+                'update_profil',
+                'Memperbarui profil (kolom: ' . implode(', ', $kolom) . ')',
+                'user',
+                $user->id
+            );
+        }
+
         // Update status ketersediaan jika user adalah designer
         if ($user->isDesigner() && $request->has('availability_status')) {
             $designerStat = $user->designerStat;
@@ -61,9 +76,20 @@ class ProfileController extends Controller
                     'availability_status' => ['required', 'in:' . DesignerStat::STATUS_AVAILABLE . ',' . DesignerStat::STATUS_UNAVAILABLE],
                 ]);
 
+                $statusLama = $designerStat->availability_status;
+
                 $designerStat->update([
                     'availability_status' => $request->availability_status,
                 ]);
+
+                if ($designerStat->wasChanged('availability_status')) {
+                    ActivityLog::record(
+                        'update_availability',
+                        "Mengubah status availability: {$statusLama} → {$designerStat->availability_status}",
+                        'designer_stat',
+                        $designerStat->id
+                    );
+                }
             }
         }
 
@@ -83,6 +109,8 @@ class ProfileController extends Controller
         $request->user()->update([
             'password' => Hash::make($request->password),
         ]);
+
+        ActivityLog::record('update_profil', 'Mengganti password', 'user', $request->user()->id);
 
         return redirect()->route('profile.edit')->with('success', 'Kata sandi berhasil diperbarui.');
     }
@@ -134,6 +162,8 @@ class ProfileController extends Controller
             'avatar_url' => $avatarUrl,
         ]);
 
+        ActivityLog::record('update_profil', 'Mengganti foto profil', 'user', $user->id);
+
         return redirect()->route('profile.edit')->with('success', 'Foto profil berhasil diperbarui.');
     }
 
@@ -155,6 +185,8 @@ class ProfileController extends Controller
             $user->update([
                 'avatar_url' => null,
             ]);
+
+            ActivityLog::record('update_profil', 'Menghapus foto profil', 'user', $user->id);
         }
 
         return redirect()->route('profile.edit')->with('success', 'Foto profil berhasil dihapus.');
@@ -177,9 +209,20 @@ class ProfileController extends Controller
             'availability_status' => ['required', 'in:' . DesignerStat::STATUS_AVAILABLE . ',' . DesignerStat::STATUS_UNAVAILABLE],
         ]);
 
+        $statusLama = $designerStat->availability_status;
+
         $designerStat->update([
             'availability_status' => $request->availability_status,
         ]);
+
+        if ($designerStat->wasChanged('availability_status')) {
+            ActivityLog::record(
+                'update_availability',
+                "Mengubah status availability: {$statusLama} → {$designerStat->availability_status}",
+                'designer_stat',
+                $designerStat->id
+            );
+        }
 
         return redirect()->route('profile.edit')->with('success', 'Status ketersediaan berhasil diperbarui.');
     }

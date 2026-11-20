@@ -9,6 +9,7 @@ use App\Models\OrderSplit;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Models\ActivityLog;
 
 
 class DashboardController extends Controller
@@ -212,7 +213,7 @@ class DashboardController extends Controller
         };
     }
 
-    public function toggleAvailability(): \Illuminate\Http\RedirectResponse
+        public function toggleAvailability(): \Illuminate\Http\RedirectResponse
     {
         $designerId = Auth::id();
         $stats = DesignerStat::where('designer_id', $designerId)->first();
@@ -225,11 +226,17 @@ class DashboardController extends Controller
             return back()->withErrors(['availability' => 'Anda sedang di-suspend, tidak bisa mengubah status.']);
         }
 
-        $stats->update([
-            'availability_status' => $stats->availability_status === 'available'
-                ? 'unavailable'
-                : 'available',
-        ]);
+        $statusLama = $stats->availability_status;
+        $statusBaru = $statusLama === 'available' ? 'unavailable' : 'available';
+
+        $stats->update(['availability_status' => $statusBaru]);
+
+        ActivityLog::record(
+            'update_availability',
+            "Mengubah status availability: {$statusLama} → {$statusBaru}",
+            'designer_stat',
+            $stats->id
+        );
 
         return back()->with('status', 'Status availability diperbarui.');
     }

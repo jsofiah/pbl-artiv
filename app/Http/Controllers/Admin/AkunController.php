@@ -12,6 +12,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use App\Models\ActivityLog;
 
 class AkunController extends Controller
 {
@@ -90,7 +91,7 @@ class AkunController extends Controller
 
     // ==================== Tambah (popup di halaman daftar) ====================
 
-    public function store(Request $request, string $role, R2StorageService $r2)
+        public function store(Request $request, string $role, R2StorageService $r2)
     {
         abort_unless(isset(self::ROLES[$role]), 404);
 
@@ -107,18 +108,23 @@ class AkunController extends Controller
             }
         }
 
-        User::create($data + [
+        $akun = User::create($data + [
             'role'       => $role,
             'is_active'  => $request->boolean('is_active', true),
             'avatar_url' => $avatarUrl,
         ]);
 
+        ActivityLog::record(
+            'create_akun',
+            'Menambahkan akun ' . strtolower(self::ROLES[$role]) . " \"{$akun->full_name}\"",
+            'user',
+            $akun->id
+        );
+
         return redirect()
             ->route('admin.akun.' . $role)
             ->with('success', 'Akun ' . strtolower(self::ROLES[$role]) . ' berhasil ditambahkan.');
     }
-
-    // ==================== Edit (popup di halaman daftar) ====================
 
     public function update(Request $request, User $user, R2StorageService $r2)
     {
@@ -151,18 +157,33 @@ class AkunController extends Controller
 
         $user->update($data);
 
+        $kolom = array_values(array_diff(array_keys($user->getChanges()), ['updated_at']));
+        if ($kolom) {
+            ActivityLog::record(
+                'update_akun',
+                "Memperbarui akun {$user->role} \"{$user->full_name}\" (kolom: " . implode(', ', $kolom) . ')',
+                'user',
+                $user->id
+            );
+        }
+
         return redirect()
             ->route('admin.akun.' . $user->role)
             ->with('success', 'Data akun berhasil diperbarui.');
     }
-
-    // ==================== Status & Hapus ====================
 
     public function toggleStatus(User $user)
     {
         abort_if($user->id === auth()->id(), 403, 'Tidak bisa menonaktifkan akun sendiri.');
 
         $user->update(['is_active' => ! $user->is_active]);
+
+        ActivityLog::record(
+            'update_akun',
+            ($user->is_active ? 'Mengaktifkan' : 'Menonaktifkan') . " akun {$user->role} \"{$user->full_name}\"",
+            'user',
+            $user->id
+        );
 
         return back()->with('success', $user->is_active ? 'Akun diaktifkan.' : 'Akun dinonaktifkan.');
     }
@@ -172,6 +193,9 @@ class AkunController extends Controller
         abort_if($user->id === auth()->id(), 403, 'Tidak bisa menghapus akun sendiri.');
 
         $avatar = $user->avatar_url;
+        $nama   = $user->full_name;
+        $peran  = $user->role;
+        $id     = $user->id;
 
         try {
             $user->delete();
@@ -179,12 +203,17 @@ class AkunController extends Controller
             return back()->with('error', 'Akun tidak bisa dihapus karena masih punya data terkait (misalnya riwayat order). Nonaktifkan akun ini sebagai gantinya.');
         }
 
+        ActivityLog::record(
+            'delete_akun',
+            "Menghapus akun {$peran} \"{$nama}\"",
+            'user',
+            $id
+        );
+
         $this->hapusFoto($r2, $avatar);
 
         return back()->with('success', 'Akun berhasil dihapus.');
     }
-
-    // ==================== Ubah Status Availability Designer ====================
 
     public function updateAvailability(Request $request, User $user)
     {
@@ -202,6 +231,8 @@ class AkunController extends Controller
             ]);
         }
 
+        $statusLama = $stat->availability_status;
+
         $payload = ['availability_status' => $data['availability_status']];
 
         if ($data['availability_status'] === DesignerStat::STATUS_SUSPENDED) {
@@ -216,6 +247,13 @@ class AkunController extends Controller
         }
 
         $stat->update($payload);
+
+        ActivityLog::record(
+            'update_availability',
+            "Mengubah status availability designer \"{$user->full_name}\": {$statusLama} → {$data['availability_status']}",
+            'designer_stat',
+            $stat->id
+        );
 
         $label = match ($data['availability_status']) {
             'available'   => 'Available',

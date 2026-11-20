@@ -9,6 +9,7 @@ use App\Models\OrderReference;
 use App\Services\R2StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Models\ActivityLog;
 
 class ManajemenFileController extends Controller
 {
@@ -130,11 +131,14 @@ class ManajemenFileController extends Controller
         }, $fileName);
     }
 
-    public function destroy(string $type, string $id)
+       public function destroy(string $type, string $id)
     {
         $file = $type === 'references'
             ? OrderReference::findOrFail($id)
             : MessageAttachment::findOrFail($id);
+
+        $namaFile = $file->file_name;
+        $jenis    = $type === 'references' ? 'referensi customer' : 'hasil desain';
 
         $cleanPath = ltrim($file->file_url ?? '', '/');
         if (preg_match('#^https?://[^/]+/(.+)$#', $cleanPath, $m)) {
@@ -146,6 +150,13 @@ class ManajemenFileController extends Controller
         }
 
         $file->delete();
+
+        ActivityLog::record(
+            'delete_file',
+            "Menghapus file {$jenis}: \"{$namaFile}\"",
+            $type === 'references' ? 'order_reference' : 'message_attachment',
+            $id
+        );
 
         return back()->with('success', 'File berhasil dihapus dari sistem.');
     }

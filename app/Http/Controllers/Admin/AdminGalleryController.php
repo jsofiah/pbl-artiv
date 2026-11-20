@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\GalleryItem;
 use App\Models\MessageAttachment;
 use Illuminate\Http\Request;
@@ -90,7 +91,7 @@ class AdminGalleryController extends Controller
 
             $order = $attachment->message?->conversation?->order;
 
-            GalleryItem::create([
+            $item = GalleryItem::create([
                 'product_id'            => $validated['product_id'] ?? $order?->product_id,
                 'order_id'              => $order?->id,
                 'message_attachment_id' => $attachment->id,
@@ -101,23 +102,49 @@ class AdminGalleryController extends Controller
                 'created_by'            => $request->user()->id,
             ]);
 
+            ActivityLog::record(
+                'create_galeri',
+                "Menambahkan item galeri \"{$item->title}\"",
+                'gallery_item',
+                $item->id
+            );
+
             $created++;
         }
 
         return redirect()
             ->route('admin.galeri.index')
             ->with('success', "{$created} file berhasil ditambahkan ke galeri.");
-            }
+    }
 
     public function destroy(GalleryItem $galleryItem)
     {
+        $judul = $galleryItem->title;
+        $id    = $galleryItem->id;
+
         $galleryItem->delete();
+
+        ActivityLog::record(
+            'delete_galeri',
+            "Menghapus item galeri \"{$judul}\"",
+            'gallery_item',
+            $id
+        );
+
         return back()->with('success', 'Item galeri dihapus.');
     }
 
     public function toggle(GalleryItem $galleryItem)
     {
         $galleryItem->update(['is_active' => ! $galleryItem->is_active]);
+
+        ActivityLog::record(
+            'update_galeri',
+            ($galleryItem->is_active ? 'Mengaktifkan' : 'Menonaktifkan') . " item galeri \"{$galleryItem->title}\"",
+            'gallery_item',
+            $galleryItem->id
+        );
+
         return back()->with('success', 'Status galeri diperbarui.');
     }
 }
